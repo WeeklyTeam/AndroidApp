@@ -19,7 +19,7 @@ import androidx.navigation.NavController
 
 /*
 *
-* Built by: Linda
+* Built by: Alondra
 *
 * Use the date passed from the birthday page and the TextField inputs to do a signup request
 * if the response is 500 show an error message
@@ -31,7 +31,7 @@ import androidx.navigation.NavController
 *
 * */
 @Composable
-fun SignupPage(navController: NavController) {
+fun SignupPage(navController: NavController, dob: String) {
 
 
 

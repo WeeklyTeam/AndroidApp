@@ -20,7 +20,6 @@ import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
 import kotlinx.coroutines.runBlocking
 
-
 @Composable
 fun LandingPage(navController: NavController) {
 

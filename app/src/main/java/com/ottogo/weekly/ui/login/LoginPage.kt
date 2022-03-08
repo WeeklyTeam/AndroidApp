@@ -19,7 +19,7 @@ import androidx.navigation.NavController
 
 /*
 *
-* Built by: Alondra
+* Built by: Linda
 *
 * create a login page following the design from the figma file
 * note the spacing of 24dp between inputs and 32dp between buttons

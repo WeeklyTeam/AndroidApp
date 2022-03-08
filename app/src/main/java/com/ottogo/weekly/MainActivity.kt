@@ -8,6 +8,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -30,7 +31,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
+@Preview
 @Composable
 fun LoginNavigation(){
     val navController = rememberNavController()
@@ -38,7 +39,9 @@ fun LoginNavigation(){
 
         composable("landingPage") { LandingPage(navController) }
         composable( "loginPage") { LoginPage(navController) }
-        composable("signupPage") { SignupPage(navController) }
+        composable("signupPage/{dob}") { backStackEntry -> SignupPage(navController,
+            backStackEntry.arguments?.getString("dob")!!)
+        }
         composable("signupInterestsPage/{token}") { backStackEntry -> SignupInterestsPage(navController,
             backStackEntry.arguments?.getString("token")!!
         ) }

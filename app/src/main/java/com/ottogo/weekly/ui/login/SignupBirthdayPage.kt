@@ -24,7 +24,7 @@ import androidx.navigation.NavController
 * Follow the guides of the figma file
 * use a date picker dialog to pick the date, verify the age is over 13
 * otherwise show a message that the user is too young
-* pass the date to the signup view
+* pass the date to the signup view as a string that follows the format YYYY-MM-DD
 *
 * */
 @Composable
