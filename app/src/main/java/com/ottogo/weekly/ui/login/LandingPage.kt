@@ -29,7 +29,7 @@ fun LandingPage(navController: NavController) {
 
         CustomButton(buttonText = "Sign up"){
             runBlocking {
-                navController.navigate("signupPage")
+                navController.navigate("signupBirthdayPage")
 
             }
         }
