@@ -53,89 +53,130 @@ import kotlin.reflect.KProperty
 @Composable
 fun SignupInterestsPage(navController: NavController = rememberNavController(), token: String = "hello") {
 
-    Column(modifier = Modifier
-        .verticalScroll(rememberScrollState())
+    var activityCategories = remember { mutableStateListOf<ActivityCategory>() }
+    runBlocking {
+        activityCategories.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
+    }
+
+    LazyColumn(modifier = Modifier
         .background(color = Color.White)
         .padding(24.dp)) {
-        Text(
-            text = "Interests",
-            fontFamily = nunitoFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 42.sp
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        Box(
-            contentAlignment = Alignment.CenterStart,
-            modifier = Modifier
-                .height(54.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(color = Color(0xFFF0EAFF))
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "What do you like to do? (Minimum 3)",
-                color = Color(0xFF4C21C2),
-                fontFamily = nunitoFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-            )
+
+        item() {
+            HeaderStuff()
         }
 
-        var activities = remember { mutableStateListOf<ActivityCategory>() }
-        runBlocking {
-            activities.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
+
+        for (activityCategory in activityCategories) {
+            item() {
+                Text(
+                    text = activityCategory.title,
+                    fontFamily = nunitoFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+            }
+
+            gridItems(
+                data = activityCategory.activities,
+                columnCount = 2,
+                horizontalArrangement = Arrangement.spacedBy(32.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+            ) { activity ->
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .shadow(12.dp, shape = RoundedCornerShape(12.dp))
+                        .background(color = Color(0xFFF0EAFF))
+                        .height(46.dp)
+                        .clickable {
+
+                        },
+                    horizontalArrangement = Arrangement.spacedBy(38.dp)
+                ) {
+
+                    Text(
+                        text = activity.activity,
+                        fontFamily = nunitoFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .height(22.dp)
+                    )
+                }
+            }
         }
 
-        for (element in activities) {
-            ActivityList(element)
+        item {
+            FooterStuff()
         }
-
-        Spacer(modifier = Modifier.height(48.dp))
-        CustomButton(buttonText = "Finish", onClick = {})
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ActivityList(activityCategory: ActivityCategory) {
-    Spacer(modifier = Modifier.height(32.dp))
+fun HeaderStuff() {
     Text(
-        text = activityCategory.title,
+        text = "Interests",
         fontFamily = nunitoFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 22.sp
+        fontSize = 42.sp
     )
-    Spacer(modifier = Modifier.height(16.dp))
-
-    var checked by remember { mutableStateOf(activityCategory.activities) }
-
-    LazyVerticalGrid(
-        cells = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Spacer(modifier = Modifier.height(32.dp))
+    Box(
+        contentAlignment = Alignment.CenterStart,
+        modifier = Modifier
+            .height(54.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(color = Color(0xFFF0EAFF))
+            .padding(16.dp)
     ) {
-        items(activityCategory.activities.size) { index ->
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .shadow(12.dp, shape = RoundedCornerShape(12.dp))
-                    .background(color = Color(0xFFF0EAFF))
-                    .height(46.dp)
-                    .clickable {
+        Text(
+            text = "What do you like to do? (Minimum 3)",
+            color = Color(0xFF4C21C2),
+            fontFamily = nunitoFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+        )
+    }
+}
 
-                    },
-                horizontalArrangement = Arrangement.spacedBy(38.dp)
-            ) {
-                Text(
-                    text = activityCategory.activities[index].activity,
-                    fontFamily = nunitoFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .height(22.dp)
-                )
+@Composable
+fun FooterStuff() {
+    Spacer(modifier = Modifier.height(48.dp))
+    CustomButton(buttonText = "Finish", onClick = {})
+}
+
+// Extends
+fun <T> LazyListScope.gridItems(
+    data: List<T>,
+    columnCount: Int,
+    modifier: Modifier,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    itemContent: @Composable BoxScope.(T) -> Unit,
+) {
+    val size = data.count()
+    val rows = if (size == 0) 0 else 1 + (size - 1) / columnCount
+    items(rows) { rowIndex ->
+        Row(
+            horizontalArrangement = horizontalArrangement,
+            modifier = modifier
+        ) {
+            for (columnIndex in 0 until columnCount) {
+                val itemIndex = rowIndex * columnCount + columnIndex
+                if (itemIndex < size) {
+                    Box(
+                        modifier = Modifier.weight(1F, fill = true),
+                        propagateMinConstraints = true
+                    ) {
+                        itemContent(data[itemIndex])
+                    }
+                } else {
+                    Spacer(Modifier.weight(1F, fill = true))
+                }
             }
         }
     }
@@ -144,6 +185,9 @@ fun ActivityList(activityCategory: ActivityCategory) {
 // placing a Lazygrid inside a Column
 // another way to create a grid?
 // using FlowRow or GridItems?
+// using grid items lead to Key 0 already in use (this was because grid items
+// extension created a key based on 'it.hashcode' (which probably generated the same key multiple
+// times).
 
 /* test data
 
