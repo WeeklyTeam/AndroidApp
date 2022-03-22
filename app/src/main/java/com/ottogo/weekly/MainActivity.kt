@@ -35,16 +35,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LoginNavigation(){
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "landingPage") {
+    NavHost(navController = navController, startDestination = "signupInterestsPage") {
 
         composable("landingPage") { LandingPage(navController) }
         composable( "loginPage") { LoginPage(navController) }
         composable("signupPage/{dob}") { backStackEntry -> SignupPage(navController,
             backStackEntry.arguments?.getString("dob")!!)
         }
-        composable("signupInterestsPage/{token}") { backStackEntry -> SignupInterestsPage(navController,
-            backStackEntry.arguments?.getString("token")!!
-        ) }
+        composable("signupInterestsPage") { SignupInterestsPage(navController) }
         composable("signupProfilePage/{token}") { backStackEntry -> SignupProfilePage(navController,
             backStackEntry.arguments?.getString("token")!!
         ) }

@@ -1,30 +1,40 @@
 package com.ottogo.weekly.ui.login
 
 import android.os.Bundle
+import android.os.Debug
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.ottogo.weekly.api.ActivityCategory
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.theme.nunitoFamily
 import kotlinx.coroutines.runBlocking
+import kotlin.reflect.KProperty
 
 /*
 *
@@ -39,10 +49,12 @@ import kotlinx.coroutines.runBlocking
 *
 * */
 
+@Preview
 @Composable
-fun SignupInterestsPage(navController: NavController, token: String) {
+fun SignupInterestsPage(navController: NavController = rememberNavController(), token: String = "hello") {
 
     Column(modifier = Modifier
+        .verticalScroll(rememberScrollState())
         .background(color = Color.White)
         .padding(24.dp)) {
         Text(
@@ -53,12 +65,13 @@ fun SignupInterestsPage(navController: NavController, token: String) {
         )
         Spacer(modifier = Modifier.height(32.dp))
         Box(
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.CenterStart,
             modifier = Modifier
                 .height(54.dp)
-                .width(328.dp)
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .background(color = Color(0xFFF0EAFF))
+                .padding(16.dp)
         ) {
             Text(
                 text = "What do you like to do? (Minimum 3)",
@@ -68,20 +81,78 @@ fun SignupInterestsPage(navController: NavController, token: String) {
                 fontSize = 16.sp,
             )
         }
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Activity Title",
-            fontFamily = nunitoFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
-        )
 
+        var activities = remember { mutableStateListOf<ActivityCategory>() }
         runBlocking {
-            WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 265245769906872d88b40205147f5cbf63538b83"))
-            Log.d("status", "Retrieved Activity List")
+            activities.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        for (element in activities) {
+            ActivityList(element)
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
         CustomButton(buttonText = "Finish", onClick = {})
     }
 }
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ActivityList(activityCategory: ActivityCategory) {
+    Spacer(modifier = Modifier.height(32.dp))
+    Text(
+        text = activityCategory.title,
+        fontFamily = nunitoFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+
+    var checked by remember { mutableStateOf(activityCategory.activities) }
+
+    LazyVerticalGrid(
+        cells = GridCells.Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(activityCategory.activities.size) { index ->
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .shadow(12.dp, shape = RoundedCornerShape(12.dp))
+                    .background(color = Color(0xFFF0EAFF))
+                    .height(46.dp)
+                    .clickable {
+
+                    },
+                horizontalArrangement = Arrangement.spacedBy(38.dp)
+            ) {
+                Text(
+                    text = activityCategory.activities[index].activity,
+                    fontFamily = nunitoFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .height(22.dp)
+                )
+            }
+        }
+    }
+}
+
+// placing a Lazygrid inside a Column
+// another way to create a grid?
+// using FlowRow or GridItems?
+
+/* test data
+
+var testDataCategory = listOf(
+    TestDataCategory("Title 1", listOf(TestData(1, "Basketball"), TestData(2, "Soccer"), TestData(3, "Volleyball"))),
+    TestDataCategory("Title 2", listOf(TestData(3, "Minecraft")))
+) */
+
+/* test data classes
+data class TestData (var id: Int, var activity: String)
+data class TestDataCategory(var title:String, var testDatas: List<TestData>) */
+
