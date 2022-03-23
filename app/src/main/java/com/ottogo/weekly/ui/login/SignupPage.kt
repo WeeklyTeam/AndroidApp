@@ -138,6 +138,7 @@ fun SignupPage(navController: NavController, dob: String = "2001-07-10") {
             }
         }
 
+        //test
         Spacer(modifier = Modifier.height(32.dp))
         Text(
             //modifier = Modifier.size(250.dp),
