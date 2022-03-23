@@ -109,20 +109,23 @@ fun SignupPage(navController: NavController, dob: String = "2001-07-10") {
             runBlocking {
                 navController.navigate("signupVerifyPage/{token}")
 
-                try{
-                    WeeklyApi.retrofitService.signup(mapOf(
-                        "phone" to phoneNumber.toString(),
-                        "username" to username.toString(),
-                        "password" to password.toString(),
-                        "dob" to dob))
-                } catch(e:Exception){
-                    when(e){
+                try {
+                    WeeklyApi.retrofitService.signup(
+                        mapOf(
+                            "phone" to phoneNumber.toString(),
+                            "username" to username.toString(),
+                            "password" to password.toString(),
+                            "dob" to dob
+                        )
+                    )
+                } catch (e: Exception) {
+                    when (e) {
                         is HttpException -> {
                             val statuscode = e.code()
-                            if(statuscode == 400){
+                            if (statuscode == 400) {
                                 error = "400 error"
                             }
-                            if(statuscode == 500){
+                            if (statuscode == 500) {
                                 error = "500 error"
                             }
                         }
