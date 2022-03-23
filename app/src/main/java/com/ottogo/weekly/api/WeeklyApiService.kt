@@ -26,7 +26,7 @@ private val retrofit = Retrofit.Builder()
 
 interface WeeklyApiService {
     @POST("api/account/login/")
-    suspend fun login(@Body body: Map<String, String>)
+    suspend fun login(@Body body: Map<String, String>): Map<String, String>
 
 }
 

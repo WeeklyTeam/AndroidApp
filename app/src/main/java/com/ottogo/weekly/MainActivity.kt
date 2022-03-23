@@ -1,5 +1,6 @@
 package com.ottogo.weekly
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +17,7 @@ import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.theme.WeeklyTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -30,7 +32,18 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    //added code from Linda 3/20
+    @Composable
+    fun WeeklyTheme(){
+        val navController = rememberNavController()
+
+        NavHost(navController = navController, startDestination = "login_page", builder = {
+            composable("login_page", content = { LoginPage(navController = navController) })
+        })
+    }
 }
+
 @Preview
 @Composable
 fun LoginNavigation(){
@@ -48,11 +61,18 @@ fun LoginNavigation(){
         composable("signupProfilePage/{token}") { backStackEntry -> SignupProfilePage(navController,
             backStackEntry.arguments?.getString("token")!!
         ) }
-        composable("signupBirthdayPage") { SignupBirthdayPage(navController) }
+        composable("signupBirthdayPage") { SignupBirthdayPage(navController)}
         composable("signupVerifyPage/{token}") { backStackEntry -> SignupVerifyPage(navController,
             backStackEntry.arguments?.getString("token")!!
         ) }
         /*...*/
     }
 }
+
+class MyNonActivityClass     //save the context received via constructor in a local variable
+    (  // variable to hold context
+    private val context: Context
+)
+
+
 
