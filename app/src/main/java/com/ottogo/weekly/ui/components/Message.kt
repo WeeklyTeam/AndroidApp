@@ -19,7 +19,7 @@ import androidx.navigation.NavController
 
 
 @Composable
-fun Message(navController: NavController, message: String) {
+fun Message(message: String) {
 
 
 
