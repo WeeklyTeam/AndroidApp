@@ -1,6 +1,7 @@
 package com.ottogo.weekly.ui.login
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -79,7 +80,6 @@ fun SignupInterestsPage(navController: NavController = rememberNavController(), 
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ActivityList(activityCategory: ActivityCategory) {
     Spacer(modifier = Modifier.height(32.dp))
@@ -134,7 +134,7 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
                 .background(color = Color(0xFFFFFFFF))
                 .height(46.dp)
                 .clickable {
-
+                    favorite(firstColActivity)
                 },
         ) {
             Text(
@@ -165,7 +165,7 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
                     .background(color = Color(0xFFFFFFFF))
                     .height(46.dp)
                     .clickable {
-
+                        favorite(secondColActivity)
                     },
             ) {
                 Text(
@@ -181,6 +181,22 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
         } else {
             Row(modifier = Modifier.weight(1f)) {}
         }
+    }
+}
+
+fun favorite(activity: Activity) {
+    if (!activity.isSelected) {
+        runBlocking {
+            WeeklyApi.retrofitService.favoriteActivity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"))
+            Log.d("status", "Successfully favorited!")
+        }
+        activity.isSelected = true
+    } else if (activity.isSelected) {
+        runBlocking {
+            WeeklyApi.retrofitService.unfavoriteActivity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"))
+            Log.d("status", "Successfully unfavorited!")
+        }
+        activity.isSelected = false
     }
 }
 
