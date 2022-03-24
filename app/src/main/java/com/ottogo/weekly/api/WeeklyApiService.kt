@@ -12,7 +12,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.HeaderMap
 
-data class Activity(@Json(name="id")var id: Int, @Json(name="activity")var activity: String)
+data class Activity(@Json(name="id")var id: Int, @Json(name="activity")var activity: String, var isSelected: Boolean = false)
 data class ActivityCategory(@Json(name="title")var title: String, @Json(name="activities")var activities: List<Activity>)
 
 private val BASE_URL = "https://plotsme.herokuapp.com"
