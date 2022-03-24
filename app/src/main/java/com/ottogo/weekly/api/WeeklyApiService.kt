@@ -28,6 +28,8 @@ interface WeeklyApiService {
     @POST("api/account/login/")
     suspend fun login(@Body body: Map<String, String>)
 
+    @POST("api/account/verify/")
+    suspend fun verify(@HeaderMap header: Map<String, String>, @Body body: Map<String, Int>)
 }
 
 object WeeklyApi {
