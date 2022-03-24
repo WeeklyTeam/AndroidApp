@@ -33,7 +33,7 @@ fun LoginTitle(navController: NavController, title: String) {
 
 
     Column(){
-
+        Text(text = title)
 
     }
 }

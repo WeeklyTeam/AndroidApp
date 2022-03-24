@@ -1,15 +1,16 @@
 package com.ottogo.weekly.api
 
-import android.app.MediaRouteActionProvider
+
+import android.provider.ContactsContract
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Retrofit
-import retrofit2.http.GET
-import retrofit2.http.POST
 import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.HeaderMap
+import retrofit2.http.*
+
 
 data class Activity(@Json(name="id")var id: Int)
 
@@ -28,6 +29,14 @@ interface WeeklyApiService {
     @POST("api/account/login/")
     suspend fun login(@Body body: Map<String, String>)
 
+    @Multipart
+    @JvmSuppressWildcards
+    @PATCH("api/profile/myprofile/")
+    suspend fun patchProfile(
+        @HeaderMap headers: Map<String, String>,
+        @PartMap partMap: Map<String, RequestBody>,
+        @Part profile_picture: MultipartBody.Part? = null
+    ): ContactsContract.Profile
 }
 
 object WeeklyApi {
