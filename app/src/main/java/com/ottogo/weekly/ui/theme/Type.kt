@@ -19,7 +19,7 @@ val Typography = Typography(
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp
         ),
-        button = TextStyle(
+        h6 = TextStyle(
                 fontFamily = nunitoFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp

@@ -34,8 +34,8 @@ fun CustomButton(
 
         buttonloading = "loading"
 
-    }, Modifier.fillMaxWidth().height(44.dp).clip(CircleShape)) {
-        Text(text = buttonloading, style = MaterialTheme.typography.button)
+    }, Modifier.fillMaxWidth().height(48.dp).clip(CircleShape)) {
+        Text(text = buttonloading, style = MaterialTheme.typography.h6)
 
     }
 }
