@@ -7,6 +7,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +34,9 @@ import com.ottogo.weekly.api.ActivityCategory
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.theme.nunitoFamily
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /*
@@ -50,11 +54,15 @@ import kotlinx.coroutines.runBlocking
 
 @Preview
 @Composable
-fun SignupInterestsPage(navController: NavController = rememberNavController(), token: String = "hello") {
-
+fun SignupInterestsPage(navController: NavController = rememberNavController(), token: String = "") {
     var activityCategories = remember { mutableStateListOf<ActivityCategory>() }
+    var runOnce = remember { mutableStateOf(true)}
     runBlocking {
-        activityCategories.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
+        if (runOnce.value) {
+            //activityCategories.clear()
+            activityCategories.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
+        }
+        runOnce.value = false
     }
 
     Column(modifier = Modifier
@@ -73,10 +81,9 @@ fun SignupInterestsPage(navController: NavController = rememberNavController(), 
             for (activityCategory in activityCategories) {
                 ActivityList(activityCategory)
             }
-        }
 
-        Spacer(modifier = Modifier.height(48.dp))
-        CustomButton(buttonText = "Finish", onClick = {})
+            FooterButton()
+        }
     }
 }
 
@@ -105,12 +112,12 @@ fun ActivityList(activityCategory: ActivityCategory) {
             var secondIndex = firstIndex + 1
             var firstColActivity = activityCategory.activities[firstIndex]
             var secondColActivity: Activity? = null
-                if (secondIndex == activityCategory.activities.size) {
-                    Spacer(modifier = Modifier.fillMaxWidth())
-                }
-                else {
-                    secondColActivity = activityCategory.activities[secondIndex]
-                }
+            if (secondIndex == activityCategory.activities.size) {
+                Spacer(modifier = Modifier.fillMaxWidth())
+            }
+            else {
+                secondColActivity = activityCategory.activities[secondIndex]
+            }
             GridItems(firstColActivity, secondColActivity)
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -134,7 +141,7 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
                 .background(color = Color(0xFFFFFFFF))
                 .height(46.dp)
                 .clickable {
-                    favorite(firstColActivity)
+                    favoriteActivity(firstColActivity)
                 },
         ) {
             Text(
@@ -152,6 +159,7 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
 
         if (secondColActivity != null) {
             Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
                     .weight(1f)
                     .coloredShadow(
@@ -165,8 +173,9 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
                     .background(color = Color(0xFFFFFFFF))
                     .height(46.dp)
                     .clickable {
-                        favorite(secondColActivity)
+                        favoriteActivity(secondColActivity)
                     },
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = secondColActivity.activity,
@@ -177,6 +186,9 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
                         .padding(10.dp)
                         .height(22.dp)
                 )
+
+                HeartIcon(secondColActivity)
+
             }
         } else {
             Row(modifier = Modifier.weight(1f)) {}
@@ -184,11 +196,25 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
     }
 }
 
-fun favorite(activity: Activity) {
+@Composable
+fun HeartIcon(activity: Activity) {
+    if (!activity.isSelected) {
+        Icon(
+            painter = painterResource(R.drawable.ic_heart_fill),
+            contentDescription = "",
+            tint = Color.Unspecified,
+            modifier = Modifier
+                .padding(end = 16.dp)
+        )
+    }
+}
+
+fun favoriteActivity(activity: Activity) {
     if (!activity.isSelected) {
         runBlocking {
             WeeklyApi.retrofitService.favoriteActivity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"))
             Log.d("status", "Successfully favorited!")
+
         }
         activity.isSelected = true
     } else if (activity.isSelected) {
@@ -229,6 +255,12 @@ fun Header() {
             fontSize = 16.sp,
         )
     }
+}
+
+@Composable
+fun FooterButton() {
+    Spacer(modifier = Modifier.height(48.dp))
+    CustomButton(buttonText = "Finish", onClick = {})
 }
 
 // Shadow with more customizability
