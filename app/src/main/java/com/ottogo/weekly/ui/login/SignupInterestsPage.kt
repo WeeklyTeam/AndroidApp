@@ -26,6 +26,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ottogo.weekly.R
@@ -56,13 +59,10 @@ import kotlinx.coroutines.runBlocking
 @Composable
 fun SignupInterestsPage(navController: NavController = rememberNavController(), token: String = "") {
     var activityCategories = remember { mutableStateListOf<ActivityCategory>() }
-    var runOnce = remember { mutableStateOf(true)}
-    runBlocking {
-        if (runOnce.value) {
-            //activityCategories.clear()
-            activityCategories.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
-        }
-        runOnce.value = false
+    var numFavorite = remember { mutableStateOf(0) }
+
+    LaunchedEffect(key1 = 1) {
+        activityCategories.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
     }
 
     Column(modifier = Modifier
@@ -82,10 +82,11 @@ fun SignupInterestsPage(navController: NavController = rememberNavController(), 
                 ActivityList(activityCategory)
             }
 
-            FooterButton()
+            FooterButton(numFavorite.value)
         }
     }
 }
+
 
 @Composable
 fun ActivityList(activityCategory: ActivityCategory) {
@@ -121,109 +122,96 @@ fun ActivityList(activityCategory: ActivityCategory) {
             GridItems(firstColActivity, secondColActivity)
             Spacer(modifier = Modifier.height(16.dp))
         }
+
+
     }
 }
 
 @Composable
 fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
     Row(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .coloredShadow(
-                    color = Color(0xFF000000),
-                    alpha = 0.05f,
-                    offsetX = 3.dp,
-                    offsetY = 5.dp
-                )
-                .clip(RoundedCornerShape(12.dp))
-                .shadow(12.dp, shape = RoundedCornerShape(12.dp))
-                .background(color = Color(0xFFFFFFFF))
-                .height(46.dp)
-                .clickable {
-                    favoriteActivity(firstColActivity)
-                },
-        ) {
-            Text(
-                text = firstColActivity.activity,
-                fontFamily = nunitoFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                modifier = Modifier
-                    .padding(10.dp)
-                    .height(22.dp)
-            )
-        }
+        ActivityCol(firstColActivity, modifier = Modifier.weight(1f))
 
         Spacer(modifier = Modifier.width(32.dp))
 
         if (secondColActivity != null) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .weight(1f)
-                    .coloredShadow(
-                        color = Color(0xFF000000),
-                        alpha = 0.05f,
-                        offsetX = 3.dp,
-                        offsetY = 5.dp
-                    )
-                    .clip(RoundedCornerShape(12.dp))
-                    .shadow(12.dp, shape = RoundedCornerShape(12.dp))
-                    .background(color = Color(0xFFFFFFFF))
-                    .height(46.dp)
-                    .clickable {
-                        favoriteActivity(secondColActivity)
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = secondColActivity.activity,
-                    fontFamily = nunitoFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .height(22.dp)
-                )
-
-                HeartIcon(secondColActivity)
-
-            }
+            ActivityCol(secondColActivity, modifier = Modifier.weight(1f))
         } else {
             Row(modifier = Modifier.weight(1f)) {}
         }
     }
 }
 
+
+
+
 @Composable
-fun HeartIcon(activity: Activity) {
-    if (!activity.isSelected) {
-        Icon(
-            painter = painterResource(R.drawable.ic_heart_fill),
-            contentDescription = "",
-            tint = Color.Unspecified,
+fun ActivityCol(activity: Activity, modifier: Modifier = Modifier) {
+    var activitySelected = remember { mutableStateOf(false)}
+    Row(
+        modifier = modifier
+            .coloredShadow(
+                color = Color(0xFF000000),
+                alpha = 0.05f,
+                offsetX = 3.dp,
+                offsetY = 5.dp
+            )
+            .clip(RoundedCornerShape(12.dp))
+            .shadow(12.dp, shape = RoundedCornerShape(12.dp))
+            .background(color = Color(0xFFFFFFFF))
+            .height(46.dp)
+            .clickable {
+                activitySelected.value = favoriteActivity(activity)
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = activity.activity,
+            fontFamily = nunitoFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
             modifier = Modifier
-                .padding(end = 16.dp)
+                .padding(10.dp)
+                .height(22.dp)
         )
+
+        if (activitySelected.value) {
+            HeartIcon(activity)
+        }
+
     }
 }
 
-fun favoriteActivity(activity: Activity) {
+@Composable
+fun HeartIcon(activity: Activity) {
+    Icon(
+        painter = painterResource(R.drawable.ic_heart_fill),
+        contentDescription = "",
+        tint = Color.Unspecified,
+        modifier = Modifier
+            .padding(end = 16.dp)
+    )
+}
+
+
+fun favoriteActivity(activity: Activity):Boolean {
     if (!activity.isSelected) {
         runBlocking {
-            WeeklyApi.retrofitService.favoriteActivity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"))
+            WeeklyApi.retrofitService.favoriteActivity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), activity.id)
             Log.d("status", "Successfully favorited!")
-
         }
         activity.isSelected = true
+        return true
     } else if (activity.isSelected) {
         runBlocking {
-            WeeklyApi.retrofitService.unfavoriteActivity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"))
+            WeeklyApi.retrofitService.unfavoriteActivity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), activity.id)
             Log.d("status", "Successfully unfavorited!")
         }
         activity.isSelected = false
+        return false
     }
+    return false
 }
 
 @Composable
@@ -258,9 +246,9 @@ fun Header() {
 }
 
 @Composable
-fun FooterButton() {
+fun FooterButton(numFavorite: Int) {
     Spacer(modifier = Modifier.height(48.dp))
-    CustomButton(buttonText = "Finish", onClick = {})
+    CustomButton(buttonText = "Finish ($numFavorite/3)", onClick = {})
 }
 
 // Shadow with more customizability
