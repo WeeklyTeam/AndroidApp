@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ottogo.weekly.R
@@ -55,11 +57,34 @@ import kotlinx.coroutines.runBlocking
 *
 * */
 
+class SignupInterestsViewModel : ViewModel() {
+    val numFavoriteLiveData: LiveData<Int>
+        get() = numFavorite
+
+    private val numFavorite= MutableLiveData<Int>()
+    private var num = 0
+
+    fun increaseNumFavorite() {
+        numFavorite.value = ++num
+        Log.d("status", "Numfavorite is ${numFavorite.value}")
+    }
+
+    fun decreaseNumFavorite() {
+        numFavorite.value = --num
+        Log.d("status", "Numfavorite is ${numFavorite.value}")
+    }
+}
+
 @Preview
 @Composable
 fun SignupInterestsPage(navController: NavController = rememberNavController(), token: String = "") {
+    SignupInterestsScreen()
+}
+
+@Composable
+fun SignupInterestsScreen(model: SignupInterestsViewModel = viewModel()) {
     var activityCategories = remember { mutableStateListOf<ActivityCategory>() }
-    var numFavorite = remember { mutableStateOf(0) }
+    val numFavorite by model.numFavoriteLiveData.observeAsState(0)
 
     LaunchedEffect(key1 = 1) {
         activityCategories.addAll(WeeklyApi.retrofitService.activity(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")))
@@ -82,11 +107,11 @@ fun SignupInterestsPage(navController: NavController = rememberNavController(), 
                 ActivityList(activityCategory)
             }
 
-            FooterButton(numFavorite.value)
+
+            FooterButton(numFavorite)
         }
     }
 }
-
 
 @Composable
 fun ActivityList(activityCategory: ActivityCategory) {
@@ -99,7 +124,7 @@ fun ActivityList(activityCategory: ActivityCategory) {
     )
     Spacer(modifier = Modifier.height(16.dp))
 
-    Column() {
+    Column {
         var numRows = 0
 
         numRows = if (activityCategory.activities.size % 2 == 0) {
@@ -127,6 +152,7 @@ fun ActivityList(activityCategory: ActivityCategory) {
     }
 }
 
+
 @Composable
 fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -143,10 +169,8 @@ fun GridItems(firstColActivity: Activity, secondColActivity: Activity? = null) {
 }
 
 
-
-
 @Composable
-fun ActivityCol(activity: Activity, modifier: Modifier = Modifier) {
+fun ActivityCol(activity: Activity, modifier: Modifier = Modifier, model: SignupInterestsViewModel = viewModel()) {
     var activitySelected = remember { mutableStateOf(false)}
     Row(
         modifier = modifier
@@ -162,6 +186,8 @@ fun ActivityCol(activity: Activity, modifier: Modifier = Modifier) {
             .height(46.dp)
             .clickable {
                 activitySelected.value = favoriteActivity(activity)
+                if (activity.isSelected) model.increaseNumFavorite()
+                else if (!activity.isSelected) model.decreaseNumFavorite()
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -177,14 +203,15 @@ fun ActivityCol(activity: Activity, modifier: Modifier = Modifier) {
         )
 
         if (activitySelected.value) {
-            HeartIcon(activity)
+            HeartIcon()
         }
 
     }
 }
 
+
 @Composable
-fun HeartIcon(activity: Activity) {
+fun HeartIcon() {
     Icon(
         painter = painterResource(R.drawable.ic_heart_fill),
         contentDescription = "",
@@ -193,7 +220,6 @@ fun HeartIcon(activity: Activity) {
             .padding(end = 16.dp)
     )
 }
-
 
 fun favoriteActivity(activity: Activity):Boolean {
     if (!activity.isSelected) {
@@ -213,6 +239,7 @@ fun favoriteActivity(activity: Activity):Boolean {
     }
     return false
 }
+
 
 @Composable
 fun Header() {
@@ -245,11 +272,13 @@ fun Header() {
     }
 }
 
+
 @Composable
 fun FooterButton(numFavorite: Int) {
     Spacer(modifier = Modifier.height(48.dp))
-    CustomButton(buttonText = "Finish ($numFavorite/3)", onClick = {})
+    CustomButton(buttonText = "Finish ($numFavorite/3)", onClick = { Log.d("status", "$numFavorite")})
 }
+
 
 // Shadow with more customizability
 fun Modifier.coloredShadow(
