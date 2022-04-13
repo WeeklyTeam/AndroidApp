@@ -2,13 +2,7 @@ package com.ottogo.weekly.ui.login.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple = Color(0xFF632DFF)
-val LightRed = Color(0xFFFFE4E8)
-val DarkRed = Color(0xFFF30E2A)
-
-val Black = Color(0xFF151522)
-val Black80 = Color(0xFF44444E)
-val Black60 = Color(0xFF73737A)
-val Black40 = Color(0xFFA1A1A7)
-val Black20 = Color(0xFFD0D0D3)
-val LightGray = Color(0xFFF1f3f6)
+val Purple200 = Color(0xFFBB86FC)
+val Purple500 = Color(0xFF6200EE)
+val Purple700 = Color(0xFF3700B3)
+val Teal200 = Color(0xFF03DAC5)
