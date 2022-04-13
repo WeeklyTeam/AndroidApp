@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ottogo.weekly.ui.theme.Black
@@ -39,7 +40,7 @@ fun ChatTitleBar(navController: NavController){
                     contentDescription = null,
                 )
             }
-            IconButton(onClick = { navController.navigate("peopleSearch") }) {
+            IconButton(onClick = { navController.navigate("searchPage") }) {
                 Icon(
                     modifier = Modifier.size(26.dp),
                     painter = painterResource(id = R.drawable.ic_search_line),

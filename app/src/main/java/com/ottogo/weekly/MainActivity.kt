@@ -23,7 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ottogo.weekly.ui.account.AccountPage
 import com.ottogo.weekly.ui.calendar.CalendarPage
 import com.ottogo.weekly.ui.chat.ChatPage
-import com.ottogo.weekly.ui.chat.PeopleSearch
+import com.ottogo.weekly.ui.chat.SearchPage
 import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.Black40
@@ -93,7 +93,7 @@ fun MainNavigation(userViewModel: UserViewModel){
     NavHost(navController = navController, startDestination = "homePage") {
 
         composable("homePage") { HomePage(navController, userViewModel) }
-        composable("peopleSearch") { PeopleSearch(userViewModel)}
+        composable("searchPage") { SearchPage(userViewModel)}
 
     }
 }

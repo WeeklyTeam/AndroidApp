@@ -5,6 +5,6 @@ import androidx.compose.runtime.Composable
 import com.ottogo.weekly.viewmodels.UserViewModel
 
 @Composable
-fun PeopleSearch(userViewModel: UserViewModel) {
+fun SearchPage(userViewModel: UserViewModel) {
     Column(){}
 }
