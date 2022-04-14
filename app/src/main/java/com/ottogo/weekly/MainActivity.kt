@@ -93,7 +93,7 @@ fun MainNavigation(userViewModel: UserViewModel){
     NavHost(navController = navController, startDestination = "homePage") {
 
         composable("homePage") { HomePage(navController, userViewModel) }
-        composable("searchPage") { SearchPage(userViewModel)}
+        composable("searchPage") { SearchPage(navController, userViewModel)}
 
     }
 }

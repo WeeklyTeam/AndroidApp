@@ -16,13 +16,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.ottogo.weekly.R
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
 
 @Composable
-fun SearchPage(userViewModel: UserViewModel) {
+fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
     Column(modifier = Modifier.padding(16.dp)){
         var searchText by remember { mutableStateOf("") }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -56,7 +57,7 @@ fun SearchPage(userViewModel: UserViewModel) {
             Button(colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
                 elevation = null, contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
                 onClick = {
-
+                    navController.popBackStack()
                 }) {
                 Text(text = "Cancel", style = MaterialTheme.typography.h4, color = Black60)
             }
