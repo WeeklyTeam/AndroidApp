@@ -11,6 +11,6 @@ val Black80 = Color(0xFF44444E)
 val Black60 = Color(0xFF73737A)
 val Black40 = Color(0xFFA1A1A7)
 val Black20 = Color(0xFFD0D0D3)
-val LightGray = Color(0xFFF1f3f6)
+val LightGray = Color(0xFFF1F3F6)
 
 
