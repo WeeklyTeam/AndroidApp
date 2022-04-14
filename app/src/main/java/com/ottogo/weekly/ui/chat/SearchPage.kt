@@ -4,6 +4,7 @@ import android.hardware.lights.Light
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
@@ -28,49 +30,78 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
         var searchText by remember { mutableStateOf("") }
         Row(verticalAlignment = Alignment.CenterVertically) {
 
-            Surface(modifier = Modifier.weight(1f)) {
-                BasicTextField(
-                    value = searchText,
-                    onValueChange = {  searchText = it },
-                    modifier = Modifier.height(40.dp),
-                    textStyle = MaterialTheme.typography.body2.copy(color = Black60),
-                    singleLine = true,
-                    decorationBox = { innerTextField ->
-                        Row(
-                            Modifier.background(LightGray, RoundedCornerShape(12.dp)),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(painter = painterResource(R.drawable.ic_search_line),
-                                contentDescription = null,
-                                tint = Black60,
-                                modifier = Modifier.padding(10.dp))
-                            if (searchText.isEmpty()) Text(text = "Search", style = MaterialTheme.typography.body2, color = Black60)
-                            innerTextField()
-                        }
-                    }
-                )
-            }
+            SearchBar(searchText, Modifier.weight(1f)) { searchText = it }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Button(colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
-                elevation = null, contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
-                onClick = {
-                    navController.popBackStack()
-                }) {
-                Text(text = "Cancel", style = MaterialTheme.typography.h4, color = Black60)
-            }
-
+            CancelButton(navController)
 
         }
+
+        Spacer(Modifier.height(8.dp))
+
         SearchResults()
     }
 }
 
 @Composable
-fun SearchResults() {
-    Column() {
-
+fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (String) -> Unit) {
+    Surface(modifier = modifier) {
+        BasicTextField(
+            value = searchText,
+            onValueChange = searchType,
+            modifier = Modifier.height(40.dp),
+            textStyle = MaterialTheme.typography.body2.copy(color = Black60),
+            singleLine = true,
+            decorationBox = { innerTextField ->
+                Row(
+                    Modifier.background(LightGray, RoundedCornerShape(12.dp)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(painter = painterResource(R.drawable.ic_search_line),
+                        contentDescription = null,
+                        tint = Black60,
+                        modifier = Modifier.padding(10.dp))
+                    if (searchText.isEmpty()) Text(text = "Search", style = MaterialTheme.typography.body2, color = Black60)
+                    innerTextField()
+                }
+            }
+        )
     }
+}
+
+@Composable
+fun CancelButton(navController: NavController) {
+    Button(colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
+        elevation = null, contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
+        onClick = {
+            navController.popBackStack()
+        }) {
+        Text(text = "Cancel", style = MaterialTheme.typography.h4, color = Black60)
+    }
+}
+
+@Composable
+fun SearchResults() {
+    Column {
+        SearchResultsItem("Jessica Jones", "jjones35")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+    }
+}
+
+@Composable
+fun SearchResultsItem(name: String, userName: String) {
+    Spacer(Modifier.height(16.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(painter = painterResource(id = R.drawable.ic_search_line), contentDescription = "profile picture")
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column() {
+            Text(text = name, style = MaterialTheme.typography.body2)
+            Text(text = userName, style = MaterialTheme.typography.body1, color = Black40)
+        }
+    }
+    Spacer(Modifier.height(16.dp))
 }
