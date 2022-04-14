@@ -1,9 +1,9 @@
 package com.ottogo.weekly.ui.chat
 
 import android.hardware.lights.Light
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.indication
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -84,9 +84,19 @@ fun CancelButton(navController: NavController) {
 
 @Composable
 fun SearchResults() {
-    Column {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SearchResultsItem("Jessica Jones", "jjones35")
         SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+        SearchResultsItem("Alexander Hamilton", "ah10")
+
     }
 }
 
