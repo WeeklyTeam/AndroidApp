@@ -1,6 +1,8 @@
 package com.ottogo.weekly.ui.chat
 
+import android.app.Instrumentation
 import android.hardware.lights.Light
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
@@ -20,9 +22,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
+import com.ottogo.weekly.api.WeeklyApi
+import com.ottogo.weekly.api.WeeklyApiService
+import com.ottogo.weekly.api.models.ApiList
+import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
+import com.squareup.moshi.Json
+import kotlinx.coroutines.runBlocking
 
 @Composable
 fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
@@ -40,7 +48,7 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 
         Spacer(Modifier.height(8.dp))
 
-        SearchResults()
+        SearchResults(searchText)
     }
 }
 
@@ -83,20 +91,32 @@ fun CancelButton(navController: NavController) {
 }
 
 @Composable
-fun SearchResults() {
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        SearchResultsItem("Jessica Jones", "jjones35")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
-        SearchResultsItem("Alexander Hamilton", "ah10")
+fun SearchResults(searchText: String) {
 
+    val searchResults = remember { mutableStateListOf<Profile>() }
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())) {
+
+        if (searchText.isNotBlank() || searchText.isNotEmpty()) {
+            LaunchedEffect(key1 = searchText) {
+                var searchApiList = WeeklyApi.retrofitService.search(
+                    mapOf("Authorization" to "token 265245769906872d88b40205147f5cbf63538b83"),
+                    searchText
+                )
+                searchResults.clear()
+                searchResults.addAll(searchApiList.results)
+                Log.d("status", searchApiList.count.toString())
+            }
+        }
+        else {
+            searchResults.clear()
+        }
+
+        for (searchResult in searchResults) {
+            Log.d("status", searchResult.name)
+            SearchResultsItem(searchResult.name, searchResult.username)
+        }
     }
 }
 
