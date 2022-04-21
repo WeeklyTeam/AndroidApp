@@ -1,27 +1,37 @@
 package com.ottogo.weekly.ui.login.ui.components
 
-import android.os.Bundle
-import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import com.ottogo.weekly.ui.theme.DarkRed
+import com.ottogo.weekly.ui.theme.LightRed
+import com.ottogo.weekly.ui.theme.WeeklyTheme
 
+enum class MessageTheme{
+    ERROR,
+}
 
+@Preview
 @Composable
-fun Message(navController: NavController, message: String) {
+fun Message(message: String = "error", messageTheme: MessageTheme = MessageTheme.ERROR) {
 
+    val (foregroundColor, backgroundColor) = when (messageTheme) {
+        MessageTheme.ERROR -> (DarkRed to LightRed)
+    }
 
+    Card(elevation = 0.dp, backgroundColor = backgroundColor, shape = RoundedCornerShape (12.dp)) {
+        Text(message, color = foregroundColor, style = MaterialTheme.typography.h6, modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth())
+    }
 
-    Text(message)
 }

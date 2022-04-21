@@ -14,15 +14,35 @@ val nunitoFamily = FontFamily(
 )
 
 val Typography = Typography(
+        body2 = TextStyle(
+                fontFamily = nunitoFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 18.sp
+        ),
         body1 = TextStyle(
                 fontFamily = nunitoFamily,
                 fontWeight = FontWeight.Normal,
-                fontSize = 16.sp
+                fontSize = 14.sp
         ),
-        button = TextStyle(
+        h5 = TextStyle(
+                fontFamily = nunitoFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+        ),
+        h4 = TextStyle(
                 fontFamily = nunitoFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
+        ),
+        h3 = TextStyle(
+                fontFamily = nunitoFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+        ),
+        h2 = TextStyle(
+                fontFamily = nunitoFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
         ),
         h1 = TextStyle(
                 fontFamily = nunitoFamily,
