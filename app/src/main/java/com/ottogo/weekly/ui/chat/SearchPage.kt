@@ -1,52 +1,41 @@
 package com.ottogo.weekly.ui.chat
 
-import android.app.Instrumentation
-import android.app.appsearch.SearchResults
-import android.hardware.lights.Light
+
 import android.util.Log
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
-import com.ottogo.weekly.api.WeeklyApiService
-import com.ottogo.weekly.api.models.ApiList
 import com.ottogo.weekly.api.models.Profile
-import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.squareup.moshi.Json
 import kotlinx.coroutines.runBlocking
 
+
 @Composable
 fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
     Column(modifier = Modifier.padding(16.dp)){
+
         var searchText by remember { mutableStateOf("") }
+
         Row(verticalAlignment = Alignment.CenterVertically) {
 
             SearchBar(searchText, Modifier.weight(1f)) { searchText = it }
@@ -62,6 +51,7 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
         SearchResults(searchText)
     }
 }
+
 
 @Composable
 fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (String) -> Unit) {
@@ -83,7 +73,7 @@ fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (St
                 backgroundColor = LightGray,
                 cursorColor = Black60,
 
-                // remove underline
+                // removes underline
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             ),
@@ -91,29 +81,9 @@ fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (St
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
 
-        /*BasicTextField(
-            value = searchText,
-            onValueChange = searchType,
-            modifier = Modifier.height(40.dp),
-            textStyle = MaterialTheme.typography.body2.copy(color = Black60),
-            singleLine = true,
-            decorationBox = { innerTextField ->
-                Row(
-                    Modifier.background(LightGray, RoundedCornerShape(12.dp)),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(painter = painterResource(R.drawable.ic_search_line),
-                        contentDescription = null,
-                        tint = Black60,
-                        modifier = Modifier.padding(10.dp))
-                    if (searchText.isEmpty()) Text(text = "Search", style = MaterialTheme.typography.body2, color = Black60)
-                    innerTextField()
-                }
-            }
-        ) */
     }
 }
+
 
 @Composable
 fun CancelButton(navController: NavController) {
@@ -126,6 +96,7 @@ fun CancelButton(navController: NavController) {
     }
 }
 
+
 @Composable
 fun SearchResults(searchText: String) {
 
@@ -134,6 +105,7 @@ fun SearchResults(searchText: String) {
         .fillMaxSize()
         .verticalScroll(rememberScrollState())) {
 
+        // api call for search results
         if (searchText.isNotBlank() || searchText.isNotEmpty()) {
             LaunchedEffect(key1 = searchText) {
                 var searchApiList = WeeklyApi.retrofitService.search(
@@ -149,6 +121,7 @@ fun SearchResults(searchText: String) {
             searchResults.clear()
         }
 
+        // display search results
         for (searchResult in searchResults) {
             Log.d("status", searchResult.name)
             SearchResultsItem(searchResult.name, searchResult.username, searchResult.profile_picture)
@@ -156,28 +129,40 @@ fun SearchResults(searchText: String) {
     }
 }
 
+
 @Composable
 fun SearchResultsItem(name: String, userName: String, profilePicture: String?) {
+
     Spacer(Modifier.height(16.dp))
+
     Row(verticalAlignment = Alignment.CenterVertically) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data("https://cdn.britannica.com/55/174255-050-526314B6/brown-Guernsey-cow.jpg")
-                .build(),
-            placeholder = painterResource(id = R.drawable.ic_search_line),
-            contentDescription = "profile picture",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .clip(CircleShape)
-                .height(50.dp)
-                .width(50.dp))
+
+        ProfilePicture(profilePicture)
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column() {
+        Column(modifier = Modifier.clickable { /* TODO: add click functionality */ }) {
             Text(text = name, style = MaterialTheme.typography.body2)
             Text(text = userName, style = MaterialTheme.typography.body1, color = Black40)
         }
     }
+
     Spacer(Modifier.height(16.dp))
+
+}
+
+
+@Composable
+fun ProfilePicture(profilePicture: String?) {
+    // TODO: use profilePicture in ".data()"
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data("https://cdn.britannica.com/55/174255-050-526314B6/brown-Guernsey-cow.jpg")
+            .build(),
+        contentDescription = "profile picture",
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .clip(CircleShape)
+            .height(50.dp)
+            .width(50.dp))
 }
