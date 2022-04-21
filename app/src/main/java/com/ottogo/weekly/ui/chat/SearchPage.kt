@@ -1,6 +1,7 @@
 package com.ottogo.weekly.ui.chat
 
 import android.app.Instrumentation
+import android.app.appsearch.SearchResults
 import android.hardware.lights.Light
 import android.util.Log
 import androidx.compose.foundation.*
@@ -11,13 +12,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -55,7 +61,32 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 @Composable
 fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (String) -> Unit) {
     Surface(modifier = modifier) {
-        BasicTextField(
+
+        val focusManager = LocalFocusManager.current
+
+        TextField(
+            value = searchText,
+            onValueChange = searchType,
+            modifier = Modifier.padding(0.dp),
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Search", style = MaterialTheme.typography.body2, color = Black60) },
+            singleLine = true,
+            leadingIcon = { Image(painter = painterResource(id = R.drawable.ic_search_line), contentDescription = "search icon") },
+            colors = TextFieldDefaults.textFieldColors(
+                textColor = Black60,
+                leadingIconColor = Black60,
+                backgroundColor = LightGray,
+                cursorColor = Black60,
+
+                // remove underline
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+            textStyle = MaterialTheme.typography.body2,
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+        )
+
+        /*BasicTextField(
             value = searchText,
             onValueChange = searchType,
             modifier = Modifier.height(40.dp),
@@ -75,7 +106,7 @@ fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (St
                     innerTextField()
                 }
             }
-        )
+        ) */
     }
 }
 
