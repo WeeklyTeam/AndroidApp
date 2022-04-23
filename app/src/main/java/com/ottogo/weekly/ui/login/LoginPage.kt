@@ -38,7 +38,6 @@ import androidx.navigation.NavController
 fun LoginPage(navController: NavController) {
 
 
-
     Column(){
 
 

@@ -13,8 +13,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Button
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,26 +22,22 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toFile
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.CustomTextField
 import com.ottogo.weekly.ui.login.ui.components.LoginTitle
 import com.ottogo.weekly.ui.login.ui.components.Message
-import kotlinx.coroutines.runBlocking
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.io.File
 import java.lang.Exception
-
 
 /*
 *
@@ -53,7 +47,7 @@ import java.lang.Exception
 * This one may be a little tricky don't hesitate to ask for help or clarification
 * when a user taps on the grey circle, an image picker activity should launch up
 * when selected show the user the image they picked,
-* and send a multipart patch request to the myprofile url
+* and send a multipart patch request to the my profile url
 * with a header map using the token that was passed
 * afterwards navigate to the signup interests page and pass the token
 * Try your best!
@@ -86,13 +80,18 @@ fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea
     ) {
         if (error != null) {
             Spacer(modifier = Modifier.padding(32.dp))
-            Message(navController, error.toString())
+            Message(error.toString())
         }
 
         if (imageUri != null) {
             file = getFile(imageUri = imageUri, LocalContext.current)
             bitmap = BitmapFactory.decodeFile(file?.path)
         }
+
+        // TODO: delete
+        // Note: After an image is selected from the gallery this composable gets called none stop
+        // I'm not sure why it's stuck in a loop.
+        Log.d("Profile Page", permissionState.hasPermission.toString() + ":" + bitmap.toString())
 
         if (bitmap != null) {
             Image(
@@ -113,7 +112,7 @@ fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea
             )
         } else {
             Image(
-                painter =  painterResource(id = R.drawable.profile_icon_96),
+                painter =  painterResource(id = R.drawable.ic_user_default),
                 contentDescription = "Profile Photo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -124,7 +123,7 @@ fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea
                         enabled = true,
                         onClickLabel = "Choose Profile Image",
                         onClick = {
-                            if (!permissionState.status.isGranted) {
+                            if (!permissionState.hasPermission) {
                                 permissionState.launchPermissionRequest()
                             }
                             galleryLauncher.launch("image/")
@@ -139,11 +138,11 @@ fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea
             buttonText = "Next",
             onClick = {
                     try {
-                        val profileName = RequestBody.create(MediaType.parse("text/plain"), name)
+                        val profileName = name.toRequestBody("text/plain".toMediaTypeOrNull())
                         var picture: MultipartBody.Part? = null
 
                         if (file != null) {
-                            val reqFile = RequestBody.create(MediaType.parse("image/*"), file)
+                            val reqFile = file!!.asRequestBody("image/*".toMediaTypeOrNull())
                             picture = MultipartBody.Part.createFormData(
                                 "profile_picture",
                                 file?.name, reqFile

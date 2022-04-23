@@ -2,6 +2,7 @@ package com.ottogo.weekly
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -24,6 +25,7 @@ import com.ottogo.weekly.ui.account.AccountPage
 import com.ottogo.weekly.ui.calendar.CalendarPage
 import com.ottogo.weekly.ui.chat.ChatPage
 import com.ottogo.weekly.ui.chat.PeopleSearch
+import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.Black40
@@ -46,16 +48,13 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-
                     if (userViewModel.token == null) {
+                        Log.d("Mainactivity", "Token is null")
                         LoginNavigation()
                     } else {
+                        Log.d("Mainactivity", "Token is not null")
                         MainNavigation(userViewModel = userViewModel)
                     }
-
-
-
-
                 }
             }
         }
@@ -90,10 +89,12 @@ fun LoginNavigation(){
 @Composable
 fun MainNavigation(userViewModel: UserViewModel){
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "homePage") {
+    NavHost(navController = navController, startDestination = "profilePage") {
 
+        composable("profilePage") {SignupProfilePage(navController)}
         composable("homePage") { HomePage(navController, userViewModel) }
         composable("peopleSearch") { PeopleSearch(userViewModel)}
+
 
     }
 }
@@ -108,6 +109,7 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel){
            1 -> ChatPage(navController = navController, userViewModel = userViewModel)
            2 -> AccountPage(navController = navController, userViewModel = userViewModel)
         }
+
         Column(Modifier.fillMaxWidth()) {
             Divider(
                 color = LightGray,
@@ -115,6 +117,7 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel){
                     .fillMaxWidth()
                     .width(1.dp)
             )
+
             Row(modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp)) {
@@ -143,10 +146,6 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel){
                         tint = if(bottomBarSelection == 1) Black else Black40
                     )
                 }
-
-
-
-
             }
         }
     }

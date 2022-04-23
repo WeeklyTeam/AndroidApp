@@ -1,5 +1,6 @@
 package com.ottogo.weekly.ui.chat
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -16,6 +17,7 @@ import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.Black40
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.ottogo.weekly.R
+import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.theme.*
 
 @Composable
