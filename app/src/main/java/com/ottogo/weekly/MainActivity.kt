@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ottogo.weekly.ui.account.AccountPage
+import com.ottogo.weekly.ui.calendar.AvailabilityPage
 import com.ottogo.weekly.ui.calendar.CalendarPage
 import com.ottogo.weekly.ui.chat.ChatPage
 import com.ottogo.weekly.ui.chat.PeopleSearch
@@ -89,13 +90,11 @@ fun LoginNavigation(){
 @Composable
 fun MainNavigation(userViewModel: UserViewModel){
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "profilePage") {
+    NavHost(navController = navController, startDestination = "availabilityPage") {
 
-        composable("profilePage") {SignupProfilePage(navController)}
+        composable("availabilityPage") { AvailabilityPage(navController, userViewModel) }
         composable("homePage") { HomePage(navController, userViewModel) }
         composable("peopleSearch") { PeopleSearch(userViewModel)}
-
-
     }
 }
 

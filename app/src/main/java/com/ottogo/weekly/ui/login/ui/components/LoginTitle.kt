@@ -30,8 +30,6 @@ import androidx.navigation.NavController
 @Composable
 fun LoginTitle(navController: NavController, title: String) {
 
-
-
     Column(){
         Text(text = title)
 
