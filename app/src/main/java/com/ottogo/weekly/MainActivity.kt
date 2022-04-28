@@ -24,6 +24,7 @@ import com.ottogo.weekly.ui.account.AccountPage
 import com.ottogo.weekly.ui.calendar.CalendarPage
 import com.ottogo.weekly.ui.chat.ChatPage
 import com.ottogo.weekly.ui.chat.PeopleSearch
+import com.ottogo.weekly.ui.chat.createGroupPage
 import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.Black40
@@ -47,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background
                 ) {
 
-                    if (userViewModel.token == null) {
+                    if (false) {
                         LoginNavigation()
                     } else {
                         MainNavigation(userViewModel = userViewModel)
@@ -94,6 +95,7 @@ fun MainNavigation(userViewModel: UserViewModel){
 
         composable("homePage") { HomePage(navController, userViewModel) }
         composable("peopleSearch") { PeopleSearch(userViewModel)}
+        composable("createGroupPage") { createGroupPage( navController, userViewModel ) }
 
     }
 }
