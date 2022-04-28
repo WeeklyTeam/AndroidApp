@@ -1,6 +1,7 @@
 package com.ottogo.weekly.ui.chat
 
 
+import android.app.appsearch.SearchResults
 import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,6 +20,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -27,11 +34,57 @@ import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.squareup.moshi.Json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
+@OptIn(ExperimentalMaterialApi::class)
+class SearchPageViewModel: ViewModel() {
+
+    val sheetStateLiveData: LiveData<ModalBottomSheetState>
+        get() = sheetState
+
+    private val sheetState = MutableLiveData<ModalBottomSheetState>()
+
+    fun expandCollapse() {
+        viewModelScope.launch {
+            if (sheetState.value?.isVisible == true) {
+                sheetState.value!!.hide()
+            }
+            else {
+                sheetState.value!!.show()
+            }
+        }
+    }
+
+}
 
 @Composable
 fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
+
+    SearchPageScreen(navController = navController)
+
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun SearchPageScreen(searchPageViewModel: SearchPageViewModel = viewModel(), navController: NavController) {
+    val sheetState by searchPageViewModel.sheetStateLiveData.observeAsState(ModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden))
+
+    ModalBottomSheetLayout(
+        sheetState = sheetState,
+        sheetContent = {
+            Text("hello")
+        }
+    ) {
+
+        SearchPageContent(navController)
+
+    }
+}
+
+@Composable
+fun SearchPageContent(navController: NavController) {
     Column(modifier = Modifier.padding(16.dp)){
 
         var searchText by remember { mutableStateOf("") }
@@ -51,7 +104,6 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
         SearchResults(searchText)
     }
 }
-
 
 @Composable
 fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (String) -> Unit) {
@@ -123,15 +175,15 @@ fun SearchResults(searchText: String) {
 
         // display search results
         for (searchResult in searchResults) {
-            Log.d("status", searchResult.name)
             SearchResultsItem(searchResult.name, searchResult.username, searchResult.profile_picture)
         }
     }
 }
 
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(name: String, userName: String, profilePicture: String?) {
+fun SearchResultsItem(name: String, userName: String, profilePicture: String?, searchPageViewModel: SearchPageViewModel = viewModel())  {
 
     Spacer(Modifier.height(16.dp))
 
@@ -141,7 +193,11 @@ fun SearchResultsItem(name: String, userName: String, profilePicture: String?) {
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(modifier = Modifier.clickable { /* TODO: add click functionality */ }) {
+        Column(modifier = Modifier.clickable {
+
+            searchPageViewModel.expandCollapse()
+
+        }) {
             Text(text = name, style = MaterialTheme.typography.body2)
             Text(text = userName, style = MaterialTheme.typography.body1, color = Black40)
         }
