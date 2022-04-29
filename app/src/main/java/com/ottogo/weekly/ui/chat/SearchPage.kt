@@ -38,6 +38,26 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
+class SearchPageViewModel : ViewModel() {
+
+    val nameLiveData: LiveData<String>
+        get() = name
+
+    val userNameLiveData: LiveData<String>
+        get() = userName
+
+    val profilePictureLiveData: LiveData<String>
+        get() = profilePicture
+
+
+    val name = MutableLiveData<String>()
+
+    val userName = MutableLiveData<String>()
+
+    val profilePicture = MutableLiveData<String>()
+
+}
+
 @Composable
 fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 
@@ -47,7 +67,11 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchPageScreen(navController: NavController) {
+fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = viewModel()) {
+    val name by model.nameLiveData.observeAsState("")
+    val userName by model.userNameLiveData.observeAsState("")
+    val profilePicture by model.profilePictureLiveData.observeAsState("")
+
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val coroutineScope = rememberCoroutineScope()
 
@@ -57,14 +81,16 @@ fun SearchPageScreen(navController: NavController) {
         sheetContent = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(modifier = Modifier.height(24.dp))
-                ProfilePicture(profilePicture = "hello")
+                ProfilePicture(profilePicture = profilePicture)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Tony Stark", style = MaterialTheme.typography.body2)
+                Text(text = name, style = MaterialTheme.typography.body2)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "tonystank123", style = MaterialTheme.typography.body1, color = Black60)
+                Text(text = userName, style = MaterialTheme.typography.body1, color = Black60)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(start = 60.dp, end = 60.dp)) {
+                    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 60.dp, end = 60.dp)) {
                         Box(modifier = Modifier.weight(1f)) {
                             CustomButton(buttonText = "Add", onClick = { /*TODO: Add functionality*/ })
                         }
@@ -188,7 +214,7 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(name: String, userName: String, profilePicture: String?, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState)  {
+fun SearchResultsItem(name: String, userName: String, profilePicture: String?, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
 
     Spacer(Modifier.height(16.dp))
 
@@ -205,6 +231,9 @@ fun SearchResultsItem(name: String, userName: String, profilePicture: String?, c
                     sheetState.hide()
                 }
                 else {
+                    model.name.value = name
+                    model.userName.value = userName
+                    model.profilePicture.value = profilePicture
                     sheetState.show()
                 }
             }
@@ -222,10 +251,9 @@ fun SearchResultsItem(name: String, userName: String, profilePicture: String?, c
 
 @Composable
 fun ProfilePicture(profilePicture: String?) {
-    // TODO: use profilePicture in ".data()"
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
-            .data("https://cdn.britannica.com/55/174255-050-526314B6/brown-Guernsey-cow.jpg")
+            .data(profilePicture)
             .build(),
         contentDescription = "profile picture",
         contentScale = ContentScale.Crop,
