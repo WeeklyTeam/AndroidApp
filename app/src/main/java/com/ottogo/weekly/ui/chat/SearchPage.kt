@@ -1,9 +1,8 @@
 package com.ottogo.weekly.ui.chat
 
-
-import android.app.appsearch.SearchResults
 import android.util.Log
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,33 +30,13 @@ import coil.request.ImageRequest
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.Profile
+import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.squareup.moshi.Json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-
-@OptIn(ExperimentalMaterialApi::class)
-class SearchPageViewModel: ViewModel() {
-
-    val sheetStateLiveData: LiveData<ModalBottomSheetState>
-        get() = sheetState
-
-    private val sheetState = MutableLiveData<ModalBottomSheetState>()
-
-    fun expandCollapse() {
-        viewModelScope.launch {
-            if (sheetState.value?.isVisible == true) {
-                sheetState.value!!.hide()
-            }
-            else {
-                sheetState.value!!.show()
-            }
-        }
-    }
-
-}
 
 @Composable
 fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
@@ -68,15 +47,47 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchPageScreen(searchPageViewModel: SearchPageViewModel = viewModel(), navController: NavController) {
-    val sheetState by searchPageViewModel.sheetStateLiveData.observeAsState(ModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden))
-
+fun SearchPageScreen(navController: NavController) {
+    val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    val coroutineScope = rememberCoroutineScope()
     ModalBottomSheetLayout(
         sheetState = sheetState,
+        sheetShape = RoundedCornerShape(24.dp),
         sheetContent = {
-            Text("hello")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(modifier = Modifier.height(24.dp))
+                ProfilePicture(profilePicture = "hello")
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "Tony Stark", style = MaterialTheme.typography.body2)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "tonystank123", style = MaterialTheme.typography.body1, color = Black60)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+
+                        CustomButton(buttonText = "Add", onClick = { /*TODO: Add functionality*/ })
+                    }
+
+                    Spacer(modifier = Modifier.width(28.dp))
+                    IconButton(onClick = { }, content = { Image(painterResource(id = R.drawable.ic_spam_line), contentDescription = "report icon") })
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     ) {
+        Button(onClick = {
+            coroutineScope.launch {
+                if (sheetState.isVisible) {
+                   sheetState.hide()
+                }
+                else {
+                    sheetState.show()
+                }
+            }
+        }) {
+            Text(text = "hello")
+        }
 
         SearchPageContent(navController)
 
@@ -183,7 +194,7 @@ fun SearchResults(searchText: String) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(name: String, userName: String, profilePicture: String?, searchPageViewModel: SearchPageViewModel = viewModel())  {
+fun SearchResultsItem(name: String, userName: String, profilePicture: String?)  {
 
     Spacer(Modifier.height(16.dp))
 
@@ -195,7 +206,7 @@ fun SearchResultsItem(name: String, userName: String, profilePicture: String?, s
 
         Column(modifier = Modifier.clickable {
 
-            searchPageViewModel.expandCollapse()
+            //////////////////////
 
         }) {
             Text(text = name, style = MaterialTheme.typography.body2)
