@@ -2,7 +2,6 @@ package com.ottogo.weekly.ui.chat
 
 import android.util.Log
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -33,10 +31,9 @@ import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
-import com.squareup.moshi.Json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+
 
 class SearchPageViewModel : ViewModel() {
 
@@ -58,6 +55,7 @@ class SearchPageViewModel : ViewModel() {
 
 }
 
+
 @Composable
 fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 
@@ -65,9 +63,11 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 
 }
 
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = viewModel()) {
+
     val name by model.nameLiveData.observeAsState("")
     val userName by model.userNameLiveData.observeAsState("")
     val profilePicture by model.profilePictureLiveData.observeAsState("")
@@ -78,38 +78,14 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
     ModalBottomSheetLayout(
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetContent = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.height(24.dp))
-                ProfilePicture(profilePicture = profilePicture)
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = name, style = MaterialTheme.typography.body2)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = userName, style = MaterialTheme.typography.body1, color = Black60)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 60.dp, end = 60.dp)) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            CustomButton(buttonText = "Add", onClick = { /*TODO: Add functionality*/ })
-                        }
-                        Spacer(modifier = Modifier.width(20.dp))
-                        IconButton(onClick = { }, content = { Image(painterResource(id = R.drawable.ic_spam_line), contentDescription = "report icon") })
-                    }
-
-
-
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+        sheetContent = { ModalBottomSheetContent(name = name, userName = userName, profilePicture = profilePicture) }
     ) {
 
         SearchPageContent(navController, coroutineScope, sheetState)
 
     }
 }
+
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -132,49 +108,6 @@ fun SearchPageContent(navController: NavController, coroutineScope: CoroutineSco
         Spacer(Modifier.height(8.dp))
 
         SearchResults(searchText, coroutineScope, sheetState)
-    }
-}
-
-@Composable
-fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (String) -> Unit) {
-    Surface(modifier = modifier) {
-
-        val focusManager = LocalFocusManager.current
-
-        TextField(
-            value = searchText,
-            onValueChange = searchType,
-            modifier = Modifier.padding(0.dp),
-            shape = RoundedCornerShape(12.dp),
-            placeholder = { Text("Search", style = MaterialTheme.typography.body2, color = Black60) },
-            singleLine = true,
-            leadingIcon = { Image(painter = painterResource(id = R.drawable.ic_search_line), contentDescription = "search icon") },
-            colors = TextFieldDefaults.textFieldColors(
-                textColor = Black60,
-                leadingIconColor = Black60,
-                backgroundColor = LightGray,
-                cursorColor = Black60,
-
-                // removes underline
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
-            textStyle = MaterialTheme.typography.body2,
-            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
-        )
-
-    }
-}
-
-
-@Composable
-fun CancelButton(navController: NavController) {
-    Button(colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
-        elevation = null, contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
-        onClick = {
-            navController.popBackStack()
-        }) {
-        Text(text = "Cancel", style = MaterialTheme.typography.h4, color = Black60)
     }
 }
 
@@ -250,7 +183,90 @@ fun SearchResultsItem(name: String, userName: String, profilePicture: String?, c
 
 
 @Composable
+fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (String) -> Unit) {
+
+    Surface(modifier = modifier) {
+
+        val focusManager = LocalFocusManager.current
+
+        TextField(
+            value = searchText,
+            onValueChange = searchType,
+            modifier = Modifier.padding(0.dp),
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Search", style = MaterialTheme.typography.body2, color = Black60) },
+            singleLine = true,
+            leadingIcon = { Image(painter = painterResource(id = R.drawable.ic_search_line), contentDescription = "search icon") },
+            colors = TextFieldDefaults.textFieldColors(
+                textColor = Black60,
+                leadingIconColor = Black60,
+                backgroundColor = LightGray,
+                cursorColor = Black60,
+
+                // removes underline
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+            textStyle = MaterialTheme.typography.body2,
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+        )
+
+    }
+
+}
+
+
+@Composable
+fun CancelButton(navController: NavController) {
+
+    Button(colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
+        elevation = null, contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
+        onClick = {
+            navController.popBackStack()
+        }) {
+        Text(text = "Cancel", style = MaterialTheme.typography.h4, color = Black60)
+    }
+
+}
+
+
+@Composable
+fun ModalBottomSheetContent(name: String, userName: String, profilePicture: String) {
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(modifier = Modifier.height(24.dp))
+        ProfilePicture(profilePicture = profilePicture)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = name, style = MaterialTheme.typography.body2)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = userName, style = MaterialTheme.typography.body1, color = Black60)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 60.dp, end = 60.dp)) {
+            Box(modifier = Modifier.weight(1f)) {
+
+                CustomButton(buttonText = "Add",
+                    onClick = {
+                        /*TODO: Add functionality*/
+                    })
+
+            }
+            Spacer(modifier = Modifier.width(20.dp))
+            IconButton(onClick = { }, content = { Image(painterResource(id = R.drawable.ic_spam_line), contentDescription = "report icon") })
+        }
+
+    }
+
+    Spacer(modifier = Modifier.height(24.dp))
+
+}
+
+
+@Composable
 fun ProfilePicture(profilePicture: String?) {
+
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(profilePicture)
@@ -261,4 +277,5 @@ fun ProfilePicture(profilePicture: String?) {
             .clip(CircleShape)
             .height(50.dp)
             .width(50.dp))
+
 }
