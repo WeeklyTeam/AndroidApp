@@ -50,9 +50,10 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 fun SearchPageScreen(navController: NavController) {
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val coroutineScope = rememberCoroutineScope()
+
     ModalBottomSheetLayout(
         sheetState = sheetState,
-        sheetShape = RoundedCornerShape(24.dp),
+        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -63,39 +64,31 @@ fun SearchPageScreen(navController: NavController) {
                 Text(text = "tonystank123", style = MaterialTheme.typography.body1, color = Black60)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-
-                        CustomButton(buttonText = "Add", onClick = { /*TODO: Add functionality*/ })
+                    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(start = 60.dp, end = 60.dp)) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            CustomButton(buttonText = "Add", onClick = { /*TODO: Add functionality*/ })
+                        }
+                        Spacer(modifier = Modifier.width(20.dp))
+                        IconButton(onClick = { }, content = { Image(painterResource(id = R.drawable.ic_spam_line), contentDescription = "report icon") })
                     }
 
-                    Spacer(modifier = Modifier.width(28.dp))
-                    IconButton(onClick = { }, content = { Image(painterResource(id = R.drawable.ic_spam_line), contentDescription = "report icon") })
+
+
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
-        }
     ) {
-        Button(onClick = {
-            coroutineScope.launch {
-                if (sheetState.isVisible) {
-                   sheetState.hide()
-                }
-                else {
-                    sheetState.show()
-                }
-            }
-        }) {
-            Text(text = "hello")
-        }
 
-        SearchPageContent(navController)
+        SearchPageContent(navController, coroutineScope, sheetState)
 
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchPageContent(navController: NavController) {
+fun SearchPageContent(navController: NavController, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState) {
+
     Column(modifier = Modifier.padding(16.dp)){
 
         var searchText by remember { mutableStateOf("") }
@@ -112,7 +105,7 @@ fun SearchPageContent(navController: NavController) {
 
         Spacer(Modifier.height(8.dp))
 
-        SearchResults(searchText)
+        SearchResults(searchText, coroutineScope, sheetState)
     }
 }
 
@@ -160,8 +153,9 @@ fun CancelButton(navController: NavController) {
 }
 
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResults(searchText: String) {
+fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState) {
 
     val searchResults = remember { mutableStateListOf<Profile>() }
     Column(modifier = Modifier
@@ -186,7 +180,7 @@ fun SearchResults(searchText: String) {
 
         // display search results
         for (searchResult in searchResults) {
-            SearchResultsItem(searchResult.name, searchResult.username, searchResult.profile_picture)
+            SearchResultsItem(searchResult.name, searchResult.username, searchResult.profile_picture, coroutineScope, sheetState)
         }
     }
 }
@@ -194,7 +188,7 @@ fun SearchResults(searchText: String) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(name: String, userName: String, profilePicture: String?)  {
+fun SearchResultsItem(name: String, userName: String, profilePicture: String?, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState)  {
 
     Spacer(Modifier.height(16.dp))
 
@@ -206,7 +200,14 @@ fun SearchResultsItem(name: String, userName: String, profilePicture: String?)  
 
         Column(modifier = Modifier.clickable {
 
-            //////////////////////
+            coroutineScope.launch {
+                if (sheetState.isVisible) {
+                    sheetState.hide()
+                }
+                else {
+                    sheetState.show()
+                }
+            }
 
         }) {
             Text(text = name, style = MaterialTheme.typography.body2)
