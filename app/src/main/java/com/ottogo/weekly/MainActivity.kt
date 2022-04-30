@@ -12,21 +12,17 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ottogo.weekly.ui.account.AccountPage
-import com.ottogo.weekly.ui.calendar.AvailabilityPage
+import com.ottogo.weekly.ui.calendar.AddAvailabilityPage
 import com.ottogo.weekly.ui.calendar.CalendarPage
 import com.ottogo.weekly.ui.chat.ChatPage
 import com.ottogo.weekly.ui.chat.PeopleSearch
-import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.Black40
@@ -50,7 +46,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background
                 ) {
                     if (userViewModel.token == null) {
-                        Log.d("Mainactivity", "Token is null")
                         LoginNavigation()
                     } else {
                         Log.d("Mainactivity", "Token is not null")
@@ -90,9 +85,9 @@ fun LoginNavigation(){
 @Composable
 fun MainNavigation(userViewModel: UserViewModel){
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "availabilityPage") {
+    NavHost(navController = navController, startDestination = "addAvailabilityPage") {
 
-        composable("availabilityPage") { AvailabilityPage(navController, userViewModel) }
+        composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel) }
         composable("homePage") { HomePage(navController, userViewModel) }
         composable("peopleSearch") { PeopleSearch(userViewModel)}
     }
