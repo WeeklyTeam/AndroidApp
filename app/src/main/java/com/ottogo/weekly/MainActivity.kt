@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ottogo.weekly.ui.account.AccountPage
 import com.ottogo.weekly.ui.calendar.CalendarPage
 import com.ottogo.weekly.ui.chat.ChatPage
+import com.ottogo.weekly.ui.chat.PlotEditPage
 import com.ottogo.weekly.ui.chat.SearchPage
 import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.theme.Black
@@ -94,6 +95,7 @@ fun MainNavigation(userViewModel: UserViewModel){
 
         composable("homePage") { HomePage(navController, userViewModel) }
         composable("searchPage") { SearchPage(navController, userViewModel)}
+        composable("plotEditPage") { PlotEditPage(navController, userViewModel) }
 
     }
 }

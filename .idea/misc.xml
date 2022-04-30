@@ -3,6 +3,8 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/piolo/AndroidStudioProjects/Weekly/AndroidApp/app/src/main/res/drawable/ic_add_circle_line.xml" value="0.1" />
+        <entry key="..\:/Users/piolo/AndroidStudioProjects/Weekly/AndroidApp/app/src/main/res/drawable/ic_arrow_left_s_line.xml" value="0.1" />
         <entry key="..\:/Users/piolo/AndroidStudioProjects/Weekly/AndroidApp/app/src/main/res/drawable/ic_search_line.xml" value="0.1" />
         <entry key="..\:/Users/piolo/AndroidStudioProjects/Weekly/AndroidApp/app/src/main/res/drawable/ic_spam_line.xml" value="0.1" />
       </map>
