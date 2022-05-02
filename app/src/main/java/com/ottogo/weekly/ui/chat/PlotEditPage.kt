@@ -1,6 +1,14 @@
 package com.ottogo.weekly.ui.chat
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.Context
+import android.os.Build
+import android.widget.Button
+import android.widget.DatePicker
 import android.widget.EditText
+import android.widget.TimePicker
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -8,11 +16,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
 import com.ottogo.weekly.ui.components.CustomButton
@@ -20,17 +34,81 @@ import com.ottogo.weekly.ui.components.CustomTextField
 import com.ottogo.weekly.ui.theme.Black60
 import com.ottogo.weekly.ui.theme.LightGray
 import com.ottogo.weekly.viewmodels.UserViewModel
+import retrofit2.http.Body
+import java.text.SimpleDateFormat
+import java.time.Month
+import java.time.format.DateTimeFormatter
+import java.util.*
 
+class PlotEditPageViewModel : ViewModel() {
+    val dateTimeLiveData: LiveData<String>
+        get() = dateTime
+
+    private var dateTime = MutableLiveData<String>("")
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun selectDateTime(context: Context) {
+
+        var time: String
+        val calendar = Calendar.getInstance()
+        val year: Int = calendar.get(Calendar.YEAR)
+        val month: Int = calendar.get(Calendar.MONTH)
+        val day: Int = calendar.get(Calendar.DAY_OF_MONTH)
+        val hour: Int = calendar.get(Calendar.HOUR)
+        var minute: Int = calendar.get(Calendar.MINUTE)
+
+        val monthNames = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+        DatePickerDialog(context, { _: DatePicker, year: Int, month: Int, day: Int ->
+
+            TimePickerDialog(context, { _:TimePicker, hour: Int, minute: Int ->
+
+                calendar.set(year, month, day, hour, minute)
+
+                time = "${monthNames[month]}. $day, $year at ${calculateTime(hour, minute)}"
+                updateDateTime(time)
+            }, hour, minute, false).show()
+
+        }, year, month, day).show()
+
+    }
+
+    private fun calculateTime(hour: Int, minute: Int): String {
+        return when {
+            hour == 0 -> {
+                "12:$minute am"
+            }
+            hour < 12 -> {
+                "$hour:$minute am"
+            }
+            hour == 12 -> {
+                "12:$minute pm"
+            }
+            else -> {
+                "${hour-12}:$minute pm"
+            }
+        }
+    }
+
+    private fun updateDateTime(time: String) {
+        dateTime.value = time
+    }
+
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PlotEditPage(navController: NavController, userViewModel: UserViewModel) {
-    
+
     PlotEditPageContent(navController)
     
 }
 
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PlotEditPageContent(navController: NavController) {
-
 
     var titleInput by remember { mutableStateOf("") }
     var detailsInput by remember { mutableStateOf("") }
@@ -43,7 +121,9 @@ fun PlotEditPageContent(navController: NavController) {
 
         Divider(color = LightGray, thickness = 1.dp)
 
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
 
             Body(detailsInput = detailsInput, titleInput = titleInput,
                 detailsChange = { detailsInput = it }, titleChange = { titleInput = it })
@@ -55,8 +135,14 @@ fun PlotEditPageContent(navController: NavController) {
 
 }
 
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Body(detailsInput: String, titleInput: String, detailsChange: (String) -> Unit, titleChange: (String) -> Unit) {
+
+    val viewModel: PlotEditPageViewModel = viewModel()
+    val dateTime = viewModel.dateTimeLiveData.observeAsState()
+
     Column(modifier = Modifier
         .fillMaxWidth()) {
 
@@ -65,25 +151,31 @@ fun Body(detailsInput: String, titleInput: String, detailsChange: (String) -> Un
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Change title
         Text(text = "Title", style = MaterialTheme.typography.h4)
         Spacer(modifier = Modifier.height(8.dp))
         CustomTextField(helper = "", hint = "What's the plan", input = titleInput, onChange = titleChange)
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Change date
         Text(text = "Date", style = MaterialTheme.typography.h4)
         Spacer(modifier = Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(text = "Jul. 10, 2001 at 3:00 pm", style = MaterialTheme.typography.body2)
-            ChangeDateButton()
+            Text(text = "${ dateTime.value }", style = MaterialTheme.typography.body2)
+            ChangeDateButton(viewModel)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Change details
         Text(text = "Details", style = MaterialTheme.typography.h4)
         Spacer(modifier = Modifier.height(12.dp))
-        Row(modifier = Modifier.height(200.dp).fillMaxWidth().border(border = BorderStroke(1.dp, LightGray), shape = RoundedCornerShape(16.dp))) {
-            TextField(modifier = Modifier.fillMaxWidth(),
+        Row(modifier = Modifier
+            .height(200.dp)
+            .fillMaxWidth()
+            .border(border = BorderStroke(1.dp, LightGray), shape = RoundedCornerShape(16.dp))) {
+            TextField(modifier = Modifier.fillMaxSize(),
                 colors = TextFieldDefaults.textFieldColors(
                     backgroundColor = Color.White, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
                 value = detailsInput, onValueChange = detailsChange)
@@ -113,13 +205,16 @@ fun Header(navController: NavController) {
 
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ChangeDateButton() {
+fun ChangeDateButton(viewModel: PlotEditPageViewModel) {
 
-    Button(colors = ButtonDefaults.buttonColors(backgroundColor = LightGray), shape = RoundedCornerShape(12.dp),
+    val context = LocalContext.current
+
+            Button(colors = ButtonDefaults.buttonColors(backgroundColor = LightGray), shape = RoundedCornerShape(12.dp),
         elevation = null, contentPadding = PaddingValues(start = 16.dp, end = 16.dp),
         onClick = {
-
+            viewModel.selectDateTime(context)
         }) {
         Text(text = "Change", style = MaterialTheme.typography.h4, color = Black60)
     }
@@ -136,5 +231,5 @@ fun ActionIconButton(resourceId: Int, onClick: () -> Unit) {
             contentDescription = "back arrow",
         )
     }
-    
+
 }
