@@ -41,10 +41,12 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 class PlotEditPageViewModel : ViewModel() {
+
     val dateTimeLiveData: LiveData<String>
         get() = dateTime
 
     private var dateTime = MutableLiveData<String>("")
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun selectDateTime(context: Context) {
@@ -74,6 +76,7 @@ class PlotEditPageViewModel : ViewModel() {
 
     }
 
+
     private fun calculateTime(hour: Int, minute: Int): String {
         return when {
             hour == 0 -> {
@@ -91,11 +94,13 @@ class PlotEditPageViewModel : ViewModel() {
         }
     }
 
+
     private fun updateDateTime(time: String) {
         dateTime.value = time
     }
 
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -151,38 +156,54 @@ fun Body(detailsInput: String, titleInput: String, detailsChange: (String) -> Un
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Change title
-        Text(text = "Title", style = MaterialTheme.typography.h4)
-        Spacer(modifier = Modifier.height(8.dp))
-        CustomTextField(helper = "", hint = "What's the plan", input = titleInput, onChange = titleChange)
+        Title(titleInput, titleChange)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Change date
-        Text(text = "Date", style = MaterialTheme.typography.h4)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(text = "${ dateTime.value }", style = MaterialTheme.typography.body2)
-            ChangeDateButton(viewModel)
-        }
+        Date(dateTime.value, viewModel)
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Change details
-        Text(text = "Details", style = MaterialTheme.typography.h4)
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(modifier = Modifier
-            .height(200.dp)
-            .fillMaxWidth()
-            .border(border = BorderStroke(1.dp, LightGray), shape = RoundedCornerShape(16.dp))) {
-            TextField(modifier = Modifier.fillMaxSize(),
-                colors = TextFieldDefaults.textFieldColors(
-                    backgroundColor = Color.White, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
-                value = detailsInput, onValueChange = detailsChange)
-        }
-
+        Details(detailsInput, detailsChange)
     }
 }
+
+
+@Composable
+fun Title(titleInput: String, titleChange: (String) -> Unit) {
+    Text(text = "Title", style = MaterialTheme.typography.h4)
+    Spacer(modifier = Modifier.height(8.dp))
+    CustomTextField(helper = "", hint = "What's the plan", input = titleInput, onChange = titleChange)
+}
+
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun Date(dateTime: String?, viewModel: PlotEditPageViewModel) {
+    Text(text = "Date", style = MaterialTheme.typography.h4)
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(text = "$dateTime", style = MaterialTheme.typography.body2)
+        ChangeDateButton(viewModel)
+    }
+}
+
+
+@Composable
+fun Details(detailsInput: String, detailsChange: (String) -> Unit) {
+    Text(text = "Details", style = MaterialTheme.typography.h4)
+    Spacer(modifier = Modifier.height(12.dp))
+    Row(modifier = Modifier
+        .height(200.dp)
+        .fillMaxWidth()
+        .border(border = BorderStroke(1.dp, LightGray), shape = RoundedCornerShape(16.dp))) {
+        TextField(modifier = Modifier.fillMaxSize(),
+            colors = TextFieldDefaults.textFieldColors(
+                backgroundColor = Color.White, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
+            value = detailsInput, onValueChange = detailsChange)
+    }
+}
+
 
 @Composable
 fun Header(navController: NavController) {
@@ -205,6 +226,7 @@ fun Header(navController: NavController) {
 
 }
 
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ChangeDateButton(viewModel: PlotEditPageViewModel) {
@@ -220,6 +242,7 @@ fun ChangeDateButton(viewModel: PlotEditPageViewModel) {
     }
 
 }
+
 
 @Composable
 fun ActionIconButton(resourceId: Int, onClick: () -> Unit) {

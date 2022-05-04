@@ -32,6 +32,9 @@ interface WeeklyApiService {
 
     @GET("api/profile/search")
     suspend fun search(@HeaderMap header: Map<String, String>, @Query("search") search: String): ApiList<Profile>
+
+    @PATCH("api/plot/")
+    suspend fun editPlot(@HeaderMap header: Map<String, String>)
 }
 
 object WeeklyApi {
