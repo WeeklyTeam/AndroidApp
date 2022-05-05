@@ -10,8 +10,11 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.*
+import java.time.LocalDateTime
 
 data class Activity(@Json(name="id")var id: Int)
+data class Plot(@Json(name="startTime") var startTime: String, @Json(name="name") var name: String,
+                @Json(name="emoji") var emoji: String, @Json(name="details") var details: String)
 
 private val BASE_URL = "https://plotsme.herokuapp.com"
 
@@ -33,8 +36,8 @@ interface WeeklyApiService {
     @GET("api/profile/search")
     suspend fun search(@HeaderMap header: Map<String, String>, @Query("search") search: String): ApiList<Profile>
 
-    @PATCH("api/plot/")
-    suspend fun editPlot(@HeaderMap header: Map<String, String>)
+    @PATCH("api/plot/{id}/")
+    suspend fun editPlot(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Plot)
 }
 
 object WeeklyApi {

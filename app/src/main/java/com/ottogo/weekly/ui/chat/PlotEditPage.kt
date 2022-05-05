@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import android.widget.Button
 import android.widget.DatePicker
 import android.widget.EditText
@@ -29,11 +30,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
+import com.ottogo.weekly.api.Plot
+import com.ottogo.weekly.api.WeeklyApi
+import com.ottogo.weekly.api.WeeklyApiService
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.CustomTextField
 import com.ottogo.weekly.ui.theme.Black60
 import com.ottogo.weekly.ui.theme.LightGray
 import com.ottogo.weekly.viewmodels.UserViewModel
+import kotlinx.coroutines.runBlocking
 import retrofit2.http.Body
 import java.text.SimpleDateFormat
 import java.time.Month
@@ -133,7 +138,15 @@ fun PlotEditPageContent(navController: NavController) {
             Body(detailsInput = detailsInput, titleInput = titleInput,
                 detailsChange = { detailsInput = it }, titleChange = { titleInput = it })
 
-            CustomButton(buttonText = "Save", onClick = { })
+            CustomButton(buttonText = "Save",
+                onClick = {
+                    runBlocking {
+                        WeeklyApi.retrofitService.editPlot(
+                            mapOf("Authorization" to "token 265245769906872d88b40205147f5cbf63538b83"), 1,
+                            Plot("2020-10-17T19:53:13-07:00", "Hey", "😃", "Meet at the ____")
+                        )
+                    }
+                })
 
         }
     }
