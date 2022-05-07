@@ -79,6 +79,7 @@ class PlotEditPageViewModel : ViewModel() {
 
         }, year, month, day).show()
 
+
     }
 
 
@@ -97,6 +98,13 @@ class PlotEditPageViewModel : ViewModel() {
                 "${hour-12}:$minute pm"
             }
         }
+    }
+
+    var dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss-'Z'")
+    //iso 8601
+    private fun formatDate() {
+        "2020-10-17T19:53:13-07:00"
+        dateFormat.format()
     }
 
 
@@ -143,7 +151,7 @@ fun PlotEditPageContent(navController: NavController) {
                     runBlocking {
                         WeeklyApi.retrofitService.editPlot(
                             mapOf("Authorization" to "token 265245769906872d88b40205147f5cbf63538b83"), 1,
-                            Plot("2020-10-17T19:53:13-07:00", "Hey", "😃", "Meet at the ____")
+                            Plot("2020-10-17T19:53:13-07:00", "Hello!!", "😃", "Meet at the ____")
                         )
                     }
                 })
