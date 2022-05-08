@@ -41,7 +41,7 @@ import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
 import retrofit2.http.Body
 import java.text.SimpleDateFormat
-import java.time.Month
+import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -52,17 +52,22 @@ class PlotEditPageViewModel : ViewModel() {
 
     private var dateTime = MutableLiveData<String>("")
 
+    var startTime = "";
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun selectDateTime(context: Context) {
+        val calendar: Calendar = Calendar.getInstance()
+        val date: Date
 
         var time: String
-        val calendar = Calendar.getInstance()
+
         val year: Int = calendar.get(Calendar.YEAR)
         val month: Int = calendar.get(Calendar.MONTH)
         val day: Int = calendar.get(Calendar.DAY_OF_MONTH)
         val hour: Int = calendar.get(Calendar.HOUR)
         var minute: Int = calendar.get(Calendar.MINUTE)
+
+
 
         val monthNames = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
@@ -75,38 +80,39 @@ class PlotEditPageViewModel : ViewModel() {
 
                 time = "${monthNames[month]}. $day, $year at ${calculateTime(hour, minute)}"
                 updateDateTime(time)
+
+                // "2020-10-17T19:53:13-07:00" iso 8601
+                var theDate = ZonedDateTime.of(LocalDateTime.of(year, month+1, day, hour, minute), ZoneId.systemDefault())
+                var dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
+                startTime = dateFormat.format(theDate)
+
             }, hour, minute, false).show()
 
         }, year, month, day).show()
-
 
     }
 
 
     private fun calculateTime(hour: Int, minute: Int): String {
+        var minuteString = minute.toString()
+        if (minute < 10) {
+            minuteString = "0$minute"
+        }
         return when {
             hour == 0 -> {
-                "12:$minute am"
+                "12:$minuteString am"
             }
             hour < 12 -> {
-                "$hour:$minute am"
+                "$hour:$minuteString am"
             }
             hour == 12 -> {
-                "12:$minute pm"
+                "12:$minuteString pm"
             }
             else -> {
-                "${hour-12}:$minute pm"
+                "${hour-12}:$minuteString pm"
             }
         }
     }
-
-    var dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss-'Z'")
-    //iso 8601
-    private fun formatDate() {
-        "2020-10-17T19:53:13-07:00"
-        dateFormat.format()
-    }
-
 
     private fun updateDateTime(time: String) {
         dateTime.value = time
@@ -128,6 +134,8 @@ fun PlotEditPage(navController: NavController, userViewModel: UserViewModel) {
 @Composable
 fun PlotEditPageContent(navController: NavController) {
 
+    val viewModel: PlotEditPageViewModel = viewModel()
+
     var titleInput by remember { mutableStateOf("") }
     var detailsInput by remember { mutableStateOf("") }
 
@@ -148,10 +156,15 @@ fun PlotEditPageContent(navController: NavController) {
 
             CustomButton(buttonText = "Save",
                 onClick = {
+                    Log.d("status", "Start Time: " + viewModel.startTime)
+                    Log.d("status", "Name: $titleInput")
+                    Log.d("status", "Details: $detailsInput")
                     runBlocking {
+
                         WeeklyApi.retrofitService.editPlot(
+                            // TODO: hook up emoji input to API call
                             mapOf("Authorization" to "token 265245769906872d88b40205147f5cbf63538b83"), 1,
-                            Plot("2020-10-17T19:53:13-07:00", "Hello!!", "😃", "Meet at the ____")
+                            Plot(viewModel.startTime, titleInput, "😃", detailsInput)
                         )
                     }
                 })
