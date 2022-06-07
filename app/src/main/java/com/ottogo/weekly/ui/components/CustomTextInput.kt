@@ -1,16 +1,27 @@
 package com.ottogo.weekly.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.ottogo.weekly.ui.theme.ExtendedTheme
+import com.ottogo.weekly.ui.theme.Typography
 
 /*
 *
@@ -31,9 +42,38 @@ fun CustomTextField(
     isNumberInput: Boolean = false,
     isPasswordInput: Boolean = false,
     onChange: (String) -> Unit,
+    keyboardActions: KeyboardActions = KeyboardActions(),
+    done: Boolean = false,
+    modifier: Modifier = Modifier
+) {
 
-    ) {
+    var keyboardType: KeyboardOptions = KeyboardOptions.Default
 
-    TextField(value = input, onValueChange = onChange)
+    keyboardType = if(isNumberInput){
+        KeyboardOptions(keyboardType = KeyboardType.Number,
+            imeAction = if (done) ImeAction.Done else ImeAction.Next
+        )
+    }
+    else{
+        KeyboardOptions(keyboardType = KeyboardType.Password,
+            imeAction = if (done) ImeAction.Done else ImeAction.Next
+        )
+    }
+    
+    Column(modifier = modifier) {
+        Text(helper, style = Typography.h4)
+        Spacer(modifier = Modifier.height(8.dp))
+        TextField(value = input,
+            onValueChange = onChange, Modifier.fillMaxWidth(),
+            keyboardOptions = keyboardType, colors = TextFieldDefaults.textFieldColors(
+                backgroundColor = ExtendedTheme.colors.LightGray,
+                focusedIndicatorColor =  Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent),
+            visualTransformation = if (isPasswordInput) PasswordVisualTransformation() else VisualTransformation.None,
+            placeholder = { Text(hint) },
+            shape = CircleShape,
+            singleLine = true,
+            keyboardActions = keyboardActions)
 
+    }
 }

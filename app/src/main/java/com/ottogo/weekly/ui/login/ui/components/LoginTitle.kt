@@ -4,18 +4,23 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.ottogo.weekly.R
+import com.ottogo.weekly.ui.theme.nunitoFamily
 
 /*
 *
@@ -34,6 +39,19 @@ fun LoginTitle(navController: NavController, title: String) {
 
     Column(){
 
+        IconButton(onClick = { navController.popBackStack() }, modifier = Modifier.size(72.dp)) {
+            Icon(painter = painterResource(id = R.drawable.ic_arrow_left_s_line),
+                contentDescription = "back",
+                modifier = Modifier.size(24.dp)
+            )
+        }
 
+
+        Text(text = title,
+            fontSize = 42.sp,
+            fontWeight = FontWeight(700),
+            fontFamily = nunitoFamily,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
     }
 }

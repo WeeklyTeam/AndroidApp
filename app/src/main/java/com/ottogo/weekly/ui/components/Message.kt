@@ -1,6 +1,5 @@
-package com.ottogo.weekly.ui.login.ui.components
+package com.ottogo.weekly.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,12 +8,10 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ottogo.weekly.ui.theme.DarkRed
 import com.ottogo.weekly.ui.theme.LightRed
-import com.ottogo.weekly.ui.theme.WeeklyTheme
 
 enum class MessageTheme{
     ERROR,
@@ -29,9 +26,10 @@ fun Message(message: String = "error", messageTheme: MessageTheme = MessageTheme
     }
 
     Card(elevation = 0.dp, backgroundColor = backgroundColor, shape = RoundedCornerShape (12.dp)) {
-        Text(message, color = foregroundColor, style = MaterialTheme.typography.h6, modifier = Modifier
+        Text(message, color = foregroundColor, style = MaterialTheme.typography.h4, modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth())
     }
+
 
 }

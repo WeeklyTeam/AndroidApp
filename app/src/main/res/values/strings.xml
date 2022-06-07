@@ -2,4 +2,5 @@
     <string name="app_name">Weekly</string>
     <string name="title_activity_landing_page">LandingPage</string>
     <string name="title_activity_demo">demo</string>
+    <string name="content_profile_icon">Profile Picture</string>
 </resources>

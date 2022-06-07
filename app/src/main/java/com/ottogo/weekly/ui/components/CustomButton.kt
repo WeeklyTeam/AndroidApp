@@ -17,25 +17,34 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ottogo.weekly.ui.theme.Typography
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 @Composable
 fun CustomButton(
     buttonText: String,
-    onClick: suspend () -> Unit,
-
+    modifier: Modifier = Modifier,
+    onClick: suspend () -> Unit
     ) {
     var buttonloading: String by remember { mutableStateOf(buttonText) }
     val scope = rememberCoroutineScope()
 
     Button(onClick = {
 
-        scope.launch { onClick() }
+
+        scope.launch {
+            runBlocking {
+                onClick()
+                buttonloading = buttonText
+            }
+
+        }
 
         buttonloading = "loading"
 
-    }, Modifier.fillMaxWidth().height(48.dp).clip(CircleShape)) {
-        Text(text = buttonloading, style = MaterialTheme.typography.h6)
+    }, shape = CircleShape, modifier = modifier.fillMaxWidth().height(48.dp).clip(CircleShape)) {
+        Text(text = buttonloading, style = MaterialTheme.typography.h4)
 
     }
 }

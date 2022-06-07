@@ -4,18 +4,26 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.accompanist.insets.systemBarsPadding
+import com.ottogo.weekly.api.WeeklyApi
+import com.ottogo.weekly.ui.components.CustomButton
+import com.ottogo.weekly.ui.components.CustomTextField
+import com.ottogo.weekly.ui.components.Message
+import com.ottogo.weekly.ui.login.ui.components.LoginTitle
+import kotlinx.coroutines.runBlocking
+import retrofit2.HttpException
+import java.io.IOException
 
 /*
 *
@@ -33,11 +41,53 @@ import androidx.navigation.NavController
 * */
 @Composable
 fun SignupVerifyPage(navController: NavController, token: String) {
+    var code by remember { mutableStateOf("") }
+    var error: String? by remember {mutableStateOf(value = null)}
 
+    Column(modifier = Modifier.systemBarsPadding()) {
+        LoginTitle(navController = navController, title = "Verify")
 
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+        ) {
+            if (error != null){
+                Spacer(modifier = Modifier.height(32.dp))
+                Message(error.toString())
+            }
 
-    Column(){
+            Spacer(modifier = Modifier.height(32.dp))
+            CustomTextField(helper = "Code", hint = "", input = code, onChange = { code = it }, isNumberInput = true)
+            Spacer(modifier = Modifier.height(32.dp))
+            CustomButton(buttonText = "Next", onClick =
+            {
+                runBlocking {
+                    try{
+                        WeeklyApi.retrofitService.verify(
+                            mapOf("Authorization" to "token $token"),
+                            mapOf("code" to code.toInt())
+                        )
+                        navController.navigate("SignupProfilePage/$token")
+                    } catch (e: Exception) {
+                        when (e) {
+                            is HttpException -> {
+                                val statuscode = e.code()
+                                if (statuscode >= 400) {
+                                    error = "Incorrect code"
+                                }
+                                if (statuscode >= 500) {
+                                    error = "We are experiencing issues please try again later"
+                                }
+                            }
+                            is IOException -> {
+                                error = "Check your connection"
+                            }
+                        }
+                    }
 
+                }
+            })
 
+        }
     }
 }

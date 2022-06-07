@@ -14,12 +14,12 @@ val nunitoFamily = FontFamily(
 )
 
 val Typography = Typography(
-        body2 = TextStyle(
+        body1 = TextStyle(
                 fontFamily = nunitoFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 18.sp
         ),
-        body1 = TextStyle(
+        body2 = TextStyle(
                 fontFamily = nunitoFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp

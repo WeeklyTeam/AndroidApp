@@ -1,24 +1,23 @@
 package com.ottogo.weekly.ui.login
 
-import android.os.Bundle
+import android.app.DatePickerDialog
 import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import android.widget.DatePicker
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.accompanist.insets.systemBarsPadding
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ottogo.weekly.ui.components.CustomButton
-import kotlinx.coroutines.runBlocking
+import com.ottogo.weekly.ui.components.Message
+import com.ottogo.weekly.ui.login.ui.components.LoginTitle
+import java.util.*
 
 /*
 *
@@ -30,19 +29,77 @@ import kotlinx.coroutines.runBlocking
 * pass the date to the signup view as a string that follows the format YYYY-MM-DD
 *
 * */
+
+
 @Composable
 fun SignupBirthdayPage(navController: NavController) {
+    val systemUiController = rememberSystemUiController()
+    var error: String? by remember {mutableStateOf(value = null)}
 
 
+    systemUiController.setSystemBarsColor(color = Color.White)
 
-    Column(){
-    Text(text ="birthday page")
-        CustomButton(buttonText = "Sign up") {
-            runBlocking {
-                navController.navigate("signupPage/{dob}")
+    val calendar = Calendar.getInstance()
+
+    var year: Int by remember { mutableStateOf(calendar.get(Calendar.YEAR)) }
+    var month: Int by remember { mutableStateOf(calendar.get(Calendar.MONTH)) }
+    var day: Int by remember { mutableStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
+
+
+    val datePickerDialog = DatePickerDialog(
+        LocalContext.current,
+        { _: DatePicker, selectedYear: Int, selectedMonth: Int, selectedDay: Int ->
+            year = selectedYear
+            month = selectedMonth
+            day = selectedDay
+            val dob = Calendar.getInstance()
+            val minimumDate = Calendar.getInstance()
+            dob.set(year, month, day)
+
+            minimumDate.add(Calendar.YEAR, -13)
+
+            if (minimumDate.compareTo(dob) < 0){
+                error = "You must be over 13 years old"
             }
-            Modifier.width(27.dp)
+
+
+
+        }, year, month, day
+    )
+
+    Column(modifier = Modifier.systemBarsPadding()) {
+        LoginTitle(navController = navController, title = "Birthday")
+
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+        ) {
+
+            if (error != null){
+                Spacer(modifier = Modifier.height(32.dp))
+                Message(error.toString())
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            Text(text = "Selected Birthday: $year-$month-$day")
+            Spacer(modifier = Modifier.size(16.dp))
+            Button(onClick = {
+                datePickerDialog.show()
+            }) {
+                Text(text = "Open Date Picker")
+            }
+
+
+            Spacer(modifier = Modifier.padding(bottom = 32.dp))
+            CustomButton(buttonText = "Next", onClick =
+            {
+                navController.navigate("signupPage/$year-$month-$day")
+            }) 
         }
+            
 
     }
+
 }
+
