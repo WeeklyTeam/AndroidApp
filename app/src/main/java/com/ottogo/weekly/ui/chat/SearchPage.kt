@@ -125,7 +125,7 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
         if (searchText.isNotBlank() || searchText.isNotEmpty()) {
             LaunchedEffect(key1 = searchText) {
                 var searchApiList = WeeklyApi.retrofitService.search(
-                    mapOf("Authorization" to "token 265245769906872d88b40205147f5cbf63538b83"),
+                    mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
                     searchText
                 )
                 searchResults.clear()
