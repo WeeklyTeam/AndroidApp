@@ -231,7 +231,48 @@ fun CancelButton(navController: NavController) {
 
 
 @Composable
+fun PopUpConfirmationSheetContent(title: String, showDialog: Boolean, onDismiss: () -> Unit) {
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Text(text = title, style = MaterialTheme.typography.h4)
+            },
+            shape = RoundedCornerShape(24.dp),
+            buttons = {
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp)) {
+                    CustomButton(buttonText = "No",
+                        backgroundColor = LightGray,
+                        textColor = Black,
+                        modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+                    Spacer(modifier = Modifier.width(24.dp))
+                    CustomButton(buttonText = "Yes",
+                        modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        )
+    }
+
+}
+
+
+@Composable
 fun ModalBottomSheetContent(name: String, userName: String, profilePicture: String) {
+
+    val showDialog = remember { mutableStateOf(false) }
+
+    Card() {
+        if (showDialog.value) {
+            PopUpConfirmationSheetContent(title = "Are you sure you want to remove $name as a friend?",
+                showDialog = showDialog.value,
+                onDismiss = { showDialog.value = false })
+        }
+    }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -247,9 +288,10 @@ fun ModalBottomSheetContent(name: String, userName: String, profilePicture: Stri
             .padding(start = 60.dp, end = 60.dp)) {
             Box(modifier = Modifier.weight(1f)) {
 
-                CustomButton(buttonText = "Add",
+                CustomButton(
+                    buttonText = "Add",
                     onClick = {
-                        /*TODO: Add functionality*/
+                        showDialog.value = true
                     })
 
             }
