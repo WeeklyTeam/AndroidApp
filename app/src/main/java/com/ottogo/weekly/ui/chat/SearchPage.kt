@@ -55,6 +55,9 @@ class SearchPageViewModel : ViewModel() {
 
     val urequestedLiveData: LiveData<Boolean>
         get() = urequested
+    
+    val requestingLiveData: LiveData<Boolean>
+        get() = requesting
 
     val profileIndexLiveData: LiveData<Int>
         get() = profileIndex
@@ -68,6 +71,8 @@ class SearchPageViewModel : ViewModel() {
     val profilePicture = MutableLiveData<String>()
 
     val urequested = MutableLiveData<Boolean>()
+
+    val requesting = MutableLiveData<Boolean>()
 
     val profileIndex = MutableLiveData<Int>()
 
@@ -111,6 +116,7 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
     val userName by model.userNameLiveData.observeAsState("")
     val profilePicture by model.profilePictureLiveData.observeAsState("")
     val urequested by model.urequestedLiveData.observeAsState(false)
+    val requesting by model.requestingLiveData.observeAsState(false)
     val profileIndex by model.profileIndexLiveData.observeAsState(0)
 
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -120,7 +126,7 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = { ModalBottomSheetContent(userId = userId, name = name, userName = userName, profilePicture = profilePicture,
-        urequested = urequested, profileIndex = profileIndex
+        urequested = urequested, requesting = requesting, profileIndex = profileIndex
         ) }
     ) {
 
@@ -186,8 +192,9 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
         // display search results
         searchResults.forEachIndexed { profileIndex, searchResult ->
             SearchResultsItem(searchResult.user_id, searchResult.name, searchResult.username, searchResult.profile_picture,
-                searchResult.urequested, profileIndex,
+                searchResult.urequested, searchResult.requesting, profileIndex,
                 coroutineScope, sheetState)
+            Log.d("status", searchResult.toString())
         }
     }
 }
@@ -195,8 +202,8 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, urequested: Boolean?, profileIndex: Int,
-                      coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
+fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, urequested: Boolean?, requesting: Boolean?, 
+                      profileIndex: Int, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
 
     Spacer(Modifier.height(16.dp))
 
@@ -218,6 +225,7 @@ fun SearchResultsItem(userId: Int, name: String, userName: String, profilePictur
                     model.userName.value = userName
                     model.profilePicture.value = profilePicture
                     model.urequested.value = urequested
+                    model.requesting.value = requesting
                     model.profileIndex.value = profileIndex
                     sheetState.show()
                 }
@@ -315,10 +323,12 @@ fun PopUpConfirmationSheetContent(title: String, showDialog: Boolean, onDismiss:
 
 @Composable
 fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profilePicture: String, urequested: Boolean?,
-                            profileIndex: Int, model: SearchPageViewModel = viewModel()) {
+                            requesting: Boolean?, profileIndex: Int, model: SearchPageViewModel = viewModel()) {
 
     val showDialog = remember { mutableStateOf(false) }
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
+
+
 
     Card() {
         if (showDialog.value) {
@@ -351,6 +361,17 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                             showDialog.value = true
                         })
 
+                } else if (requesting == true) {
+                    Row(){
+                        CustomButton(buttonText = "Reject", backgroundColor = LightGray,
+                            textColor = Black, modifier = Modifier.weight(1f)) {
+
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        CustomButton(buttonText = "Accept", modifier = Modifier.weight(1f)) {
+
+                        }
+                    }
                 } else {
                     CustomButton(
                         buttonText = "Add",
