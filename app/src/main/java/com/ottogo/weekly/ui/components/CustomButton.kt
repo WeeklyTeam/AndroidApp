@@ -4,10 +4,12 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,12 +44,11 @@ fun CustomButton(
 
         buttonloading = "loading"
 
-    }, colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor),
+    }, elevation = null, shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(3.dp, outlineColor), colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor),
         modifier = modifier.fillMaxWidth()
             .height(48.dp)
-            .border(width = 3.dp, color = outlineColor)
-            .clip(CircleShape)
-            ) {
+    ) {
         Text(text = buttonloading, style = MaterialTheme.typography.h6, color = textColor)
 
     }

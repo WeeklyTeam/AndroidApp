@@ -59,8 +59,12 @@ class SearchPageViewModel : ViewModel() {
     val requestingLiveData: LiveData<Boolean>
         get() = requesting
 
+    val friendLiveData: LiveData<Boolean>
+        get() = friend
+
     val profileIndexLiveData: LiveData<Int>
         get() = profileIndex
+
 
     val userId = MutableLiveData<Int>()
 
@@ -73,6 +77,8 @@ class SearchPageViewModel : ViewModel() {
     val urequested = MutableLiveData<Boolean>()
 
     val requesting = MutableLiveData<Boolean>()
+
+    val friend = MutableLiveData<Boolean>()
 
     val profileIndex = MutableLiveData<Int>()
 
@@ -117,6 +123,7 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
     val profilePicture by model.profilePictureLiveData.observeAsState("")
     val urequested by model.urequestedLiveData.observeAsState(false)
     val requesting by model.requestingLiveData.observeAsState(false)
+    val friend by model.friendLiveData.observeAsState(false)
     val profileIndex by model.profileIndexLiveData.observeAsState(0)
 
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -126,7 +133,7 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = { ModalBottomSheetContent(userId = userId, name = name, userName = userName, profilePicture = profilePicture,
-        urequested = urequested, requesting = requesting, profileIndex = profileIndex
+        urequested = urequested, requesting = requesting, friend = friend, profileIndex = profileIndex
         ) }
     ) {
 
@@ -192,7 +199,7 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
         // display search results
         searchResults.forEachIndexed { profileIndex, searchResult ->
             SearchResultsItem(searchResult.user_id, searchResult.name, searchResult.username, searchResult.profile_picture,
-                searchResult.urequested, searchResult.requesting, profileIndex,
+                searchResult.urequested, searchResult.requesting, searchResult.friend, profileIndex,
                 coroutineScope, sheetState)
             Log.d("status", searchResult.toString())
         }
@@ -202,7 +209,7 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, urequested: Boolean?, requesting: Boolean?, 
+fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, urequested: Boolean?, requesting: Boolean?, friend: Boolean?,
                       profileIndex: Int, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
 
     Spacer(Modifier.height(16.dp))
@@ -226,6 +233,7 @@ fun SearchResultsItem(userId: Int, name: String, userName: String, profilePictur
                     model.profilePicture.value = profilePicture
                     model.urequested.value = urequested
                     model.requesting.value = requesting
+                    model.friend.value = friend
                     model.profileIndex.value = profileIndex
                     sheetState.show()
                 }
@@ -323,7 +331,7 @@ fun PopUpConfirmationSheetContent(title: String, showDialog: Boolean, onDismiss:
 
 @Composable
 fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profilePicture: String, urequested: Boolean?,
-                            requesting: Boolean?, profileIndex: Int, model: SearchPageViewModel = viewModel()) {
+                            requesting: Boolean?, friend: Boolean?, profileIndex: Int, model: SearchPageViewModel = viewModel()) {
 
     val showDialog = remember { mutableStateOf(false) }
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
@@ -352,7 +360,16 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
             .padding(start = 60.dp, end = 60.dp)) {
             Box(modifier = Modifier.weight(1f)) {
 
-                if (urequested == true) {
+                if (friend == true) {
+                    CustomButton(
+                        buttonText = "Added",
+                        backgroundColor = Color.White,
+                        outlineColor = LightGray,
+                        textColor = Black60,
+                        onClick = {
+                            showDialog.value = true
+                        })
+                } else if (urequested == true) {
                     CustomButton(
                         buttonText = "Requested",
                         backgroundColor = LightGray,
@@ -365,11 +382,33 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                     Row(){
                         CustomButton(buttonText = "Reject", backgroundColor = LightGray,
                             textColor = Black, modifier = Modifier.weight(1f)) {
+                            runBlocking {
+                                WeeklyApi.retrofitService.reject(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                            }
 
+                            // To recompose bottom sheet button
+                            model.requesting.value = false
+
+                            // To recompose search results with updated profile
+                            var newProfile = searchResults[profileIndex].copy()
+                            newProfile.requesting = false
+                            model.updateSearchItem(profileIndex, newProfile)
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         CustomButton(buttonText = "Accept", modifier = Modifier.weight(1f)) {
+                            runBlocking {
+                                WeeklyApi.retrofitService.accept(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                            }
 
+                            // To recompose bottom sheet button
+                            model.requesting.value = false
+                            model.friend.value = true
+
+                            // To recompose search results with updated profile
+                            var newProfile = searchResults[profileIndex].copy()
+                            newProfile.requesting = false
+                            newProfile.friend = true
+                            model.updateSearchItem(profileIndex, newProfile)
                         }
                     }
                 } else {
