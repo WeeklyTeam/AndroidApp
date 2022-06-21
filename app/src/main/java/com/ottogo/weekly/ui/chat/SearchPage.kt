@@ -33,9 +33,13 @@ import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 
 class SearchPageViewModel : ViewModel() {
+
+    val userIdLiveData: LiveData<Int>
+        get() = userId
 
     val nameLiveData: LiveData<String>
         get() = name
@@ -46,12 +50,46 @@ class SearchPageViewModel : ViewModel() {
     val profilePictureLiveData: LiveData<String>
         get() = profilePicture
 
+    val searchResultsLiveData: MutableLiveData<MutableList<Profile>>
+        get() = searchResults
+
+    val urequestedLiveData: LiveData<Boolean>
+        get() = urequested
+
+    val profileIndexLiveData: LiveData<Int>
+        get() = profileIndex
+
+    val userId = MutableLiveData<Int>()
 
     val name = MutableLiveData<String>()
 
     val userName = MutableLiveData<String>()
 
     val profilePicture = MutableLiveData<String>()
+
+    val urequested = MutableLiveData<Boolean>()
+
+    val profileIndex = MutableLiveData<Int>()
+
+    val searchResults = MutableLiveData<MutableList<Profile>>()
+
+    fun addSearchItems(items: List<Profile>) {
+        searchResults.value = items.toMutableList()
+    }
+
+    fun updateSearchItem(profileIndex: Int, newProfile: Profile) {
+        var tempList:MutableList<Profile>? = searchResults.value?.toMutableList()
+
+        if (tempList != null) {
+            tempList[profileIndex] = newProfile
+            Log.d("status", tempList[profileIndex].urequested.toString())
+            searchResults.value = tempList.toMutableList()
+        }
+    }
+
+    fun clearSearch() {
+        searchResults.value = emptyList<Profile>().toMutableList()
+    }
 
 }
 
@@ -68,9 +106,12 @@ fun SearchPage(navController: NavController, userViewModel: UserViewModel) {
 @Composable
 fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = viewModel()) {
 
+    val userId by model.userIdLiveData.observeAsState(1)
     val name by model.nameLiveData.observeAsState("")
     val userName by model.userNameLiveData.observeAsState("")
     val profilePicture by model.profilePictureLiveData.observeAsState("")
+    val urequested by model.urequestedLiveData.observeAsState(false)
+    val profileIndex by model.profileIndexLiveData.observeAsState(0)
 
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val coroutineScope = rememberCoroutineScope()
@@ -78,7 +119,9 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
     ModalBottomSheetLayout(
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetContent = { ModalBottomSheetContent(name = name, userName = userName, profilePicture = profilePicture) }
+        sheetContent = { ModalBottomSheetContent(userId = userId, name = name, userName = userName, profilePicture = profilePicture,
+        urequested = urequested, profileIndex = profileIndex
+        ) }
     ) {
 
         SearchPageContent(navController, coroutineScope, sheetState)
@@ -90,6 +133,8 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SearchPageContent(navController: NavController, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState) {
+
+    //val searchResults = remember { mutableStateListOf<Profile>() }
 
     Column(modifier = Modifier.padding(16.dp)){
 
@@ -114,9 +159,11 @@ fun SearchPageContent(navController: NavController, coroutineScope: CoroutineSco
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState) {
+fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel()) {
 
-    val searchResults = remember { mutableStateListOf<Profile>() }
+    //val searchResults = remember { mutableStateListOf<Profile>() }
+    val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
+
     Column(modifier = Modifier
         .fillMaxSize()
         .verticalScroll(rememberScrollState())) {
@@ -128,18 +175,19 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
                     mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
                     searchText
                 )
-                searchResults.clear()
-                searchResults.addAll(searchApiList.results)
-                Log.d("status", searchApiList.count.toString())
+                model.addSearchItems(searchApiList.results)
+                //Log.d("status", searchApiList.count.toString())
             }
         }
         else {
-            searchResults.clear()
+            model.clearSearch()
         }
 
         // display search results
-        for (searchResult in searchResults) {
-            SearchResultsItem(searchResult.name, searchResult.username, searchResult.profile_picture, coroutineScope, sheetState)
+        searchResults.forEachIndexed { profileIndex, searchResult ->
+            SearchResultsItem(searchResult.user_id, searchResult.name, searchResult.username, searchResult.profile_picture,
+                searchResult.urequested, profileIndex,
+                coroutineScope, sheetState)
         }
     }
 }
@@ -147,7 +195,8 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(name: String, userName: String, profilePicture: String?, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
+fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, urequested: Boolean?, profileIndex: Int,
+                      coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
 
     Spacer(Modifier.height(16.dp))
 
@@ -164,9 +213,12 @@ fun SearchResultsItem(name: String, userName: String, profilePicture: String?, c
                     sheetState.hide()
                 }
                 else {
+                    model.userId.value = userId
                     model.name.value = name
                     model.userName.value = userName
                     model.profilePicture.value = profilePicture
+                    model.urequested.value = urequested
+                    model.profileIndex.value = profileIndex
                     sheetState.show()
                 }
             }
@@ -262,9 +314,11 @@ fun PopUpConfirmationSheetContent(title: String, showDialog: Boolean, onDismiss:
 
 
 @Composable
-fun ModalBottomSheetContent(name: String, userName: String, profilePicture: String) {
+fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profilePicture: String, urequested: Boolean?,
+                            profileIndex: Int, model: SearchPageViewModel = viewModel()) {
 
     val showDialog = remember { mutableStateOf(false) }
+    val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
 
     Card() {
         if (showDialog.value) {
@@ -288,11 +342,33 @@ fun ModalBottomSheetContent(name: String, userName: String, profilePicture: Stri
             .padding(start = 60.dp, end = 60.dp)) {
             Box(modifier = Modifier.weight(1f)) {
 
-                CustomButton(
-                    buttonText = "Add",
-                    onClick = {
-                        showDialog.value = true
-                    })
+                if (urequested == true) {
+                    CustomButton(
+                        buttonText = "Requested",
+                        backgroundColor = LightGray,
+                        textColor = Black60,
+                        onClick = {
+                            showDialog.value = true
+                        })
+
+                } else {
+                    CustomButton(
+                        buttonText = "Add",
+                        onClick = {
+                            runBlocking {
+                                WeeklyApi.retrofitService.add(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                            }
+
+                            // To recompose bottom sheet button
+                            model.urequested.value = true
+
+                            // To recompose search results with updated profile
+                            var newProfile = searchResults[profileIndex].copy()
+                            newProfile.urequested = true
+                            model.updateSearchItem(profileIndex, newProfile)
+                        })
+                }
+
 
             }
             Spacer(modifier = Modifier.width(20.dp))

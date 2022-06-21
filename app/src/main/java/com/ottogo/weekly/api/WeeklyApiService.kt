@@ -38,6 +38,9 @@ interface WeeklyApiService {
 
     @PATCH("api/plot/{id}/")
     suspend fun editPlot(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Plot)
+
+    @GET("api/profile/{id}/add/")
+    suspend fun add(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
 }
 
 object WeeklyApi {
