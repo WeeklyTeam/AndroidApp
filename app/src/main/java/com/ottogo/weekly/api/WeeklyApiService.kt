@@ -45,6 +45,12 @@ interface WeeklyApiService {
     suspend fun accept(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
     @GET("api/profile/{id}/reject/")
     suspend fun reject(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/block/")
+    suspend fun block(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/report/")
+    suspend fun report(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/unblock/")
+    suspend fun unblock(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
 }
 
 object WeeklyApi {

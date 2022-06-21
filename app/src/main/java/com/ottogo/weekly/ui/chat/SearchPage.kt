@@ -308,7 +308,7 @@ fun CancelButton(navController: NavController) {
 
 
 @Composable
-fun PopUpConfirmationSheetContent(title: String, blockDisplay: Boolean, showDialog: Boolean, onDismiss: () -> Unit) {
+fun PopUpConfirmationSheetContent(title: String, userId: Int, blockDisplay: Boolean, showDialog: Boolean, onDismiss: () -> Unit) {
 
     if (showDialog) {
         AlertDialog(
@@ -323,18 +323,22 @@ fun PopUpConfirmationSheetContent(title: String, blockDisplay: Boolean, showDial
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 24.dp, end = 24.dp)) {
-                        CustomButton(buttonText = "Block",
-                            backgroundColor = LightRed,
-                            textColor = DarkRed) { onDismiss.invoke() }
+                        CustomButton(buttonText = "Block", backgroundColor = LightRed, textColor = DarkRed) {
+                            onDismiss.invoke()
+                            runBlocking {
+                                WeeklyApi.retrofitService.block(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                            }
+                        }
                         Spacer(modifier = Modifier.height(24.dp))
-                        CustomButton(buttonText = "Block & Report",
-                            backgroundColor = Color.White,
-                            textColor = Black60,
-                            outlineColor = LightGray) { onDismiss.invoke() }
+                        CustomButton(buttonText = "Block & Report", backgroundColor = Color.White, textColor = Black60, outlineColor = LightGray) {
+                            onDismiss.invoke()
+                            runBlocking {
+                                WeeklyApi.retrofitService.block(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                                WeeklyApi.retrofitService.report(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                            }
+                        }
                         Spacer(modifier = Modifier.height(24.dp))
-                        CustomButton(buttonText = "Cancel",
-                            backgroundColor = LightGray,
-                            textColor = Black) { onDismiss.invoke() }
+                        CustomButton(buttonText = "Cancel", backgroundColor = LightGray, textColor = Black) { onDismiss.invoke() }
                         Spacer(modifier = Modifier.height(12.dp))
                     }
                 } else {
@@ -363,14 +367,15 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                             friend: Boolean?, blocked: Boolean?, profileIndex: Int, model: SearchPageViewModel = viewModel()) {
 
     val showDialog = remember { mutableStateOf(false) }
+    val title = remember { mutableStateOf("") }
     val blockDisplay = remember { mutableStateOf(false) }
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
 
 
-
     Card() {
         if (showDialog.value) {
-            PopUpConfirmationSheetContent(title = "Are you sure you want to remove $name as a friend?",
+            PopUpConfirmationSheetContent(title = title.value,
+                userId = userId,
                 showDialog = showDialog.value,
                 blockDisplay = blockDisplay.value,
                 onDismiss = { showDialog.value = false })
@@ -392,13 +397,13 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
             Box(modifier = Modifier.weight(1f)) {
 
                 if (blocked == true) {
-                    blockDisplay.value = true
                     CustomButton(
                         buttonText = "This user is blocked",
                         backgroundColor = Color.White,
                         textColor = Black){
+                        title.value = "Are you sure you want to unblock $name?"
+                        blockDisplay.value = false
                         showDialog.value = true
-
                     }
                 } else if (friend == true) {
                     CustomButton(
@@ -406,6 +411,8 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                         backgroundColor = Color.White,
                         outlineColor = LightGray,
                         textColor = Black60) {
+                        title.value = "Are you sure you want to remove $name as a friend?"
+                        blockDisplay.value = false
                         showDialog.value = true
 
                     }
@@ -415,6 +422,8 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                         backgroundColor = LightGray,
                         textColor = Black60,
                         onClick = {
+                            title.value = "Are you sure you want to cancel this request?"
+                            blockDisplay.value = false
                             showDialog.value = true
                         })
 
@@ -472,7 +481,12 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
 
             }
             Spacer(modifier = Modifier.width(20.dp))
-            IconButton(onClick = { }, content = { Image(painterResource(id = R.drawable.ic_spam_line), contentDescription = "report icon") })
+
+            IconButton(onClick = {
+                title.value = "Are you sure you want to block $name?"
+                blockDisplay.value = true
+                showDialog.value = true
+            }, content = { Image(painterResource(id = R.drawable.ic_spam_line), contentDescription = "report icon") })
         }
 
     }
