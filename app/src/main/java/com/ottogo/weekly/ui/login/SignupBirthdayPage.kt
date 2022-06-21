@@ -1,7 +1,6 @@
 package com.ottogo.weekly.ui.login
 
 import android.app.DatePickerDialog
-import android.util.Log
 import android.widget.DatePicker
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -92,10 +91,9 @@ fun SignupBirthdayPage(navController: NavController) {
 
 
             Spacer(modifier = Modifier.padding(bottom = 32.dp))
-            CustomButton(buttonText = "Next", onClick =
-            {
+            CustomButton(buttonText = "Next") {
                 navController.navigate("signupPage/$year-$month-$day")
-            }) 
+            }
         }
             
 

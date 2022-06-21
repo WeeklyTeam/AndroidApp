@@ -54,8 +54,12 @@ fun CustomTextField(
             imeAction = if (done) ImeAction.Done else ImeAction.Next
         )
     }
-    else{
+    else if (isPasswordInput) {
         KeyboardOptions(keyboardType = KeyboardType.Password,
+            imeAction = if (done) ImeAction.Done else ImeAction.Next
+        )
+    }else {
+        KeyboardOptions(keyboardType = KeyboardType.Text,
             imeAction = if (done) ImeAction.Done else ImeAction.Next
         )
     }

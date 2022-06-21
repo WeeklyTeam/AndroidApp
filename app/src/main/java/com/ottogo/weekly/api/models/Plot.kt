@@ -1,9 +1,6 @@
 package com.ottogo.weekly.api.models
 
-import android.os.Parcelable
 import com.squareup.moshi.Json
-import kotlinx.android.parcel.Parcelize
-import kotlinx.android.parcel.RawValue
 import java.util.*
 
 data class Plot(

@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
-import com.ottogo.weekly.ui.components.CustomTextField
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -21,24 +20,20 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.ViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
-import com.ottogo.weekly.api.ActivityCategory
 import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.chat.SearchBar
 import com.ottogo.weekly.ui.components.ProfilePicture
 import kotlinx.coroutines.launch
-import java.util.concurrent.Executor
 
 data class ContactsModel(val phone: String, val name: String)
 

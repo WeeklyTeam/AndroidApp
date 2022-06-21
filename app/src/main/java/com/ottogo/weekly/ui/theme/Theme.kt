@@ -19,8 +19,9 @@ data class ExtendedColors(
     val Black20: Color,
     val LightGray: Color,
     val LoveRed: Color,
-    val Green: Color
-
+    val Green: Color,
+    val DarkGreen: Color,
+    val LightGreen: Color
 
 )
 
@@ -32,7 +33,9 @@ val LocalExtendedColors = staticCompositionLocalOf {
         Black20 = Color.Unspecified,
         LightGray = Color.Unspecified,
         LoveRed = Color.Unspecified,
-        Green = Color.Unspecified
+        Green = Color.Unspecified,
+        DarkGreen = Color.Unspecified,
+        LightGreen = Color.Unspecified
 
     )
 }
@@ -73,7 +76,10 @@ fun WeeklyTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable
         Black20 = Black20,
         LightGray = LightGray,
         LoveRed = LoveRed,
-        Green = Green
+        Green = Green,
+        LightGreen = LightGreen,
+        DarkGreen = DarkGreen
+
     )
     CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
         MaterialTheme(

@@ -49,7 +49,7 @@ fun CreateGroupPage(navController: NavController){
         onResult = {
                 uri: Uri? -> imageUri = uri
             if (imageUri != null) {
-                file = getFile(imageUri = imageUri, context)
+                file = getFile(imageUri = imageUri!!, context)
                 bitmap = BitmapFactory.decodeFile(file?.path)
             }
         }
@@ -113,10 +113,10 @@ fun CreateGroupPage(navController: NavController){
         Spacer(modifier = Modifier.height(24.dp))
         CustomButton(
             buttonText = "Next",
-            modifier = Modifier.padding(horizontal = 16.dp),
-            onClick = {
-                navController.currentBackStackEntry?.arguments?.putParcelable("imageUri", imageUri)
-                navController.navigate("inviteGroupPage/$groupName")
-            })
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            navController.currentBackStackEntry?.arguments?.putParcelable("imageUri", imageUri)
+            navController.navigate("inviteGroupPage/$groupName")
+        }
     }
 }

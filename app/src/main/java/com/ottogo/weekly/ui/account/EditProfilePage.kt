@@ -1,12 +1,9 @@
 package com.ottogo.weekly.ui.account
 
 import android.Manifest
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Log
-import android.widget.Space
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -38,7 +35,6 @@ import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.login.getFile
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
-import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -65,7 +61,7 @@ fun EditProfilePage(navController: NavController, userViewModel: UserViewModel) 
         onResult = {
                 uri: Uri? -> imageUri = uri
             if (imageUri != null) {
-                file = getFile(imageUri = imageUri, context)
+                file = getFile(imageUri = imageUri!!, context)
                 bitmap = BitmapFactory.decodeFile(file?.path)
             }
         }
@@ -158,36 +154,36 @@ fun EditProfilePage(navController: NavController, userViewModel: UserViewModel) 
             Spacer(modifier = Modifier.height(24.dp))
             CustomButton(
                 buttonText = "Save",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                onClick = {
-                    try {
-                        val profileUsername = username.toRequestBody("text/plain".toMediaTypeOrNull())
-                        val profileName = name.toRequestBody("text/plain".toMediaTypeOrNull())
-                        var picture: MultipartBody.Part? = null
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                try {
+                    val profileUsername = username.toRequestBody("text/plain".toMediaTypeOrNull())
+                    val profileName = name.toRequestBody("text/plain".toMediaTypeOrNull())
+                    var picture: MultipartBody.Part? = null
 
-                        if (file != null) {
-                            val reqFile = file!!.asRequestBody("image/*".toMediaTypeOrNull())
-                            picture = MultipartBody.Part.createFormData(
-                                "profile_picture",
-                                file?.name, reqFile
-                            )
-                        }
-                        userViewModel.profile = WeeklyApi.retrofitService.patchProfile(
-                            mapOf("Authorization" to "token ${userViewModel.token}"),
-                            mapOf("name" to profileName, "username" to profileUsername),
-                            picture
+                    if (file != null) {
+                        val reqFile = file!!.asRequestBody("image/*".toMediaTypeOrNull())
+                        picture = MultipartBody.Part.createFormData(
+                            "profile_picture",
+                            file?.name, reqFile
                         )
+                    }
+                    userViewModel.profile = WeeklyApi.retrofitService.patchProfile(
+                        mapOf("Authorization" to "token ${userViewModel.token}"),
+                        mapOf("name" to profileName, "username" to profileUsername),
+                        picture
+                    )
 
-                        navController.navigateUp()
+                    navController.navigateUp()
 
-                    } catch (e: Exception) {
-                        if (e is HttpException) {
-                            if (e.code() >= 400) {
-                                error = "Issue Editing Profile.\n Please Try again."
-                            }
+                } catch (e: Exception) {
+                    if (e is HttpException) {
+                        if (e.code() >= 400) {
+                            error = "Issue Editing Profile.\n Please Try again."
                         }
                     }
-                })
+                }
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 

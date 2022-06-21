@@ -1,18 +1,8 @@
 package com.ottogo.weekly.ui.login
 
-import android.os.Bundle
-import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.insets.systemBarsPadding
@@ -59,10 +49,9 @@ fun SignupVerifyPage(navController: NavController, token: String) {
             Spacer(modifier = Modifier.height(32.dp))
             CustomTextField(helper = "Code", hint = "", input = code, onChange = { code = it }, isNumberInput = true)
             Spacer(modifier = Modifier.height(32.dp))
-            CustomButton(buttonText = "Next", onClick =
-            {
+            CustomButton(buttonText = "Next") {
                 runBlocking {
-                    try{
+                    try {
                         WeeklyApi.retrofitService.verify(
                             mapOf("Authorization" to "token $token"),
                             mapOf("code" to code.toInt())
@@ -86,7 +75,7 @@ fun SignupVerifyPage(navController: NavController, token: String) {
                     }
 
                 }
-            })
+            }
 
         }
     }

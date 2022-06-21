@@ -31,6 +31,11 @@ class UserViewModel(): ViewModel() {
         }
     }
 
+    fun addGroup(group: Group){
+        groupsOrder?.add(0, group.id)
+        groups?.set(group.id, group)
+    }
+
     suspend fun getMain(){
         val data = WeeklyApi.retrofitService.main(mapOf("Authorization" to "token $token"))
         Log.d("ViewModel", data.toString())
@@ -53,6 +58,7 @@ class UserViewModel(): ViewModel() {
             groupsOrder!!.add(group.id)
         }
 
+        availability = data.availability.toMutableList()
         requests = data.requests.toMutableList()
         calendars = data.calendars.toMutableList()
         plots = data.plots.toMutableList()

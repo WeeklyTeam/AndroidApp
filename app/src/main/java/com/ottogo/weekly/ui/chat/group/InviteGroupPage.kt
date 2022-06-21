@@ -1,13 +1,7 @@
 package com.ottogo.weekly.ui.chat
 
-import android.Manifest
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Log
 import com.ottogo.weekly.R
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,10 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
-import com.google.accompanist.permissions.rememberPermissionState
 import com.ottogo.weekly.api.WeeklyApi
+import com.ottogo.weekly.api.models.Group
 import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.ProfilePicture
@@ -37,13 +30,13 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import retrofit2.HttpException
 import java.io.File
-
 
 
 @Composable
 fun InviteGroupPage(navController: NavController, name: String, imageUri: Uri?, userViewModel: UserViewModel) {
+
+    val context = LocalContext.current
 
     val selectedIds = remember {
         mutableStateListOf<Int>()
@@ -53,7 +46,7 @@ fun InviteGroupPage(navController: NavController, name: String, imageUri: Uri?, 
         TitleBar(navController = navController, title = "Invite")
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.weight(1F).verticalScroll(rememberScrollState())) {
             Spacer(modifier = Modifier.height(8.dp))
 
             userViewModel.friends?.forEach { (userId, profile) ->
@@ -68,12 +61,30 @@ fun InviteGroupPage(navController: NavController, name: String, imageUri: Uri?, 
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
-        Spacer(Modifier.weight(1F))
 
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
         CustomButton(buttonText = "Create", onClick = {
-            // TODO: create group request 
+            val file: File? = imageUri?.let { getFile(imageUri = it, context = context) }
+            val membersList = selectedIds.toList().toString().toRequestBody("text/plain".toMediaTypeOrNull())
+            val groupName = name.toRequestBody("text/plain".toMediaTypeOrNull())
+            var image: MultipartBody.Part? = null
+
+            if (file != null) {
+                val reqFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+                image = MultipartBody.Part.createFormData(
+                    "profile_picture",
+                    file.name, reqFile
+                )
+            }
+            userViewModel.addGroup(WeeklyApi.retrofitService.createGroup(
+                mapOf("Authorization" to "token ${userViewModel.token}"),
+                mapOf("name" to groupName, "members" to membersList),
+                image
+            ))
+
+
+            navController.popBackStack("homePage", inclusive = false)
         }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 12.dp))
 
 
@@ -98,6 +109,26 @@ fun SelectProfileItem(profile: Profile, selected: Boolean, modifier: Modifier = 
 
     }
 }
+
+@Composable
+fun SelectGroupItem(group: Group, selected: Boolean, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        ProfilePicture(url = group.image, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        Text(text = group.name, style = MaterialTheme.typography.body1)
+
+        Spacer(Modifier.weight(1F))
+
+        Icon(
+            painter = painterResource(id = if (selected){ R.drawable.ic_checkbox_circle_fill } else { R.drawable.ic_checkbox_blank_circle_line }),
+            tint = if (selected){ MaterialTheme.colors.primary } else { ExtendedTheme.colors.Black60 },
+            contentDescription = "checkbox",
+            modifier = Modifier.padding(16.dp)
+        )
+
+
+    }
+}
+
 
 //try {
 //    val profileName = name.toRequestBody("text/plain".toMediaTypeOrNull())

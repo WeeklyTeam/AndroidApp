@@ -31,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
+import com.ottogo.weekly.ui.calendar.availability.beginningOfDay
 import com.ottogo.weekly.ui.calendar.ui.components.PlotItem
+import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.nunitoFamily
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -57,14 +59,14 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
 
 
     Column() {
-        CalendarTitleBar(navController = navController, date = displayMonth, nextMonth = { displayMonth = it }, previousMonth = { displayMonth = it })
+        CalendarTitleBar(navController = navController, date = displayMonth, nextMonth = { displayMonth = it }, previousMonth = { displayMonth = it }, userViewModel = userViewModel)
 
         Column(Modifier.verticalScroll(rememberScrollState())) {
 
 
             CalendarComponent(displayMonth,
                 modifier = Modifier
-                    .padding(16.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
                 selectedDate = selectedDate,
                 selectDate = { selectedDate = it })
 
@@ -80,6 +82,15 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
                     )
                     .clickable { selectedCalendar = -1 })
 
+                Chip("Create", icon = R.drawable.ic_calendar_line, modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .clip(
+                        RoundedCornerShape(20.dp)
+                    )
+                    .clickable {
+                        navController.navigate("createCalendarPage")
+                    })
+
                 userViewModel.calendars?.forEachIndexed { index, calendar ->
                     Chip(calendar.name, isSelected = selectedCalendar == index, modifier = Modifier
                         .padding(horizontal = 8.dp)
@@ -90,30 +101,27 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
 
                 }
 
-                Chip("Create", icon = R.drawable.ic_calendar_line, modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .clip(
-                        RoundedCornerShape(20.dp)
-                    )
-                    .clickable {
-                        navController.navigate("createCalendarPage")
+            }
+
+            userViewModel.plots?.filter{ if (it.starttime != null) { it.starttime >= displayMonth && it.starttime < addMonth(displayMonth, 1) } else { true } }
+                ?.filter{ if (selectedDate != null && it.starttime != null){ it.starttime >= selectedDate && it.starttime < addDay(
+                    selectedDate!!, 1)} else { selectedDate == null } }
+                ?.forEach { plot ->
+                    PlotItem(plot, onClick = {
+                        navController.navigate("plotPage/${plot.id}")
                     })
-            }
 
-            userViewModel.plots?.forEach { plot ->
-                PlotItem(plot, onClick = {
-                    navController.navigate("plotPage/${plot.id}")
-                })
+                }
 
-            }
+            Spacer(modifier = Modifier.height(60.dp))
         }
     }
 }
 
 @Composable
-fun CalendarComponent(month: Date, modifier: Modifier = Modifier, selectedDate: Date?, selectDate: (Date?) -> Unit){
+fun CalendarComponent(month: Date, shortened: Boolean = false, modifier: Modifier = Modifier, selectedDate: Date?, selectDate: (Date?) -> Unit){
 
-    val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val daysOfWeek = if (shortened) { listOf("S", "M", "T", "W", "T", "F", "S") } else { listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") }
     val range = calendarRange(month = month).toList()
 
     Column(modifier = modifier) {
@@ -203,7 +211,7 @@ fun CalendarBox(value: String, date: Date = Date(), isSelected: Boolean = false,
             ),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(8.dp),
-            color = if (!isSelected) { if (date >= Date()) { MaterialTheme.colors.onBackground } else { ExtendedTheme.colors.Black60 } } else { MaterialTheme.colors.onPrimary }
+            color = if (!isSelected) { if (date >= beginningOfDay(Date())) { MaterialTheme.colors.onBackground } else { ExtendedTheme.colors.Black60 } } else { MaterialTheme.colors.onPrimary }
         )
 
     }
@@ -215,6 +223,14 @@ fun addMonth(date: Date, amount: Int): Date{
     val calendar = Calendar.getInstance()
     calendar.time = date
     calendar.add(Calendar.MONTH, amount)
+    return calendar.time
+}
+
+
+fun addDay(date: Date, amount: Int): Date{
+    val calendar = Calendar.getInstance()
+    calendar.time = date
+    calendar.add(Calendar.DATE, amount)
     return calendar.time
 }
 
@@ -248,22 +264,30 @@ fun calendarRange(month: Date): IntRange {
 
 @SuppressLint("SimpleDateFormat")
 @Composable
-fun CalendarTitleBar(navController: NavController, date: Date, nextMonth: (Date) -> Unit, previousMonth: (Date) -> Unit){
-
-
+fun CalendarTitleBar(navController: NavController, date: Date, nextMonth: (Date) -> Unit, previousMonth: (Date) -> Unit, userViewModel: UserViewModel){
 
     Row(
         Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(horizontal = 16.dp), verticalAlignment = Alignment.Bottom) {
-        Text(text = SimpleDateFormat("MMM yyyy").format(date), Modifier.padding(top = 24.dp, bottom = 8.dp), style = MaterialTheme.typography.h1)
+            .padding(horizontal = 16.dp)
+            .padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+
+        ProfilePicture(url = userViewModel.profile?.profile_picture, modifier = Modifier
+            .padding(vertical = 12.dp)
+            .clip(CircleShape)
+            .clickable {
+                navController.navigate("accountPage")
+            })
+
+        Spacer(Modifier.width(16.dp))
+
+        Text(text = SimpleDateFormat("MMM yyyy").format(date), style = MaterialTheme.typography.h1)
 
         Spacer(Modifier.width(6.dp))
 
         Icon(
             modifier = Modifier
-                .padding(top = 16.dp, bottom = 8.dp)
                 .fillMaxHeight()
                 .size(36.dp)
                 .clip(CircleShape)
@@ -276,7 +300,6 @@ fun CalendarTitleBar(navController: NavController, date: Date, nextMonth: (Date)
         )
         Icon(
             modifier = Modifier
-                .padding(top = 16.dp, bottom = 8.dp)
                 .fillMaxHeight()
                 .size(36.dp)
                 .clip(CircleShape)
@@ -292,23 +315,13 @@ fun CalendarTitleBar(navController: NavController, date: Date, nextMonth: (Date)
         Spacer(modifier = Modifier.weight(1F))
 
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {
-                                 navController.navigate("plotDatePage")
-            }, modifier = Modifier.size(58.dp)) {
-                Icon(
-                    modifier = Modifier.size(26.dp),
-                    painter = painterResource(id = R.drawable.ic_add_circle_line),
-                    contentDescription = "create plan",
-                )
-            }
-            IconButton(onClick = { navController.navigate("availabilityPage") }, modifier = Modifier.size(58.dp)) {
-                Icon(
-                    modifier = Modifier.size(26.dp),
-                    painter = painterResource(id = R.drawable.ic_calendar_check_line),
-                    contentDescription = "availability",
-                )
-            }
+
+        IconButton(onClick = { navController.navigate("availabilityPage") }, modifier = Modifier.size(58.dp)) {
+            Icon(
+                modifier = Modifier.size(26.dp),
+                painter = painterResource(id = R.drawable.ic_calendar_check_line),
+                contentDescription = "availability",
+            )
         }
 
 

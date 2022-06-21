@@ -25,6 +25,7 @@ import com.ottogo.weekly.R
 import com.ottogo.weekly.ui.account.ui.components.AccountOption
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.ProfilePicture
+import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.nunitoFamily
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -38,14 +39,14 @@ fun AccountPage(navController: NavController, userViewModel: UserViewModel) {
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
 
-        Spacer(modifier = Modifier.height(24.dp))
+        TitleBar(navController = navController, title = "Account")
 
-
-        Text(text = "Account",style = MaterialTheme.typography.h1, modifier = Modifier.padding(horizontal = 16.dp))
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
-        Card(elevation = 0.dp, border = BorderStroke(1.dp, ExtendedTheme.colors.LightGray), shape = RoundedCornerShape(12.dp), modifier = Modifier.height(96.dp).fillMaxWidth().padding(horizontal = 16.dp)) {
+        Card(elevation = 0.dp, border = BorderStroke(1.dp, ExtendedTheme.colors.LightGray), shape = RoundedCornerShape(12.dp), modifier = Modifier
+            .height(96.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)) {
             Row(Modifier.padding(16.dp)) {
                 ProfilePicture(url = userViewModel.profile?.profile_picture, size = 64)
                 Spacer(Modifier.width(16.dp))

@@ -3,7 +3,6 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id("com.google.android.gms.oss-licenses-plugin")
 }
-apply plugin: 'org.jetbrains.kotlin.android.extensions'
 
 android {
     compileSdk 32
@@ -45,9 +44,7 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
-    androidExtensions {
-        experimental = true
-    }
+
 }
 
 

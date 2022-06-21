@@ -1,31 +1,42 @@
 package com.ottogo.weekly
 
-import android.content.Context
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,13 +45,14 @@ import androidx.navigation.navArgument
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.systemBarsPadding
 import com.ottogo.weekly.api.models.ChatMessage
-import com.ottogo.weekly.api.models.Plot
 import com.ottogo.weekly.ui.account.*
-import com.ottogo.weekly.ui.calendar.CalendarPage
-import com.ottogo.weekly.ui.calendar.CreateCalendarPage
+import com.ottogo.weekly.ui.calendar.*
+import com.ottogo.weekly.ui.calendar.availability.AddAvailabilityPage
+import com.ottogo.weekly.ui.calendar.availability.AvailabilityPage
 import com.ottogo.weekly.ui.calendar.plot.PlotPage
+import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.chat.*
-import com.ottogo.weekly.ui.components.ProfilePicture
+import com.ottogo.weekly.ui.components.*
 import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.plot.PlotDatePage
 import com.ottogo.weekly.ui.theme.*
@@ -49,14 +61,13 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import org.java_websocket.WebSocket
+import kotlinx.coroutines.launch
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
-import java.io.File
 import java.lang.Exception
 import java.net.URI
+import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -200,49 +211,318 @@ fun LoginNavigation(userViewModel: UserViewModel){
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?){
+fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bottomSheetViewModel: BottomSheetViewModel = BottomSheetViewModel()){
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "homePage") {
+    
+    val modalBottomSheetState = rememberModalBottomSheetState(
+        ModalBottomSheetValue.Hidden
+    )
 
-        composable("homePage") { HomePage(navController, userViewModel) }
-        composable("searchPage") { SearchPage(navController, userViewModel) }
-        composable("settingsPage") { SettingsPage(navController) }
-        composable("reportPage") { ReportPage(navController, userViewModel) }
-        composable("activitiesPage") { ActivitiesPage(navController, userViewModel) }
-        composable("addActivityPage") { AddActivityPage(navController, userViewModel) }
-        composable("contactsPage") { ContactsPage(navController, userViewModel) }
-        composable("editProfilePage") { EditProfilePage(navController, userViewModel) }
-        composable("createGroupPage") { CreateGroupPage(navController) }
-        composable("groupPage/{group_id}") { backStackEntry -> GroupPage(navController, backStackEntry.arguments?.getInt("group_id")!!, userViewModel) }
-        composable("createCalendarPage") { CreateCalendarPage(navController, userViewModel) }
-        composable("plotDatePage") { PlotDatePage(navController) }
-        composable("inviteGroupPage/{groupName}") { backStackEntry -> InviteGroupPage(navController,
-            backStackEntry.arguments?.getString("groupName")!!,
-            navController.previousBackStackEntry?.arguments?.getParcelable<Uri>("imageUri"),
-            userViewModel
-        ) }
-        composable("plotPage/{plot_id}") { backStackEntry -> PlotPage(navController,
-            backStackEntry.arguments?.getInt("plot_id")!!,
-            userViewModel
-        ) }
-        composable("privateChatPage/{userId}") { backStackEntry -> PrivateChatPage(navController, userViewModel,
-            backStackEntry.arguments?.getString("userId")!!.toInt(), webSocket
-        ) }
-        composable("webviewPage/{title}?url={url}",
-            arguments = listOf(navArgument("userId") { defaultValue = "" })
-        ) { backStackEntry -> WebViewPage(navController,
-            backStackEntry.arguments?.getString("title")!!, backStackEntry.arguments?.getString("url")!!
-        ) }
+    val scope = rememberCoroutineScope()
+    //val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
 
+    val closeSheet = {
+        //focusManager.clearFocus()
+        keyboardController?.hide()
 
+        bottomSheetViewModel.bottomSheetType = null
+        scope.launch { modalBottomSheetState.hide() }
+    }
+
+    val openSheet = {
+        scope.launch { modalBottomSheetState.show() }
+    }
+    val activity = (LocalContext.current as? Activity)
+
+    BackHandler {
+        if (modalBottomSheetState.isVisible) {
+            when (bottomSheetViewModel.bottomSheetType) {
+                BottomSheetType.TYPE2 -> {
+                    bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE1
+                }
+                BottomSheetType.TYPE3 -> {
+                    bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE2
+                }
+                else -> {
+
+                    closeSheet()
+
+                }
+            }
+        } else {
+
+
+            if (navController.currentDestination?.route == "homePage") {
+                activity?.finish()
+            } else {
+                navController.navigateUp()
+            }
+        }
+    }
+
+    ModalBottomSheetLayout(
+        modifier = Modifier.fillMaxSize(),
+        sheetState = modalBottomSheetState,
+        sheetContent = {
+            Spacer(modifier = Modifier.height(1.dp))
+            bottomSheetViewModel.bottomSheetType?.let {
+                SheetLayout(
+                    closeSheet = {
+                        closeSheet()
+                    },
+                    bottomSheetViewModel = bottomSheetViewModel,
+                    userViewModel = userViewModel,
+                    bottomSheetType = it)
+            }
+        },
+        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        ) {
+        NavHost(navController = navController, startDestination = "homePage") {
+
+            composable("homePage") { HomePage(navController, userViewModel) {
+                bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE1
+                openSheet()
+            }
+            }
+            composable("searchPage") { SearchPage(navController, userViewModel) }
+            composable("settingsPage") { SettingsPage(navController) }
+            composable("reportPage") { ReportPage(navController, userViewModel) }
+            composable("activitiesPage") { ActivitiesPage(navController, userViewModel) }
+            composable("addActivityPage") { AddActivityPage(navController, userViewModel) }
+            composable("contactsPage") { ContactsPage(navController, userViewModel) }
+            composable("editProfilePage") { EditProfilePage(navController, userViewModel) }
+            composable("createGroupPage") { CreateGroupPage(navController) }
+            composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel) }
+            composable("groupPage/{group_id}") { backStackEntry ->
+                GroupPage(
+                    navController,
+                    backStackEntry.arguments?.getInt("group_id")!!,
+                    userViewModel
+                )
+            }
+            composable("accountPage") { AccountPage(navController, userViewModel) }
+            composable("createCalendarPage") { CreateCalendarPage(navController, userViewModel) }
+            composable("plotDatePage") { PlotDatePage(navController) }
+            composable("availabilityPage") { AvailabilityPage(navController, userViewModel) }
+            composable("inviteGroupPage/{groupName}") { backStackEntry ->
+                InviteGroupPage(
+                    navController,
+                    backStackEntry.arguments?.getString("groupName")!!,
+                    navController.previousBackStackEntry?.arguments?.getParcelable<Uri>("imageUri"),
+                    userViewModel
+                )
+            }
+            composable("plotPage/{plot_id}") { backStackEntry ->
+                PlotPage(
+                    navController,
+                    backStackEntry.arguments?.getInt("plot_id")!!,
+                    userViewModel
+                )
+            }
+            composable("privateChatPage/{userId}") { backStackEntry ->
+                PrivateChatPage(
+                    navController, userViewModel,
+                    backStackEntry.arguments?.getString("userId")!!.toInt(), webSocket
+                )
+            }
+            composable(
+                "webviewPage/{title}?url={url}",
+                arguments = listOf(navArgument("userId") { defaultValue = "" })
+            ) { backStackEntry ->
+                WebViewPage(
+                    navController,
+                    backStackEntry.arguments?.getString("title")!!,
+                    backStackEntry.arguments?.getString("url")!!
+                )
+            }
+
+
+        }
+    }
+}
+
+class BottomSheetViewModel: ViewModel() {
+    var bottomSheetType: BottomSheetType? by mutableStateOf(null)
+
+}
+
+enum class BottomSheetType() {
+    TYPE1, TYPE2, TYPE3
+}
+
+@Composable
+fun SheetLayout(
+    bottomSheetType: BottomSheetType,
+    bottomSheetViewModel: BottomSheetViewModel,
+    userViewModel: UserViewModel,
+    closeSheet : () -> Unit
+){
+
+    when(bottomSheetType){
+        BottomSheetType.TYPE1 -> Screen1(closeSheet, bottomSheetViewModel)
+        BottomSheetType.TYPE2 -> Screen2(closeSheet, bottomSheetViewModel)
+        BottomSheetType.TYPE3 -> Screen3(closeSheet, userViewModel)
+    }
+
+}
+
+@Composable
+fun Screen3(closeSheet: () -> Unit, userViewModel: UserViewModel) {
+    val configuration = LocalConfiguration.current
+
+    val screenHeight = configuration.screenHeightDp.dp
+    Column {
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)){
+
+            IconButton(onClick = {  }, modifier = Modifier.size(56.dp)) {
+                Icon(painter = painterResource(id = R.drawable.ic_arrow_left_s_line),
+                    contentDescription = "back",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+
+            Text(text = "Invite",
+                style = MaterialTheme.typography.h2
+            )
+
+        }
+
+        Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
+
+        Column(
+            Modifier
+                .height(screenHeight - 65.dp - 91.dp - 24.dp)
+                .verticalScroll(rememberScrollState())) {
+
+            Text("Groups", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
+
+            userViewModel.groupsOrder?.forEach { index ->
+                userViewModel.groups!![index]?.let { SelectGroupItem(group = it, selected = false, modifier = Modifier
+                    .clickable {}
+                    .padding(horizontal = 8.dp)) }
+            }
+
+            Text("Friends", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
+
+            userViewModel.friendsOrder?.forEach { index ->
+                userViewModel.friends!![index]?.let { SelectProfileItem(profile = it, selected = false, modifier = Modifier
+                    .clickable {}
+                    .padding(horizontal = 8.dp)) }
+            }
+        }
+
+        Divider(color = ExtendedTheme.colors.LightGray, thickness = 1.dp)
+
+        CustomButton(buttonText = "Invite", onClick = {}, modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp, top = 18.dp))
     }
 }
 
 @Composable
-fun HomePage(navController: NavController, userViewModel: UserViewModel){
+fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
+    var selectedDate: Date? by rememberSaveable {
+        mutableStateOf(null)
+    }
+
+    var displayCalendar by rememberSaveable {
+        mutableStateOf(true)
+    }
+
+
+    var displayMonth by rememberSaveable{
+        mutableStateOf(initialMonth())
+    }
+
+    Column(Modifier.padding(24.dp)) {
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            IconButton(onClick = { displayMonth = addMonth(displayMonth, -1) }, modifier = Modifier.size(56.dp)) {
+                Icon(painter = painterResource(id = R.drawable.ic_arrow_left_s_line),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Text(
+                SimpleDateFormat(if (displayCalendar) {"MMM yyyy"} else {"MMM dd"}).format(displayMonth),
+                modifier = Modifier.weight(1F), style = MaterialTheme.typography.h2, textAlign = TextAlign.Center)
+
+            IconButton(onClick = { displayMonth = addMonth(displayMonth, 1) }, modifier = Modifier.size(56.dp)) {
+                Icon(painter = painterResource(id = R.drawable.ic_arrow_right_s_line),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+
+        if (displayCalendar) {
+            CalendarComponent(month = displayMonth, shortened = true, modifier = Modifier
+                .padding(16.dp), selectedDate = null, selectDate = {
+                displayCalendar = false
+                selectedDate = it
+            })
+        }
+        else {
+            ScrollPicker(options = listOf(List(12){ index -> (index+1).toString()}, listOf("AM", "PM")))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        if (!displayCalendar) {
+            CustomButton(buttonText = "Next") { bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE3 }
+        } else {
+            CustomButton(buttonText = "Skip", backgroundColor = MaterialTheme.colors.background, foregroundColor = ExtendedTheme.colors.Black60) {  bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE3 }
+        }
+    }
+}
+
+//https://stackoverflow.com/questions/22178349/android-how-to-filter-emoji-emoticons-from-a-string
+//https://stackoverflow.com/questions/64181930/request-focus-on-textfield-in-jetpack-compose
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
+    var title by remember{
+        mutableStateOf("")
+    }
+    var emoji by remember{
+        mutableStateOf("")
+    }
+
+    val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(key1 = bottomSheetViewModel.bottomSheetType == BottomSheetType.TYPE1){
+        focusRequester.requestFocus()
+    }
+
+
+    Column(modifier = Modifier.padding(24.dp)) {
+        if (emoji.isNotEmpty()){
+            EmojiCircle(emoji = emoji)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+        
+        CustomTextField(helper = "Title", hint = "What are you doing?", input = emoji, onChange = {
+            emoji = it
+        }, modifier = Modifier.focusRequester(focusRequester), keyboardActions = KeyboardActions(onNext = {
+            focusManager.clearFocus()
+            bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE2
+        }),)
+    }
+}
+
+@Composable
+fun HomePage(navController: NavController, userViewModel: UserViewModel, openSheet: () -> Unit){
     var bottomBarSelection by rememberSaveable{ mutableStateOf(0) }
 
     Box(modifier = Modifier.fillMaxSize()){
@@ -265,7 +545,8 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel){
             )
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp).background(color = MaterialTheme.colors.background)) {
+                .height(60.dp)
+                .background(color = MaterialTheme.colors.background)) {
                 
                 IconButton(onClick = {bottomBarSelection = 0},
                     Modifier
@@ -277,6 +558,18 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel){
                         contentDescription = null,
                         tint = if(bottomBarSelection == 0) Black else Black40
 
+                    )
+                }
+
+                IconButton(onClick = { openSheet() },
+                    Modifier
+                        .fillMaxSize()
+                        .weight(1f)) {
+                    Icon(
+                        modifier = Modifier.size(28.dp),
+                        painter = painterResource(id = R.drawable.ic_add_circle_line),
+                        contentDescription = null,
+                        tint = Black40
                     )
                 }
 
@@ -292,32 +585,32 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel){
                     )
                 }
 
-                IconButton(onClick = {bottomBarSelection = 2}, modifier =
-                Modifier
-                    .fillMaxSize()
-                    .weight(1f)) {
-                    Box(contentAlignment = Alignment.Center, modifier =
-                    Modifier
-                        .fillMaxSize()) {
-
-                        Card(
-                            shape = CircleShape,
-                            modifier = Modifier.size(38.dp),
-                            border = BorderStroke(3.dp,if (bottomBarSelection == 2) Black else White),
-                            elevation = 0.dp
-
-                        ){
-
-                        }
-                        ProfilePicture(
-                            url = userViewModel.profile?.profile_picture,
-                            size = 24
-                        )
-
-
-
-                    }
-                }
+//                IconButton(onClick = {bottomBarSelection = 2}, modifier =
+//                Modifier
+//                    .fillMaxSize()
+//                    .weight(1f)) {
+//                    Box(contentAlignment = Alignment.Center, modifier =
+//                    Modifier
+//                        .fillMaxSize()) {
+//
+//                        Card(
+//                            shape = CircleShape,
+//                            modifier = Modifier.size(38.dp),
+//                            border = BorderStroke(3.dp,if (bottomBarSelection == 2) Black else White),
+//                            elevation = 0.dp
+//
+//                        ){
+//
+//                        }
+//                        ProfilePicture(
+//                            url = userViewModel.profile?.profile_picture,
+//                            size = 24
+//                        )
+//
+//
+//
+//                    }
+//                }
 
 
 

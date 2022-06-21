@@ -47,25 +47,13 @@ fun PlotItem(plot: Plot, onClick: () -> Unit) {
                     offsetY = 5.dp
                 )
                 .clip(RoundedCornerShape(12.dp))
-                .clickable{
+                .clickable {
                     onClick()
                 }
                 .background(MaterialTheme.colors.background)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp)) {
-                Box(modifier = Modifier
-                    .clip(
-                        CircleShape
-                    )
-                    .size(72.dp)
-                    .background(ExtendedTheme.colors.LightGray)
-                    , contentAlignment = Alignment.Center){
-                    Text(plot.emoji, style = TextStyle(
-                        fontFamily = nunitoFamily,
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 36.sp
-                    ),
-                        color = Color(red = 0, blue = 0, green = 0))
-                }
+                
+                EmojiCircle(emoji = plot.emoji)
 
                 Spacer(modifier = Modifier.width(16.dp))
 

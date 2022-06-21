@@ -36,13 +36,14 @@ import java.util.*
 @Composable
 fun ChatPage(navController: NavController, userViewModel: UserViewModel) {
     Column {
-        ChatTitleBar(navController = navController)
+        ChatTitleBar(navController = navController, userViewModel = userViewModel)
 
 
 
         if (userViewModel.friends?.count() ?:0 > 0) {
-
-            FriendRequests(requests = userViewModel.requests)
+            if (userViewModel.requests.count() > 0) {
+                FriendRequests(requests = userViewModel.requests)
+            }
 
             chatTabRow(userViewModel = userViewModel, navController = navController)
         } else {
@@ -75,7 +76,7 @@ fun ChatPage(navController: NavController, userViewModel: UserViewModel) {
 
 @Composable
 fun FriendRequests(requests: List<Profile>){
-    Column(Modifier.padding(top = 8.dp)) {
+    Column(Modifier.padding(top = 4.dp)) {
         requests.forEach{ profile ->
             Row(Modifier.clickable{}) {
                 ProfilePicture(url = profile.profile_picture, modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
@@ -117,7 +118,7 @@ fun chatTabRow(userViewModel: UserViewModel, navController: NavController){
     Column() {
 
         TabBar(pagerState = pagerState, tabItems = tabItems, modifier = Modifier
-            .padding(16.dp)
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)
             .border(3.dp, LightGray, RoundedCornerShape(22.dp)))
 
         HorizontalPager(
@@ -322,9 +323,12 @@ fun ChatListItem(
         Row() {
             ProfilePicture(
                 profilePicture,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(CircleShape).clickable{
-                    onImageClick()
-                }
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(CircleShape)
+                    .clickable {
+                        onImageClick()
+                    }
             )
 
             Column() {
@@ -346,31 +350,32 @@ fun ChatListItem(
 }
 
 @Composable
-fun ChatTitleBar(navController: NavController){
+fun ChatTitleBar(navController: NavController, userViewModel: UserViewModel){
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = "Chat", Modifier.padding(top = 24.dp, bottom = 8.dp), style = MaterialTheme.typography.h1)
+            .padding(horizontal = 16.dp).padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+
+        ProfilePicture(url = userViewModel.profile?.profile_picture, modifier = Modifier.padding(vertical = 12.dp).clip(CircleShape)
+            .clickable {
+                navController.navigate("accountPage")
+            })
+
+        Spacer(Modifier.width(16.dp))
+
+        Text(text = "Chat", Modifier.weight(1F), style = MaterialTheme.typography.h1)
 
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {}, modifier = Modifier.size(58.dp)) {
-                Icon(
-                    modifier = Modifier.size(26.dp),
-                    painter = painterResource(id = R.drawable.ic_add_circle_line),
-                    contentDescription = null,
-                )
-            }
-            IconButton(onClick = { navController.navigate("searchPage") }, modifier = Modifier.size(58.dp)) {
-                Icon(
-                    modifier = Modifier.size(26.dp),
-                    painter = painterResource(id = R.drawable.ic_search_line),
-                    contentDescription = null,
-                )
-            }
+
+        IconButton(onClick = { navController.navigate("searchPage") }, modifier = Modifier.size(58.dp)) {
+            Icon(
+                modifier = Modifier.size(26.dp),
+                painter = painterResource(id = R.drawable.ic_search_line),
+                contentDescription = null,
+            )
         }
-
-
     }
+
+
+
 }

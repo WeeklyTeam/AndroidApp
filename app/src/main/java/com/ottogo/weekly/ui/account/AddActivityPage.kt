@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -21,7 +20,6 @@ import com.ottogo.weekly.ui.components.Message
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
-import kotlinx.coroutines.runBlocking
 import retrofit2.HttpException
 import java.io.IOException
 

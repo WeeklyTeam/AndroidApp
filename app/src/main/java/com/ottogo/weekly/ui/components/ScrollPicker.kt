@@ -17,18 +17,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.Typography
-import dev.chrisbanes.snapper.ExperimentalSnapperApi
-import dev.chrisbanes.snapper.LazyListSnapperLayoutInfo
-import dev.chrisbanes.snapper.rememberLazyListSnapperLayoutInfo
-import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
+import com.ottogo.weekly.ui.theme.nunitoFamily
+import dev.chrisbanes.snapper.*
 
 
 @Composable
@@ -39,46 +41,58 @@ fun ScrollPicker(
 
 
 
-    Row(modifier.height(192.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.height(125.dp), verticalAlignment = Alignment.CenterVertically) {
         options.forEach{ list ->
             SingleScrollPicker(list = list, modifier = Modifier.weight(1F))
         }
     }
 }
 
+
+
 @OptIn(ExperimentalSnapperApi::class)
 @Composable
 fun SingleScrollPicker(list: List<String>, modifier: Modifier = Modifier){
     val lazyListState: LazyListState = rememberLazyListState()
     val layoutInfo: LazyListSnapperLayoutInfo = rememberLazyListSnapperLayoutInfo(lazyListState)
+    val contentPadding = PaddingValues(vertical = 62.dp)
 
     LazyColumn(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         state = lazyListState,
-        flingBehavior = rememberSnapperFlingBehavior(lazyListState),
+        flingBehavior = rememberSnapperFlingBehavior(
+            lazyListState = lazyListState,
+            snapOffsetForItem = SnapOffsets.Start,
+            endContentPadding = contentPadding.calculateBottomPadding(),
+        ),
+        contentPadding = contentPadding,
     ) {
 
-        item{Spacer(modifier = Modifier.height(90.dp))}
 
         list.forEachIndexed { index, text ->
             item {
                 Text(
                     text, textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.body1,
+                    modifier = Modifier.height(25.dp),
+                    style = TextStyle(
+                        fontFamily = nunitoFamily,
+                        fontWeight = if (layoutInfo.currentItem?.index == index) {
+                            FontWeight.Bold
+                        } else {
+                            FontWeight.Normal
+                        },
+                        fontSize = 22.sp),
                     color = if (layoutInfo.currentItem?.index == index) {
                         MaterialTheme.colors.onBackground
                     } else {
-                        ExtendedTheme.colors.Black60
+                        ExtendedTheme.colors.Black40
                     }
                 )
 
             }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(90.dp))
-        }
 
     }
 }

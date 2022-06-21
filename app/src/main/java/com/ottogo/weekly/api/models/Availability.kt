@@ -1,13 +1,14 @@
 package com.ottogo.weekly.api.models
 
+import com.squareup.moshi.Json
 import java.util.*
 
 data class Availability(
-    val id: Int,
-    val user_id: Int,
-    val bust: Boolean = true,
-    val starttime: Date,
-    val endtime: Date,
-    val title: String,
-    val days_of_week: List<Int>
+    @Json(name = "id") val id: Int,
+    @Json(name = "user_id") val user_id: Int,
+    @Json(name = "busy") val busy: Boolean = true,
+    @Json(name = "starttime") val starttime: Date,
+    @Json(name = "endtime") val endtime: Date,
+    @Json(name = "title") val title: String,
+    @Json(name = "days_of_week") val days_of_week: List<Int>
 )

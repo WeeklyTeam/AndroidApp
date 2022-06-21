@@ -166,9 +166,9 @@ fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea
 //    }
 }
 
-fun getFile(imageUri: Uri?, context: Context): File? {
+fun getFile(imageUri: Uri, context: Context): File? {
     var file: File? = null
-    val cursor = context.contentResolver?.query(imageUri!!, null, null, null, null)
+    val cursor = context.contentResolver?.query(imageUri, null, null, null, null)
     val column = "_data"
     if (cursor != null) {
         while (cursor.moveToNext()) {

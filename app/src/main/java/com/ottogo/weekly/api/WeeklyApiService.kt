@@ -1,9 +1,7 @@
 package com.ottogo.weekly.api
 
 import android.app.MediaRouteActionProvider
-import com.ottogo.weekly.api.models.ApiList
-import com.ottogo.weekly.api.models.Main
-import com.ottogo.weekly.api.models.Profile
+import com.ottogo.weekly.api.models.*
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
@@ -34,9 +32,16 @@ private val retrofit = Retrofit.Builder()
     .build()
 
 interface WeeklyApiService {
+    @JvmSuppressWildcards
+    @POST("api/calendar/")
+    suspend fun createCalendar(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>)
+
+
+
     @GET("api/main")
     suspend fun main(@HeaderMap header: Map<String, String>): Main
 
+    @JvmSuppressWildcards
     @POST("api/report/")
     suspend fun report(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>)
 
@@ -64,6 +69,15 @@ interface WeeklyApiService {
         @Part profile_picture: MultipartBody.Part? = null
     ): Profile
 
+    @Multipart
+    @JvmSuppressWildcards
+    @POST("api/group/")
+    suspend fun createGroup(
+        @HeaderMap headers: Map<String, String>,
+        @PartMap partMap: Map<String, RequestBody>,
+        @Part image: MultipartBody.Part? = null
+    ): Group
+
     @GET("api/activities/")
     suspend fun activity(@HeaderMap header: Map<String, String>):List<ActivityCategory>
 
@@ -79,6 +93,10 @@ interface WeeklyApiService {
     @JvmSuppressWildcards
     @POST("api/profile/contacts/")
     suspend fun searchContacts(@HeaderMap header: Map<String, String>, @Body body: Map<String, List<String>>): List<Profile>
+
+    @JvmSuppressWildcards
+    @POST("api/availability/")
+    suspend fun addAvailability(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>): Availability
 }
 
 object WeeklyApi {

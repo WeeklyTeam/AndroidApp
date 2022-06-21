@@ -2,7 +2,6 @@ package com.ottogo.weekly.ui.account
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -21,11 +20,11 @@ import androidx.navigation.NavController
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
+import com.ottogo.weekly.ui.components.SelectableOption
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
-import okhttp3.internal.wait
 
 @Composable
 fun ReportPage(navController: NavController, userViewModel: UserViewModel) {
@@ -52,31 +51,9 @@ fun ReportPage(navController: NavController, userViewModel: UserViewModel) {
             Spacer(Modifier.height(16.dp))
 
             options.forEachIndexed { index, option ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        category = index
-                    }) {
-                    Icon(painter = painterResource(id =
-                        if(category == index){
-                            R.drawable.ic_checkbox_circle_fill
-                        } else {
-                            R.drawable.ic_checkbox_blank_circle_line
-                        }), contentDescription = "Checkbox",
-                        modifier = Modifier
-                            .padding(vertical = 8.dp, horizontal = 16.dp)
-                            .height(24.dp)
-                            .width(24.dp),
-                        tint =
-                        if(category == index){
-                            MaterialTheme.colors.primary
-                        } else {
-                            ExtendedTheme.colors.Black60
-                        }
-                    )
-
-                    Text(text = option, style = MaterialTheme.typography.body1)
-                }
+                SelectableOption(option, index == category, modifier = Modifier.clickable{
+                    category = index
+                })
             }
 
             Spacer(Modifier.height(24.dp))
@@ -120,11 +97,12 @@ fun ReportPage(navController: NavController, userViewModel: UserViewModel) {
         }
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-        CustomButton(buttonText = "Report",
+        CustomButton(
+            buttonText = "Report",
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .padding(top = 12.dp, bottom = 16.dp)
-            , onClick = {
+        ) {
             runBlocking {
                 WeeklyApi.retrofitService.report(
                     mapOf(
@@ -138,7 +116,7 @@ fun ReportPage(navController: NavController, userViewModel: UserViewModel) {
                 )
 
             }
-        })
+        }
     }
 }
 
@@ -175,3 +153,4 @@ fun CustomBigTextField(
     )
 
 }
+

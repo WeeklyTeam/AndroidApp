@@ -7,6 +7,8 @@ val LightRed = Color(0xFFFFE4E8)
 val DarkRed = Color(0xFFF30E2A)
 val LoveRed = Color(0xFFFF2D5E)
 val Green = Color(0xFF18BE47)
+val DarkGreen = Color(0xFF005723)
+val LightGreen = Color(0xFFE0FFD1)
 
 val Black = Color(0xFF151522)
 val Black80 = Color(0xFF44444E)
