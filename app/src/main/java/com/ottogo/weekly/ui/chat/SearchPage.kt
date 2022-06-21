@@ -1,5 +1,6 @@
 package com.ottogo.weekly.ui.chat
 
+import android.hardware.lights.Light
 import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -62,6 +63,9 @@ class SearchPageViewModel : ViewModel() {
     val friendLiveData: LiveData<Boolean>
         get() = friend
 
+    val blockedLiveData: LiveData<Boolean>
+        get() = blocked
+
     val profileIndexLiveData: LiveData<Int>
         get() = profileIndex
 
@@ -79,6 +83,8 @@ class SearchPageViewModel : ViewModel() {
     val requesting = MutableLiveData<Boolean>()
 
     val friend = MutableLiveData<Boolean>()
+
+    val blocked = MutableLiveData<Boolean>()
 
     val profileIndex = MutableLiveData<Int>()
 
@@ -124,6 +130,7 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
     val urequested by model.urequestedLiveData.observeAsState(false)
     val requesting by model.requestingLiveData.observeAsState(false)
     val friend by model.friendLiveData.observeAsState(false)
+    val blocked by model.blockedLiveData.observeAsState(false)
     val profileIndex by model.profileIndexLiveData.observeAsState(0)
 
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -133,7 +140,7 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = { ModalBottomSheetContent(userId = userId, name = name, userName = userName, profilePicture = profilePicture,
-        urequested = urequested, requesting = requesting, friend = friend, profileIndex = profileIndex
+        urequested = urequested, requesting = requesting, friend = friend, blocked = blocked, profileIndex = profileIndex
         ) }
     ) {
 
@@ -199,7 +206,7 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
         // display search results
         searchResults.forEachIndexed { profileIndex, searchResult ->
             SearchResultsItem(searchResult.user_id, searchResult.name, searchResult.username, searchResult.profile_picture,
-                searchResult.urequested, searchResult.requesting, searchResult.friend, profileIndex,
+                searchResult.urequested, searchResult.requesting, searchResult.friend, searchResult.blocked, profileIndex,
                 coroutineScope, sheetState)
             Log.d("status", searchResult.toString())
         }
@@ -209,8 +216,9 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, urequested: Boolean?, requesting: Boolean?, friend: Boolean?,
-                      profileIndex: Int, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
+fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, urequested: Boolean?,
+                      requesting: Boolean?, friend: Boolean?, blocked: Boolean?, profileIndex: Int,
+                      coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel())  {
 
     Spacer(Modifier.height(16.dp))
 
@@ -234,6 +242,7 @@ fun SearchResultsItem(userId: Int, name: String, userName: String, profilePictur
                     model.urequested.value = urequested
                     model.requesting.value = requesting
                     model.friend.value = friend
+                    model.blocked.value = blocked
                     model.profileIndex.value = profileIndex
                     sheetState.show()
                 }
@@ -299,7 +308,7 @@ fun CancelButton(navController: NavController) {
 
 
 @Composable
-fun PopUpConfirmationSheetContent(title: String, showDialog: Boolean, onDismiss: () -> Unit) {
+fun PopUpConfirmationSheetContent(title: String, blockDisplay: Boolean, showDialog: Boolean, onDismiss: () -> Unit) {
 
     if (showDialog) {
         AlertDialog(
@@ -310,16 +319,36 @@ fun PopUpConfirmationSheetContent(title: String, showDialog: Boolean, onDismiss:
             shape = RoundedCornerShape(24.dp),
             buttons = {
                 Spacer(modifier = Modifier.height(24.dp))
-                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp)) {
-                    CustomButton(buttonText = "No",
-                        backgroundColor = LightGray,
-                        textColor = Black,
-                        modifier = Modifier.weight(1f)) { onDismiss.invoke() }
-                    Spacer(modifier = Modifier.width(24.dp))
-                    CustomButton(buttonText = "Yes",
-                        modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+                if (blockDisplay) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp)) {
+                        CustomButton(buttonText = "Block",
+                            backgroundColor = LightRed,
+                            textColor = DarkRed) { onDismiss.invoke() }
+                        Spacer(modifier = Modifier.height(24.dp))
+                        CustomButton(buttonText = "Block & Report",
+                            backgroundColor = Color.White,
+                            textColor = Black60,
+                            outlineColor = LightGray) { onDismiss.invoke() }
+                        Spacer(modifier = Modifier.height(24.dp))
+                        CustomButton(buttonText = "Cancel",
+                            backgroundColor = LightGray,
+                            textColor = Black) { onDismiss.invoke() }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                } else {
+                    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp)) {
+                        CustomButton(buttonText = "No",
+                            backgroundColor = LightGray,
+                            textColor = Black,
+                            modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+                        Spacer(modifier = Modifier.width(24.dp))
+                        CustomButton(buttonText = "Yes",
+                            modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+                    }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -330,10 +359,11 @@ fun PopUpConfirmationSheetContent(title: String, showDialog: Boolean, onDismiss:
 
 
 @Composable
-fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profilePicture: String, urequested: Boolean?,
-                            requesting: Boolean?, friend: Boolean?, profileIndex: Int, model: SearchPageViewModel = viewModel()) {
+fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profilePicture: String, urequested: Boolean?, requesting: Boolean?,
+                            friend: Boolean?, blocked: Boolean?, profileIndex: Int, model: SearchPageViewModel = viewModel()) {
 
     val showDialog = remember { mutableStateOf(false) }
+    val blockDisplay = remember { mutableStateOf(false) }
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
 
 
@@ -342,6 +372,7 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
         if (showDialog.value) {
             PopUpConfirmationSheetContent(title = "Are you sure you want to remove $name as a friend?",
                 showDialog = showDialog.value,
+                blockDisplay = blockDisplay.value,
                 onDismiss = { showDialog.value = false })
         }
     }
@@ -360,15 +391,24 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
             .padding(start = 60.dp, end = 60.dp)) {
             Box(modifier = Modifier.weight(1f)) {
 
-                if (friend == true) {
+                if (blocked == true) {
+                    blockDisplay.value = true
+                    CustomButton(
+                        buttonText = "This user is blocked",
+                        backgroundColor = Color.White,
+                        textColor = Black){
+                        showDialog.value = true
+
+                    }
+                } else if (friend == true) {
                     CustomButton(
                         buttonText = "Added",
                         backgroundColor = Color.White,
                         outlineColor = LightGray,
-                        textColor = Black60,
-                        onClick = {
-                            showDialog.value = true
-                        })
+                        textColor = Black60) {
+                        showDialog.value = true
+
+                    }
                 } else if (urequested == true) {
                     CustomButton(
                         buttonText = "Requested",

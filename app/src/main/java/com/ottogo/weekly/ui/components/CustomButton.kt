@@ -49,7 +49,7 @@ fun CustomButton(
         modifier = modifier.fillMaxWidth()
             .height(48.dp)
     ) {
-        Text(text = buttonloading, style = MaterialTheme.typography.h6, color = textColor)
+        Text(text = buttonloading, style = MaterialTheme.typography.h4, color = textColor)
 
     }
 }
