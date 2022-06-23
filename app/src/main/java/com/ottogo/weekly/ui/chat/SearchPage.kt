@@ -306,11 +306,73 @@ fun CancelButton(navController: NavController) {
 
 }
 
+@Composable
+fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = title, style = MaterialTheme.typography.h4)
+        },
+        shape = RoundedCornerShape(24.dp),
+        buttons = {
+            Spacer(modifier = Modifier.height(24.dp))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp)
+            ) {
+                CustomButton(
+                    buttonText = "Block",
+                    backgroundColor = LightRed,
+                    textColor = DarkRed
+                ) {
+                    onDismiss.invoke()
+                    runBlocking {
+                        WeeklyApi.retrofitService.block(
+                            mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
+                            userId
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                CustomButton(
+                    buttonText = "Block & Report",
+                    backgroundColor = Color.White,
+                    textColor = Black60,
+                    outlineColor = LightGray
+                ) {
+                    onDismiss.invoke()
+                    runBlocking {
+                        WeeklyApi.retrofitService.block(
+                            mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
+                            userId
+                        )
+                        WeeklyApi.retrofitService.report(
+                            mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
+                            userId
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                CustomButton(
+                    buttonText = "Cancel",
+                    backgroundColor = LightGray,
+                    textColor = Black
+                ) { onDismiss.invoke() }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    )
+}
+
 
 @Composable
-fun PopUpConfirmationSheetContent(title: String, userId: Int, blockDisplay: Boolean, showDialog: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-
-    if (showDialog) {
+fun PopUpConfirmationSheetContent(title: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
         AlertDialog(
             onDismissRequest = onDismiss,
             title = {
@@ -319,49 +381,24 @@ fun PopUpConfirmationSheetContent(title: String, userId: Int, blockDisplay: Bool
             shape = RoundedCornerShape(24.dp),
             buttons = {
                 Spacer(modifier = Modifier.height(24.dp))
-                if (blockDisplay) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, end = 24.dp)) {
-                        CustomButton(buttonText = "Block", backgroundColor = LightRed, textColor = DarkRed) {
-                            onDismiss.invoke()
-                            runBlocking {
-                                WeeklyApi.retrofitService.block(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(24.dp))
-                        CustomButton(buttonText = "Block & Report", backgroundColor = Color.White, textColor = Black60, outlineColor = LightGray) {
-                            onDismiss.invoke()
-                            runBlocking {
-                                WeeklyApi.retrofitService.block(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
-                                WeeklyApi.retrofitService.report(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(24.dp))
-                        CustomButton(buttonText = "Cancel", backgroundColor = LightGray, textColor = Black) { onDismiss.invoke() }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                } else {
-                    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, end = 24.dp)) {
-                        CustomButton(buttonText = "No",
-                            backgroundColor = LightGray,
-                            textColor = Black,
-                            modifier = Modifier.weight(1f)) { onDismiss.invoke() }
-                        Spacer(modifier = Modifier.width(24.dp))
-                        CustomButton(buttonText = "Yes",
-                            modifier = Modifier.weight(1f)) {
-                            Log.d("status", "Hello2")
-                            onConfirm.invoke()
-                            onDismiss.invoke()
-                        }
+                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp)) {
+                    CustomButton(buttonText = "No",
+                        backgroundColor = LightGray,
+                        textColor = Black,
+                        modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+                    Spacer(modifier = Modifier.width(24.dp))
+                    CustomButton(buttonText = "Yes",
+                        modifier = Modifier.weight(1f)) {
+                        Log.d("status", "Hello2")
+                        onConfirm.invoke()
+                        onDismiss.invoke()
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
         )
-    }
 
 }
 
@@ -378,13 +415,13 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
     val onConfirm = remember { mutableStateOf({ }) }
 
 
-    if (showDialog.value) {
+    if (showDialog.value && !blockDisplay.value) {
         PopUpConfirmationSheetContent(title = title.value,
-            userId = userId,
-            showDialog = showDialog.value,
-            blockDisplay = blockDisplay.value,
             onDismiss = { showDialog.value = false },
             onConfirm = { onConfirm.value.invoke() } )
+    } else if (showDialog.value && blockDisplay.value) {
+        PopUpBlockSheetContent(title = title.value, userId = userId,
+            onDismiss = { showDialog.value = false })
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -470,7 +507,6 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                             }
                             showDialog.value = true
                         })
-
                 } else if (requesting == true) {
                     Row(){
                         CustomButton(buttonText = "Reject", backgroundColor = LightGray,
@@ -521,9 +557,8 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                             model.updateSearchItem(profileIndex, newProfile)
                         })
                 }
-
-
             }
+
             Spacer(modifier = Modifier.width(20.dp))
 
             IconButton(onClick = {
