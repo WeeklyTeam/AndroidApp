@@ -308,7 +308,7 @@ fun CancelButton(navController: NavController) {
 
 
 @Composable
-fun PopUpConfirmationSheetContent(title: String, userId: Int, blockDisplay: Boolean, showDialog: Boolean, onDismiss: () -> Unit) {
+fun PopUpConfirmationSheetContent(title: String, userId: Int, blockDisplay: Boolean, showDialog: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
 
     if (showDialog) {
         AlertDialog(
@@ -351,7 +351,11 @@ fun PopUpConfirmationSheetContent(title: String, userId: Int, blockDisplay: Bool
                             modifier = Modifier.weight(1f)) { onDismiss.invoke() }
                         Spacer(modifier = Modifier.width(24.dp))
                         CustomButton(buttonText = "Yes",
-                            modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+                            modifier = Modifier.weight(1f)) {
+                            Log.d("status", "Hello2")
+                            onConfirm.invoke()
+                            onDismiss.invoke()
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
@@ -371,15 +375,16 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
     val blockDisplay = remember { mutableStateOf(false) }
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
 
+    val onConfirm = remember { mutableStateOf({ }) }
 
-    Card() {
-        if (showDialog.value) {
-            PopUpConfirmationSheetContent(title = title.value,
-                userId = userId,
-                showDialog = showDialog.value,
-                blockDisplay = blockDisplay.value,
-                onDismiss = { showDialog.value = false })
-        }
+
+    if (showDialog.value) {
+        PopUpConfirmationSheetContent(title = title.value,
+            userId = userId,
+            showDialog = showDialog.value,
+            blockDisplay = blockDisplay.value,
+            onDismiss = { showDialog.value = false },
+            onConfirm = { onConfirm.value.invoke() } )
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -403,7 +408,21 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                         textColor = Black){
                         title.value = "Are you sure you want to unblock $name?"
                         blockDisplay.value = false
+                        onConfirm.value = {
+                            runBlocking {
+                                WeeklyApi.retrofitService.unblock(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                            }
+
+                            // To recompose bottom sheet button
+                            model.blocked.value = false
+
+                            // To recompose search results with updated profile
+                            var newProfile = searchResults[profileIndex].copy()
+                            newProfile.blocked = false
+                            model.updateSearchItem(profileIndex, newProfile)
+                        }
                         showDialog.value = true
+
                     }
                 } else if (friend == true) {
                     CustomButton(
@@ -413,8 +432,20 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                         textColor = Black60) {
                         title.value = "Are you sure you want to remove $name as a friend?"
                         blockDisplay.value = false
-                        showDialog.value = true
+                        onConfirm.value = {
+                            runBlocking {
+                                WeeklyApi.retrofitService.reject(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                            }
 
+                            // To recompose bottom sheet button
+                            model.friend.value = false
+
+                            // To recompose search results with updated profile
+                            var newProfile = searchResults[profileIndex].copy()
+                            newProfile.friend = false
+                            model.updateSearchItem(profileIndex, newProfile)
+                        }
+                        showDialog.value = true
                     }
                 } else if (urequested == true) {
                     CustomButton(
@@ -424,6 +455,19 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                         onClick = {
                             title.value = "Are you sure you want to cancel this request?"
                             blockDisplay.value = false
+                            onConfirm.value = {
+                                runBlocking {
+                                    WeeklyApi.retrofitService.reject(mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"), userId)
+                                }
+
+                                // To recompose bottom sheet button
+                                model.urequested.value = false
+
+                                // To recompose search results with updated profile
+                                var newProfile = searchResults[profileIndex].copy()
+                                newProfile.urequested = false
+                                model.updateSearchItem(profileIndex, newProfile)
+                            }
                             showDialog.value = true
                         })
 
