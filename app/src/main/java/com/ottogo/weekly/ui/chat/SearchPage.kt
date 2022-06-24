@@ -307,7 +307,7 @@ fun CancelButton(navController: NavController) {
 }
 
 @Composable
-fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit) {
+fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit, onBlock: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -333,6 +333,7 @@ fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit) {
                             userId
                         )
                     }
+                    onBlock.invoke()
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -354,6 +355,7 @@ fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit) {
                             userId
                         )
                     }
+                    onBlock.invoke()
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -391,7 +393,6 @@ fun PopUpConfirmationSheetContent(title: String, onDismiss: () -> Unit, onConfir
                     Spacer(modifier = Modifier.width(24.dp))
                     CustomButton(buttonText = "Yes",
                         modifier = Modifier.weight(1f)) {
-                        Log.d("status", "Hello2")
                         onConfirm.invoke()
                         onDismiss.invoke()
                     }
@@ -421,7 +422,23 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
             onConfirm = { onConfirm.value.invoke() } )
     } else if (showDialog.value && blockDisplay.value) {
         PopUpBlockSheetContent(title = title.value, userId = userId,
-            onDismiss = { showDialog.value = false })
+            onDismiss = { showDialog.value = false },
+            onBlock = {
+                // To recompose bottom sheet button
+                model.blocked.value = true
+                model.urequested.value = false
+                model.requesting.value = false
+                model.friend.value = false
+
+                // To recompose search results with updated profile
+                var newProfile = searchResults[profileIndex].copy()
+                newProfile.blocked = true
+                newProfile.urequested = false
+                newProfile.requesting = false
+                newProfile.friend = false
+                model.updateSearchItem(profileIndex, newProfile)}
+        )
+
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
