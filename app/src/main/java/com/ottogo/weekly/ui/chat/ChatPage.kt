@@ -47,13 +47,6 @@ fun ChatTitleBar(navController: NavController){
                     contentDescription = null,
                 )
             }
-            IconButton(onClick = { navController.navigate("plotEditPage")}) {
-                Icon(
-                    modifier = Modifier.size(26.dp),
-                    painter = painterResource(id = R.drawable.ic_search_line),
-                    contentDescription = null,
-                )
-            }
         }
 
 

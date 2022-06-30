@@ -154,8 +154,6 @@ fun SearchPageScreen(navController: NavController, model: SearchPageViewModel = 
 @Composable
 fun SearchPageContent(navController: NavController, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState) {
 
-    //val searchResults = remember { mutableStateListOf<Profile>() }
-
     Column(modifier = Modifier.padding(16.dp)){
 
         var searchText by remember { mutableStateOf("") }
@@ -181,7 +179,6 @@ fun SearchPageContent(navController: NavController, coroutineScope: CoroutineSco
 @Composable
 fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState: ModalBottomSheetState, model: SearchPageViewModel = viewModel()) {
 
-    //val searchResults = remember { mutableStateListOf<Profile>() }
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
 
     Column(modifier = Modifier
@@ -196,7 +193,6 @@ fun SearchResults(searchText: String, coroutineScope: CoroutineScope, sheetState
                     searchText
                 )
                 model.addSearchItems(searchApiList.results)
-                //Log.d("status", searchApiList.count.toString())
             }
         }
         else {
@@ -382,25 +378,32 @@ fun PopUpConfirmationSheetContent(title: String, onDismiss: () -> Unit, onConfir
             },
             shape = RoundedCornerShape(24.dp),
             buttons = {
+
                 Spacer(modifier = Modifier.height(24.dp))
+
                 Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 24.dp, end = 24.dp)) {
+
                     CustomButton(buttonText = "No",
                         backgroundColor = LightGray,
                         textColor = Black,
                         modifier = Modifier.weight(1f)) { onDismiss.invoke() }
+
                     Spacer(modifier = Modifier.width(24.dp))
+
                     CustomButton(buttonText = "Yes",
                         modifier = Modifier.weight(1f)) {
                         onConfirm.invoke()
                         onDismiss.invoke()
                     }
+
                 }
+
                 Spacer(modifier = Modifier.height(24.dp))
+
             }
         )
-
 }
 
 
@@ -414,7 +417,6 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
 
     val onConfirm = remember { mutableStateOf({ }) }
-
 
     if (showDialog.value && !blockDisplay.value) {
         PopUpConfirmationSheetContent(title = title.value,
@@ -438,7 +440,6 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                 newProfile.friend = false
                 model.updateSearchItem(profileIndex, newProfile)}
         )
-
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -476,9 +477,10 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                             model.updateSearchItem(profileIndex, newProfile)
                         }
                         showDialog.value = true
-
                     }
-                } else if (friend == true) {
+                }
+
+                else if (friend == true) {
                     CustomButton(
                         buttonText = "Added",
                         backgroundColor = Color.White,
@@ -501,7 +503,9 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                         }
                         showDialog.value = true
                     }
-                } else if (urequested == true) {
+                }
+
+                else if (urequested == true) {
                     CustomButton(
                         buttonText = "Requested",
                         backgroundColor = LightGray,
@@ -524,7 +528,9 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                             }
                             showDialog.value = true
                         })
-                } else if (requesting == true) {
+                }
+
+                else if (requesting == true) {
                     Row(){
                         CustomButton(buttonText = "Reject", backgroundColor = LightGray,
                             textColor = Black, modifier = Modifier.weight(1f)) {
@@ -557,7 +563,9 @@ fun ModalBottomSheetContent(userId: Int, name: String, userName: String, profile
                             model.updateSearchItem(profileIndex, newProfile)
                         }
                     }
-                } else {
+                }
+
+                else {
                     CustomButton(
                         buttonText = "Add",
                         onClick = {
