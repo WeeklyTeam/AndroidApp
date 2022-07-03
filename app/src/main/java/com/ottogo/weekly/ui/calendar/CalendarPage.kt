@@ -56,17 +56,17 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
         mutableStateOf(null)
     }
 
-
-
     Column() {
         CalendarTitleBar(navController = navController, date = displayMonth, nextMonth = { displayMonth = it }, previousMonth = { displayMonth = it }, userViewModel = userViewModel)
 
         Column(Modifier.verticalScroll(rememberScrollState())) {
 
-
             CalendarComponent(displayMonth,
                 modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                    .padding(start = 16.dp,
+                        end = 16.dp,
+                        top = 12.dp,
+                        bottom = 16.dp),
                 selectedDate = selectedDate,
                 selectDate = { selectedDate = it })
 

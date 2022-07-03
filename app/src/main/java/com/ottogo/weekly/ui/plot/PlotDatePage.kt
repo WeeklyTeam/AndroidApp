@@ -44,6 +44,7 @@ fun PlotDatePage(navController: NavController) {
         mutableStateOf(initialMonth())
     }
 
+
     Column() {
         TitleBar(navController = navController, title = "When")
 

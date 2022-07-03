@@ -12,7 +12,6 @@ import com.ottogo.weekly.api.models.*
 import kotlinx.coroutines.launch
 
 class UserViewModel(): ViewModel() {
-
     var token by mutableStateOf<String?>("8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")
     var profile by mutableStateOf<Profile?>(null)
     var friendsOrder by mutableStateOf<MutableList<Int>?>(null)
@@ -58,6 +57,9 @@ class UserViewModel(): ViewModel() {
             groupsOrder!!.add(group.id)
         }
 
+        Log.d("groups", groups.toString())
+        Log.d("groups", groupsOrder.toString())
+
         availability = data.availability.toMutableList()
         requests = data.requests.toMutableList()
         calendars = data.calendars.toMutableList()
@@ -66,7 +68,6 @@ class UserViewModel(): ViewModel() {
     }
 
     fun sendMessage(recipientId: Int, message: ChatMessage){
-
         friendsOrder?.remove(recipientId)
         friendsOrder?.add(0, recipientId)
 

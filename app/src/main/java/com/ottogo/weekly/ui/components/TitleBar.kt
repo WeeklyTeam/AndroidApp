@@ -18,18 +18,13 @@ import com.ottogo.weekly.ui.theme.nunitoFamily
 
 @Composable
 fun TitleBar(navController: NavController, title: String, modifier: Modifier = Modifier, iconButtons: @Composable () -> Unit = {}) {
-
-
-
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier){
-
         IconButton(onClick = { navController.popBackStack() }, modifier = Modifier.size(56.dp)) {
             Icon(painter = painterResource(id = R.drawable.ic_arrow_left_s_line),
                 contentDescription = "back",
                 modifier = Modifier.size(24.dp)
             )
         }
-
 
         Text(text = title,
             style = MaterialTheme.typography.h2

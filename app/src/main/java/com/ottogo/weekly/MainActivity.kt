@@ -1,6 +1,5 @@
 package com.ottogo.weekly
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
@@ -13,7 +12,6 @@ import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +23,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
@@ -52,6 +49,9 @@ import com.ottogo.weekly.ui.calendar.availability.AvailabilityPage
 import com.ottogo.weekly.ui.calendar.plot.PlotPage
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.chat.*
+import com.ottogo.weekly.ui.chat.group.AddGroupMembersPage
+import com.ottogo.weekly.ui.chat.group.EditGroupPage
+import com.ottogo.weekly.ui.chat.group.GroupPage
 import com.ottogo.weekly.ui.components.*
 import com.ottogo.weekly.ui.login.*
 import com.ottogo.weekly.ui.plot.PlotDatePage
@@ -255,9 +255,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                 }
             }
         } else {
-
-
-            if (navController.currentDestination?.route == "homePage") {
+            if (navController.currentDestination?.route == "homepage") {
                 activity?.finish()
             } else {
                 navController.navigateUp()
@@ -282,12 +280,12 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
+        // TODO: change startDestination to homePage
         NavHost(navController = navController, startDestination = "homePage") {
 
             composable("homePage") { HomePage(navController, userViewModel) {
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE1
-                openSheet()
-            }
+                openSheet() }
             }
             composable("searchPage") { SearchPage(navController, userViewModel) }
             composable("settingsPage") { SettingsPage(navController) }
@@ -300,6 +298,19 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel) }
             composable("groupPage/{group_id}") { backStackEntry ->
                 GroupPage(
+                    navController,
+                    backStackEntry.arguments?.getInt("group_id")!!,
+                    userViewModel
+                )
+            }
+            composable("groupAddMembersPage/{group_id}") { backStackEntry ->
+                AddGroupMembersPage(
+                    navController,
+                    userViewModel
+                )
+            }
+            composable("editGroupPage") { backStackEntry ->
+                EditGroupPage(
                     navController,
                     backStackEntry.arguments?.getInt("group_id")!!,
                     userViewModel
@@ -320,7 +331,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("plotPage/{plot_id}") { backStackEntry ->
                 PlotPage(
                     navController,
-                    backStackEntry.arguments?.getInt("plot_id")!!,
+                    backStackEntry.arguments?.getString("plot_id")!!.toInt(),
                     userViewModel
                 )
             }
