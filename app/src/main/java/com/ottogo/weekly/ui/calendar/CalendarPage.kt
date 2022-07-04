@@ -37,6 +37,7 @@ import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.nunitoFamily
 import com.ottogo.weekly.viewmodels.UserViewModel
+import kotlinx.coroutines.selects.select
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -61,7 +62,7 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
     Column() {
         CalendarTitleBar(navController = navController, date = displayMonth, nextMonth = { displayMonth = it }, previousMonth = { displayMonth = it }, userViewModel = userViewModel)
 
-        Column(Modifier.verticalScroll(rememberScrollState())) {
+        Column(Modifier.verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
 
 
             CalendarComponent(displayMonth,
@@ -70,48 +71,92 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
                 selectedDate = selectedDate,
                 selectDate = { selectedDate = it })
 
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(8.dp)
-            ) {
-                Chip("Mine", isSelected = selectedCalendar == -1, modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .clip(
-                        RoundedCornerShape(20.dp)
-                    )
-                    .clickable { selectedCalendar = -1 })
 
-                Chip("Create", icon = R.drawable.ic_calendar_line, modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .clip(
-                        RoundedCornerShape(20.dp)
-                    )
-                    .clickable {
-                        navController.navigate("createCalendarPage")
-                    })
-
-                userViewModel.calendars?.forEachIndexed { index, calendar ->
-                    Chip(calendar.name, isSelected = selectedCalendar == index, modifier = Modifier
+            if (userViewModel.friends.count() > 0 || userViewModel.groups.count() > 0) {
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(8.dp)
+                ) {
+                    Chip("Mine", isSelected = selectedCalendar == -1, modifier = Modifier
                         .padding(horizontal = 8.dp)
                         .clip(
                             RoundedCornerShape(20.dp)
                         )
-                        .clickable { selectedCalendar = index })
+                        .clickable { selectedCalendar = -1 })
+
+                    Chip("Create", icon = R.drawable.ic_calendar_line, modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .clip(
+                            RoundedCornerShape(20.dp)
+                        )
+                        .clickable {
+                            navController.navigate("createCalendarPage")
+                        })
+
+                    userViewModel.calendars?.forEachIndexed { index, calendar ->
+                        Chip(calendar.name,
+                            isSelected = selectedCalendar == index,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .clip(
+                                    RoundedCornerShape(20.dp)
+                                )
+                                .clickable { selectedCalendar = index })
+
+                    }
 
                 }
-
             }
 
-            userViewModel.plots?.filter{ if (it.starttime != null) { it.starttime >= displayMonth && it.starttime < addMonth(displayMonth, 1) } else { true } }
-                ?.filter{ if (selectedDate != null && it.starttime != null){ it.starttime >= selectedDate && it.starttime < addDay(
-                    selectedDate!!, 1)} else { selectedDate == null } }
-                ?.forEach { plot ->
-                    PlotItem(plot, onClick = {
-                        navController.navigate("plotPage/${plot.id}")
-                    })
+            if (userViewModel.plots.count() ?: 0 > 0) {
+                userViewModel.plots.filter {
+                    if (it.starttime != null) {
+                        it.starttime >= displayMonth && it.starttime < addMonth(displayMonth, 1)
+                    } else {
+                        true
+                    }
+                }
+                    .filter {
+                        if (selectedDate != null && it.starttime != null) {
+                            it.starttime >= selectedDate && it.starttime < addDay(
+                                selectedDate!!, 1
+                            )
+                        } else {
+                            selectedDate == null
+                        }
+                    }
+                    .filter {
+                        if (selectedCalendar != -1) {
+                            when {
+                                it.relationship_id != null -> {
+                                    it.relationship_id == userViewModel.calendars?.get(selectedCalendar)?.relationship_id
+                                }
+                                it.group_id != null -> {
+                                    it.group_id == userViewModel.calendars?.get(selectedCalendar)?.group_id
+                                }
+                                else -> {
+                                    false
+                                }
+                            }
+                        } else {
+                            true
+                        }
+                    }.forEach { plot ->
+                        PlotItem(plot, onClick = {
+                            navController.navigate("plotPage/${plot.id}")
+                        }, userViewModel = userViewModel)
+
+                    }
+            } else {
+                Text(text = "Make your first plan \uD83C\uDF89", style = MaterialTheme.typography.h2, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 48.dp, bottom = 24.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Tap ", style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
+                    Icon(painter = painterResource(id = R.drawable.ic_add_line), contentDescription = "search", tint = ExtendedTheme.colors.Black60, modifier = Modifier.size(15.dp))
+                    Text(" to begin", style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
 
                 }
+            }
 
             Spacer(modifier = Modifier.height(60.dp))
         }
@@ -238,7 +283,6 @@ fun setDay(date: Date, day: Int): Date {
     val calendar = Calendar.getInstance()
     calendar.time = date
     calendar[Calendar.DAY_OF_MONTH] = day
-    Log.d("calendarSetDay",calendar.time.toString())
 
     return calendar.time
 }

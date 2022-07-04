@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -19,13 +20,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ottogo.weekly.api.models.Plot
+import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.login.coloredShadow
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.nunitoFamily
+import com.ottogo.weekly.viewmodels.UserViewModel
 import java.text.SimpleDateFormat
 
 @Composable
-fun PlotItem(plot: Plot, onClick: () -> Unit) {
+fun PlotItem(plot: Plot, userViewModel: UserViewModel, onClick: () -> Unit) {
     val date = SimpleDateFormat("EEEE, MMM dd").format(plot.starttime)
     val time = SimpleDateFormat("h:mm a").format(plot.starttime)
 
@@ -64,6 +67,23 @@ fun PlotItem(plot: Plot, onClick: () -> Unit) {
                         color = ExtendedTheme.colors.Black60)
                 }
             }
+            Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
+            if (!plot.is_going) {
+                Text("Are you going?", style = MaterialTheme.typography.h5, color = ExtendedTheme.colors.Black60, modifier = Modifier.padding(16.dp))
+
+                Row(
+                    Modifier
+                        .width(IntrinsicSize.Min)
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)) {
+                    CustomButton(buttonText = "No", onClick = { userViewModel.rejectPlotInvite(plot) }, modifier = Modifier.weight(1F))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    CustomButton(buttonText = "Yes", onClick = { userViewModel.acceptPlotInvite(plot) }, modifier = Modifier.weight(1F))
+
+                }
+            }
         }
+
+
     }
 }

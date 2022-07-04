@@ -1,5 +1,6 @@
 package com.ottogo.weekly.ui.login
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
@@ -60,110 +62,116 @@ import java.lang.Exception
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7") {
-//    var error : String? by remember { mutableStateOf(null) }
-//    var name : String by remember { mutableStateOf("") }
-//    var imageUri: Uri? by remember { mutableStateOf(null) }
-//    var file: File? by remember { mutableStateOf(null) }
-//    var bitmap: Bitmap? by remember { mutableStateOf(null) }
-//    val permissionState = rememberPermissionState(android.Manifest.permission.READ_EXTERNAL_STORAGE)
-//    val galleryLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.GetContent(),
-//        onResult = { uri: Uri? -> imageUri = uri }
-//    )
-//
-//    LoginTitle(navController = navController, title = "Profile")
-//    Column (
-//        horizontalAlignment = Alignment.CenterHorizontally,
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .padding(horizontal = 24.dp)
-//    ) {
-//        if (error != null) {
-//            Spacer(modifier = Modifier.padding(32.dp))
-//            Message(error.toString())
-//        }
-//
-//        if (imageUri != null) {
-//            file = getFile(imageUri = imageUri, LocalContext.current)
-//            bitmap = BitmapFactory.decodeFile(file?.path)
-//        }
-//
-//        // TODO: delete
-//        // Note: After an image is selected from the gallery this composable gets called none stop
-//        // I'm not sure why it's stuck in a loop.
-//        Log.d("Profile Page", permissionState.hasPermission.toString() + ":" + bitmap.toString())
-//
-//        if (bitmap != null) {
-//            Image(
-//                bitmap = bitmap!!.asImageBitmap(),
-//                contentDescription = "Profile Photo",
-//                contentScale = ContentScale.Crop,
-//                modifier = Modifier
-//                    .padding(vertical = 32.dp)
-//                    .size(96.dp)
-//                    .clip(CircleShape)
-//                    .clickable(
-//                        enabled = true,
-//                        onClickLabel = "Choose Profile Image",
-//                        onClick = {
-//                            galleryLauncher.launch("image/")
-//                        }
-//                    )
-//            )
-//        } else {
-//            Image(
-//                painter =  painterResource(id = R.drawable.default_profile_picture),
-//                contentDescription = "Profile Photo",
-//                contentScale = ContentScale.Crop,
-//                modifier = Modifier
-//                    .padding(vertical = 32.dp)
-//                    .size(96.dp)
-//                    .clip(CircleShape)
-//                    .clickable(
-//                        enabled = true,
-//                        onClickLabel = "Choose Profile Image",
-//                        onClick = {
-//                            if (!permissionState.hasPermission) {
-//                                permissionState.launchPermissionRequest()
-//                            }
-//                            galleryLauncher.launch("image/")
-//                        }
-//                    )
-//            )
-//        }
-//
-//        CustomTextField(helper = "Name", hint = "Name", input = name , onChange = {name = it} )
-//        Spacer(modifier = Modifier.padding(bottom = 32.dp))
-//        CustomButton(
-//            buttonText = "Next",
-//            onClick = {
-//                try {
-//                    val profileName = name.toRequestBody("text/plain".toMediaTypeOrNull())
-//                    var picture: MultipartBody.Part? = null
-//
-//                    if (file != null) {
-//                        val reqFile = file!!.asRequestBody("image/*".toMediaTypeOrNull())
-//                        picture = MultipartBody.Part.createFormData(
-//                            "profile_picture",
-//                            file?.name, reqFile
-//                        )
-//                    }
-//
-//                    WeeklyApi.retrofitService.patchProfile(
-//                        mapOf("Authorization" to "token $token"),
-//                        mapOf("name" to profileName),
-//                        picture
-//                    )
-//                } catch (e: Exception) {
-//                    if (e is HttpException) {
-//                        if (e.code() >= 400) {
-//                            error = "Issue Signing up.\n Please Try again."
-//                        }
-//                    }
-//                    navController.navigate("signupInterestsPage/$token")
-//                }
-//            })
-//    }
+    var error : String? by remember { mutableStateOf(null) }
+    var name : String by remember { mutableStateOf("") }
+    var imageUri: Uri? by remember { mutableStateOf(null) }
+    var file: File? by remember { mutableStateOf(null) }
+    var bitmap: Bitmap? by remember { mutableStateOf(null) }
+    val storagePermissionStatus = rememberPermissionState(
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    )
+    val context = LocalContext.current
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = {
+                uri: Uri? -> imageUri = uri
+            if (imageUri != null) {
+                file = getFile(imageUri = imageUri!!, context)
+                bitmap = BitmapFactory.decodeFile(file?.path)
+            }
+        }
+    )
+
+    LoginTitle(navController = navController, title = "Profile")
+    Column (
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp)
+    ) {
+        if (error != null) {
+            Spacer(modifier = Modifier.padding(32.dp))
+            Message(error.toString())
+        }
+
+
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap!!.asImageBitmap(),
+                contentDescription = "Profile Photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .padding(vertical = 32.dp)
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .clickable(
+                        enabled = true,
+                        onClickLabel = "Choose Profile Image",
+                        onClick = {
+                            galleryLauncher.launch("image/")
+                        }
+                    )
+            )
+        } else {
+            Image(
+                painter =  painterResource(id = R.drawable.default_profile_picture),
+                contentDescription = "Profile Photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .padding(vertical = 32.dp)
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .clickable(
+                        enabled = true,
+                        onClickLabel = "Choose Profile Image",
+                        onClick = {
+                            when (storagePermissionStatus.status) {
+                                // If the camera permission is granted, then show screen with the feature enabled
+                                PermissionStatus.Granted -> {
+                                    galleryLauncher.launch("image/")
+                                }
+                                is PermissionStatus.Denied -> {
+                                    storagePermissionStatus.launchPermissionRequest()
+
+                                }
+                            }
+                        }
+                    )
+            )
+        }
+
+        CustomTextField(helper = "Name", hint = "Name", input = name , onChange = {name = it} )
+        Spacer(modifier = Modifier.padding(bottom = 32.dp))
+        CustomButton(
+            buttonText = "Next",
+            onClick = {
+                try {
+                    val profileName = name.toRequestBody("text/plain".toMediaTypeOrNull())
+                    var picture: MultipartBody.Part? = null
+
+                    if (file != null) {
+                        val reqFile = file!!.asRequestBody("image/*".toMediaTypeOrNull())
+                        picture = MultipartBody.Part.createFormData(
+                            "profile_picture",
+                            file?.name, reqFile
+                        )
+                    }
+
+                    WeeklyApi.retrofitService.patchProfile(
+                        mapOf("Authorization" to "token $token"),
+                        mapOf("name" to profileName),
+                        picture
+                    )
+                } catch (e: Exception) {
+                    if (e is HttpException) {
+                        if (e.code() >= 400) {
+                            error = "Issue Signing up.\n Please Try again."
+                        }
+                    }
+                    navController.navigate("signupInterestsPage/$token")
+                }
+            })
+    }
 }
 
 fun getFile(imageUri: Uri, context: Context): File? {

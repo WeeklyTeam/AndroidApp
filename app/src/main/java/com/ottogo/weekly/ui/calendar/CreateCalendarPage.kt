@@ -19,6 +19,7 @@ import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.chat.SelectGroupItem
 import com.ottogo.weekly.ui.chat.SelectProfileItem
 import com.ottogo.weekly.ui.components.CustomButton
+import com.ottogo.weekly.ui.components.CustomTextField
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -29,45 +30,75 @@ fun CreateCalendarPage(navController: NavController, userViewModel: UserViewMode
     var selected: Any? by remember{
         mutableStateOf("null")
     }
+    var name by remember {
+        mutableStateOf("")
+    }
 
+    var selectedGroupId by remember { mutableStateOf<Int?>(null) }
+    var selectedProfileIds by remember {
+        mutableStateOf(mutableListOf<Int>())
+    }
 
     Column() {
 
         TitleBar(navController = navController, title = "Create")
 
+        CustomTextField(helper = "Name", hint = "Name", input = name, onChange = {name = it}, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-        Column(Modifier.weight(1F).verticalScroll(rememberScrollState())) {
+        Column(
+            Modifier
+                .weight(1F)
+                .verticalScroll(rememberScrollState())) {
 
-            Text("Groups", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
+            Text("Groups", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
 
-            userViewModel.groupsOrder?.forEach { index ->
-                userViewModel.groups!![index]?.let { SelectGroupItem(group = it, selected = if (selected is Group) { (selected as Group).id == userViewModel.groups!![index]!!.id} else { false }, modifier = Modifier
-                    .clickable {selected = userViewModel.groups!![index]}) }
+            userViewModel.groups.forEach { (index, group) ->
+                userViewModel.groups[index]?.let { SelectGroupItem(group = group, selected = selectedGroupId == group.id, modifier = Modifier
+                    .clickable {
+                        if (selectedGroupId == it.id) {
+                            selectedGroupId = null
+                        } else {
+                            selectedGroupId = it.id
+                            selectedProfileIds = mutableListOf<Int>()
+                        }
+                    }
+                    .padding(horizontal = 8.dp)) }
             }
 
-            Text("Friends", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
+            Text("Friends", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
 
-            userViewModel.friendsOrder?.forEach { index ->
-                userViewModel.friends!![index]?.let { SelectProfileItem(profile = it, selected = if (selected is Profile) { (selected as Profile).user_id == userViewModel.friends!![index]!!.user_id} else { false }, modifier = Modifier
-                    .clickable {selected = userViewModel.friends!![index]}) }
+            userViewModel.friends.forEach { (index, friend) ->
+                userViewModel.friends[index]?.let { SelectProfileItem(profile = friend, selected = selectedProfileIds.contains(friend.user_id), modifier = Modifier
+                    .clickable {
+                        if (selectedProfileIds.contains(friend.user_id)) {
+                            selectedProfileIds.remove(friend.user_id)
+                        } else {
+                            selectedGroupId = null
+                            selectedProfileIds.add(friend.user_id)
+                        }
+                    }
+                    .padding(horizontal = 8.dp)) }
             }
         }
 
         Divider(color = ExtendedTheme.colors.LightGray, thickness = 1.dp)
 
         CustomButton(buttonText = "Create", onClick = {
-            lateinit var body: Map<String, Any>
+            var body: MutableMap<String, Any?> = mutableMapOf()
 
-            when (selected) {
-                is Group -> {
-                    body = mapOf("group_id" to (selected as Group).id)
+            if (selectedGroupId != null) {
+                body["group_id"] = selectedGroupId
                 }
-                is Profile -> {
-                    body = mapOf("user_id" to (selected as Profile).user_id)
-                }
+            else {
+                body["user_ids"] = selectedProfileIds
+
             }
-            WeeklyApi.retrofitService.createCalendar(mapOf("Authorization" to "token ${userViewModel.token}"), body)
+            if (name.isNotBlank()){
+                body["name"] = name
+            }
+            userViewModel.addCalendar(WeeklyApi.retrofitService.createCalendar(mapOf("Authorization" to "token ${userViewModel.token}"), body))
             navController.navigateUp()
 
         }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 12.dp))

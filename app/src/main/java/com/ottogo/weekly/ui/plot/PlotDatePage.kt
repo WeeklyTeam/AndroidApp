@@ -77,7 +77,7 @@ fun PlotDatePage(navController: NavController) {
             })
         }
         else {
-            ScrollPicker(options = listOf(List(12){ index -> index.toString()}, listOf("AM", "PM")))
+            ScrollPicker(options = listOf(List(12){ index -> index.toString()}, listOf("AM", "PM")), listOf({}))
         }
 
         Spacer(Modifier.weight(1F))

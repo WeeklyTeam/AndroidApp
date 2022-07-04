@@ -1,25 +1,46 @@
 package com.ottogo.weekly.ui.login
 
-import androidx.compose.foundation.layout.*
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.navigation.NavController
 import com.google.accompanist.insets.systemBarsPadding
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.ottogo.weekly.StoreUserToken
+import com.ottogo.weekly.api.Activity
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.CustomTextField
 import com.ottogo.weekly.ui.components.Message
 import com.ottogo.weekly.ui.login.ui.components.LoginTitle
+import com.ottogo.weekly.ui.theme.ExtendedTheme
+import com.ottogo.weekly.ui.theme.nunitoFamily
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
 import retrofit2.HttpException
 import java.io.IOException
+
 
 /*
 *
@@ -46,6 +67,9 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
     var passwordValue by remember { mutableStateOf("") }
     var error: String? by remember {mutableStateOf(value = null)}
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+    val dataStore = StoreUserToken(context = context)
+
 
 
 
@@ -59,7 +83,8 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
 
         Column(
             modifier = Modifier
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             if (error != null){
@@ -69,11 +94,12 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            CustomTextField(helper = "Username",
-                hint = "Username",
+            CustomTextField(
+                helper = "Login",
+                hint = "Username, phone, or email",
                 input = usernameValue,
                 onChange = { usernameValue = it },
-                keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Next)}),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -99,15 +125,22 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
                                     "password" to passwordValue
                                 )
                             )
-                        userViewModel.token = responseMap["token"]
+
+                        val token = responseMap["token"]
+                        if (token != null) {
+                            dataStore.saveToken(token)
+                        }
+
+                        userViewModel.token = token
 
                     } catch (e: Exception) {
+                        Log.d("AM", e.toString())
 
                         when (e) {
                             is HttpException -> {
                                 val statuscode = e.code()
                                 if (statuscode >= 400) {
-                                    error = "Incorrect username or password"
+                                    error = "Incorrect login or password"
                                 }
                                 if (statuscode >= 500) {
                                     error = "We are experiencing issues please try again later"
@@ -119,7 +152,17 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
                         }
                     }
                 }
+
             }
+            Text(
+                text = "Forgot your password?" ,
+                style = MaterialTheme.typography.h5,
+                color = MaterialTheme.colors.primary,
+                modifier = Modifier.clickable {
+                    navController.navigate("webviewPage/Weekly?url=www.theweeklyapp.com/account/password_reset")
+                }
+
+            )
         }
     }
 }

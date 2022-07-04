@@ -42,7 +42,6 @@ import java.util.*
 @Composable
 fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewModel) {
 
-    val plot = userViewModel.plots?.first { it.id == plotId }
 
     Column{}
 }
