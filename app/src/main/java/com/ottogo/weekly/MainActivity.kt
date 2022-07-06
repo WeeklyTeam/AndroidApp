@@ -73,20 +73,13 @@ import java.util.concurrent.Executors
 
 
 class MainActivity : ComponentActivity() {
-
     private val userViewModel: UserViewModel by viewModels()
     private var webSocket: WebSocketClient? = null
     val executorService: ExecutorService = Executors.newFixedThreadPool(4)
 
-
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
-
 
         setContent {
 
@@ -180,6 +173,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun LoginNavigation(userViewModel: UserViewModel){
@@ -297,19 +291,17 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("createGroupPage") { CreateGroupPage(navController) }
             composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel) }
             composable("groupPage/{group_id}") { backStackEntry ->
+                Log.d("groups", backStackEntry.arguments?.getInt("group_id").toString())
                 GroupPage(
                     navController,
                     backStackEntry.arguments?.getInt("group_id")!!,
                     userViewModel
                 )
             }
-            composable("groupAddMembersPage/{group_id}") { backStackEntry ->
-                AddGroupMembersPage(
-                    navController,
-                    userViewModel
-                )
+            composable("groupAddMembersPage/{group_id}") {
+                AddGroupMembersPage(navController, userViewModel)
             }
-            composable("editGroupPage") { backStackEntry ->
+            composable("editGroupPage/{group_id}") { backStackEntry ->
                 EditGroupPage(
                     navController,
                     backStackEntry.arguments?.getInt("group_id")!!,

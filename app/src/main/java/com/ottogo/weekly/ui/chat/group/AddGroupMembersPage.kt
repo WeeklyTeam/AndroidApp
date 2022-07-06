@@ -1,93 +1,106 @@
 package com.ottogo.weekly.ui.chat.group
 
+import android.net.Uri
+import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Checkbox
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ottogo.weekly.R
+import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.TitleBar
-import com.ottogo.weekly.ui.theme.LightGray
+import com.ottogo.weekly.ui.login.getFile
+import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 
 @Composable
 fun AddGroupMembersPage(navController: NavController, userViewModel: UserViewModel) {
+    val context = LocalContext.current
+
+    val selectedIds = remember {
+        mutableStateListOf<Int>()
+    }
+
     Column {
-        TitleBar(
-            navController = navController,
-            title = "Add",
-            modifier = Modifier.padding(start = 24.dp, top = 44.dp, bottom = 12.dp)
-        )
-        Divider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            color = LightGray,
-            thickness = 1.dp
-        )
-        for (profileID in userViewModel.friends!!) {
-            val profile = userViewModel.friends!![profileID.key]
-            profile?.let { MemberItem(profile = it) }
+        TitleBar(navController = navController, title = "Add")
+        Divider(thickness = 2.dp, color = ExtendedTheme.colors.LightGray)
+
+        Column(modifier = Modifier.weight(1F).verticalScroll(rememberScrollState())) {
+            Spacer(modifier = Modifier.height(8.dp))
+            userViewModel.friends?.forEach { (userId, profile) ->
+                val selected = selectedIds.contains(userId)
+                SelectProfileItem(
+                    profile = profile
+                    , selected = selected
+                    , modifier = Modifier.clickable{
+                        if (selected){
+                            selectedIds.remove(userId)
+                        } else {
+                            selectedIds.add(userId)
+                        }
+                    })
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
-        Divider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            color = LightGray,
-            thickness = 1.dp
-        )
-        DoneBtn()
+
+        Divider(thickness = 2.dp, color = ExtendedTheme.colors.LightGray)
+        // TODO: Implement the button functionality
+        CustomButton(buttonText = "Create", onClick = {
+//            val file: File? = imageUri?.let { getFile(imageUri = it, context = context) }
+//            val membersList = selectedIds.toList().toString().toRequestBody("text/plain".toMediaTypeOrNull())
+//            val groupName = name.toRequestBody("text/plain".toMediaTypeOrNull())
+//            var image: MultipartBody.Part? = null
+//
+//            if (file != null) {
+//                val reqFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+//                image = MultipartBody.Part.createFormData(
+//                    "profile_picture",
+//                    file.name, reqFile
+//                )
+//            }
+//            userViewModel.addGroup(
+//                WeeklyApi.retrofitService.createGroup(
+//                mapOf("Authorization" to "token ${userViewModel.token}"),
+//                mapOf("name" to groupName, "members" to membersList),
+//                image
+//            ))
+//
+//            navController.popBackStack("groupPage/{group_id}", inclusive = false)
+        }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 12.dp))
     }
 }
 
 @Composable
-fun DoneBtn () {
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .padding(start = 16.dp, end = 16.dp, bottom = 50.dp),
-        verticalArrangement = Arrangement.Bottom
-    ) {
-        CustomButton(buttonText = "Done",
-            // TODO: Implement Done btn functionality
-            onClick = {})
-    }
-}
+fun SelectProfileItem(profile: Profile, selected: Boolean, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        ProfilePicture(url = profile.profile_picture, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        Text(text = profile.name, style = MaterialTheme.typography.body1)
 
-@Composable
-fun MemberItem(profile: Profile?) {
-    val checkedState = remember { mutableStateOf(false) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (profile != null) {
-            ProfilePicture(
-                url = profile.profile_picture,
-                modifier = Modifier
-                    .size(48.dp)
-            )
-            Text(
-                text = profile.name,
-                style = MaterialTheme.typography.body1,
-                modifier=Modifier.padding(horizontal = 16.dp))
-            Checkbox(
-                checked = checkedState.value,
-                onCheckedChange = { checkedState.value = it},
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        Spacer(Modifier.weight(1F))
+
+        Icon(
+            painter = painterResource(id = if (selected){ R.drawable.ic_checkbox_circle_fill } else { R.drawable.ic_checkbox_blank_circle_line }),
+            tint = if (selected){ MaterialTheme.colors.primary } else { ExtendedTheme.colors.Black60 },
+            contentDescription = "checkbox",
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }

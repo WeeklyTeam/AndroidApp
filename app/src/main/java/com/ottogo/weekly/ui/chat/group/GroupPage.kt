@@ -1,7 +1,6 @@
 package com.ottogo.weekly.ui.chat.group
 
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -58,7 +57,7 @@ fun AddMember(navController: NavController, groupId: Int) {
             modifier = Modifier.size(56.dp)) {
             Icon(
                 modifier = Modifier.size(24.dp),
-                painter = painterResource(id = R.drawable.ic_add_circle_line),
+                painter = painterResource(id = R.drawable.ic_user_add_fill),
                 contentDescription = null,
             )
         }
@@ -87,7 +86,6 @@ fun LeaveBtn () {
 
 @Composable
 fun GroupInfo(group: Group?) {
-    Log.d("groups", group.toString())
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
