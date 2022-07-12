@@ -166,6 +166,7 @@ class UserViewModel(): ViewModel() {
 
     
 
+    @RequiresApi(Build.VERSION_CODES.N)
     fun addMessage(message: ChatMessage){
         if (message.recipient != null) {
 
@@ -176,6 +177,7 @@ class UserViewModel(): ViewModel() {
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     suspend fun acceptPlotInvite(plot: Plot){
 
         WeeklyApi.retrofitService.acceptPlotInvitation(mapOf("Authorization" to "token ${token}"), plot.id)

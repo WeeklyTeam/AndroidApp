@@ -175,7 +175,6 @@ fun MembersAddSideScroll(group: Group?) {
                     color = ExtendedTheme.colors.LightGray,
                     shape = RoundedCornerShape(12.dp)
                 ),
-            foregroundColor = com.ottogo.weekly.ui.theme.Purple,
             backgroundColor = com.ottogo.weekly.ui.theme.White,
             onClick = {} )
     }

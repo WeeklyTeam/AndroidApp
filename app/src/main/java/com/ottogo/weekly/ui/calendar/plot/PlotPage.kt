@@ -87,8 +87,6 @@ fun RainCheckBtn() {
     Spacer(modifier = Modifier.padding(bottom = 12.dp))
     CustomButton(buttonText = "Rain Check",
         modifier = Modifier.padding(horizontal = 16.dp),
-        foregroundColor = Black80,
         backgroundColor = LightGray,
         onClick = {})
 }
-

@@ -1,10 +1,16 @@
 package com.ottogo.weekly
 
 import android.app.Activity
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+// for a 'val' variable
+import androidx.compose.runtime.getValue
+
+// for a `var` variable also add
+import androidx.compose.runtime.setValue
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -33,6 +39,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -41,8 +52,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.systemBarsPadding
+import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.ChatMessage
+import com.ottogo.weekly.api.models.Group
+import com.ottogo.weekly.api.models.Plot
+import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.account.*
+import com.ottogo.weekly.ui.bottomModals.ProfileBottomModalSheet
 import com.ottogo.weekly.ui.calendar.*
 import com.ottogo.weekly.ui.calendar.availability.AddAvailabilityPage
 import com.ottogo.weekly.ui.calendar.availability.AvailabilityPage
@@ -51,6 +67,7 @@ import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.chat.*
 import com.ottogo.weekly.ui.chat.group.AddGroupMembersPage
 import com.ottogo.weekly.ui.chat.group.EditGroupPage
+import com.ottogo.weekly.ui.chat.group.GroupChatPage
 import com.ottogo.weekly.ui.chat.group.GroupPage
 import com.ottogo.weekly.ui.components.*
 import com.ottogo.weekly.ui.login.*
@@ -61,7 +78,11 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.selects.select
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.lang.Exception
@@ -73,43 +94,71 @@ import java.util.concurrent.Executors
 
 
 class MainActivity : ComponentActivity() {
+
     private val userViewModel: UserViewModel by viewModels()
     private var webSocket: WebSocketClient? = null
     val executorService: ExecutorService = Executors.newFixedThreadPool(4)
+
+
+
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val dataStore = StoreUserToken(context = applicationContext)
+
+
         setContent {
 
-                WeeklyTheme {
-                    // A surface container using the 'background' color from the theme
+            WeeklyTheme {
+                // A surface container using the 'background' color from the theme
 
+                val token = dataStore.getToken.collectAsState(initial = null)
+                if (token.value == null) {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                        Column(modifier = Modifier.systemBarsPadding()) {
+                            MainNavigation(userViewModel = userViewModel, webSocket = webSocket)
+                        }
+                    }
+                }else {
 
-                        if (userViewModel.token == null) {
-                            WindowCompat.setDecorFitsSystemWindows(window, false)
+                    if (token.value == "") {
+                        WindowCompat.setDecorFitsSystemWindows(window, false)
 
-                            ProvideWindowInsets {
-                                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-                                    LoginNavigation(userViewModel = userViewModel)
+                        ProvideWindowInsets {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = MaterialTheme.colors.background
+                            ) {
+                                LoginNavigation(userViewModel = userViewModel)
 
-                                }
                             }
-                        } else {
-                            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-                                Column(modifier = Modifier.systemBarsPadding()) {
-                                    MainNavigation(userViewModel = userViewModel, webSocket = webSocket)
-                                }
+                        }
+                    } else {
+                        userViewModel.setToken(token.value!!)
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colors.background
+                        ) {
+                            Column(modifier = Modifier.systemBarsPadding()) {
+                                MainNavigation(
+                                    userViewModel = userViewModel,
+                                    webSocket = webSocket
+                                )
                             }
-
                         }
 
+                    }
+                }
 
 
             }
         }
     }
+
+
 
     override fun onResume() {
         super.onResume()
@@ -126,19 +175,27 @@ class MainActivity : ComponentActivity() {
                 }
 
                 override fun onMessage(message: String?) {
-                    Log.d("WebSocket", message.toString())
-                    val moshi = Moshi.Builder().add(Date::class.java, Rfc3339DateJsonAdapter()).add(
-                        KotlinJsonAdapterFactory()
-                    ).build()
-                    val adapter: JsonAdapter<ChatMessage> = moshi.adapter(ChatMessage::class.java)
-                    val chatMessage = adapter.fromJson(message)
-                    if (chatMessage != null) {
-                        Log.d("WebSocket", chatMessage.timestamp.toString())
 
-                    }
-                    if (userViewModel.profile?.user_id != chatMessage?.user_id) {
-                        userViewModel.friends?.get(chatMessage?.user_id)?.messages = listOf(chatMessage) as List<ChatMessage>
-                    }
+
+                    Log.d("WebSocket", message.toString())
+
+
+//                    Log.d("WebSocket", message.toString())
+//                    val moshi = Moshi.Builder().add(Date::class.java, Rfc3339DateJsonAdapter()).add(
+//                        KotlinJsonAdapterFactory()
+//                    ).build()
+//                    val adapter: JsonAdapter<ChatMessage> = moshi.adapter(ChatMessage::class.java)
+//                    val chatMessage = adapter.fromJson(message)
+//                    if (chatMessage != null) {
+//                        Log.d("WebSocket", chatMessage.toString())
+//
+//                        if (userViewModel.profile?.user_id != chatMessage.user_id) {
+//                            userViewModel.addMessage(chatMessage)
+//
+//                        }
+//
+//                    }
+
                 }
 
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
@@ -159,12 +216,9 @@ class MainActivity : ComponentActivity() {
             }
 
             (webSocket as WebSocketClient).connect()
+
         }
     }
-//
-//    fun sendWebSocketMessage(message: String){
-//        webSocket!!.send(message)
-//    }
 
     override fun onPause() {
         super.onPause()
@@ -173,6 +227,32 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+class StoreUserToken(private val context: Context) {
+
+    // to make sure there's only one instance
+    companion object {
+        private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("user")
+        val USER_TOKEN_KEY = stringPreferencesKey("token")
+    }
+
+    //get the saved email
+    val getToken: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[USER_TOKEN_KEY] ?: ""
+        }
+
+    //save email into datastore
+    suspend fun saveToken(token: String) {
+        context.dataStore.edit { preferences ->
+            preferences[USER_TOKEN_KEY] = token
+        }
+    }
+
+
+}
+
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -210,7 +290,7 @@ fun LoginNavigation(userViewModel: UserViewModel){
 @Composable
 fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bottomSheetViewModel: BottomSheetViewModel = BottomSheetViewModel()){
     val navController = rememberNavController()
-    
+
     val modalBottomSheetState = rememberModalBottomSheetState(
         ModalBottomSheetValue.Hidden
     )
@@ -236,11 +316,11 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
     BackHandler {
         if (modalBottomSheetState.isVisible) {
             when (bottomSheetViewModel.bottomSheetType) {
-                BottomSheetType.TYPE2 -> {
-                    bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE1
+                BottomSheetType.Planning2 -> {
+                    bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
                 }
-                BottomSheetType.TYPE3 -> {
-                    bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE2
+                BottomSheetType.Planning3 -> {
+                    bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning2
                 }
                 else -> {
 
@@ -249,7 +329,9 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                 }
             }
         } else {
-            if (navController.currentDestination?.route == "homepage") {
+
+
+            if (navController.currentDestination?.route == "homePage") {
                 activity?.finish()
             } else {
                 navController.navigateUp()
@@ -261,27 +343,32 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         modifier = Modifier.fillMaxSize(),
         sheetState = modalBottomSheetState,
         sheetContent = {
-            Spacer(modifier = Modifier.height(1.dp))
+            Spacer(Modifier.height(1.dp))
+
             bottomSheetViewModel.bottomSheetType?.let {
+
                 SheetLayout(
                     closeSheet = {
                         closeSheet()
                     },
                     bottomSheetViewModel = bottomSheetViewModel,
-                    userViewModel = userViewModel,
-                    bottomSheetType = it)
+                    userViewModel = userViewModel,)
             }
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        ) {
-        // TODO: change startDestination to homePage
+    ) {
         NavHost(navController = navController, startDestination = "homePage") {
 
             composable("homePage") { HomePage(navController, userViewModel) {
-                bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE1
-                openSheet() }
+                bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
+                openSheet()
             }
-            composable("searchPage") { SearchPage(navController, userViewModel) }
+            }
+            composable("searchPage") { SearchPage(navController, userViewModel){
+                bottomSheetViewModel.profile = it
+                bottomSheetViewModel.bottomSheetType = BottomSheetType.Profile
+                openSheet()
+            } }
             composable("settingsPage") { SettingsPage(navController) }
             composable("reportPage") { ReportPage(navController, userViewModel) }
             composable("activitiesPage") { ActivitiesPage(navController, userViewModel) }
@@ -290,6 +377,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("editProfilePage") { EditProfilePage(navController, userViewModel) }
             composable("createGroupPage") { CreateGroupPage(navController) }
             composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel) }
+            composable("chatSearchPage") { ChatSearchPage(navController, userViewModel) }
             composable("groupPage/{group_id}") { backStackEntry ->
                 GroupPage(
                     navController,
@@ -309,6 +397,14 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                     userViewModel
                 )
             }
+            composable("groupChatPage/{group_id}") { backStackEntry ->
+                GroupChatPage(
+                    navController,
+                    userViewModel,
+                    backStackEntry.arguments?.get("group_id").toString().toInt(),
+                    webSocket
+                )
+            }
             composable("accountPage") { AccountPage(navController, userViewModel) }
             composable("createCalendarPage") { CreateCalendarPage(navController, userViewModel) }
             composable("plotDatePage") { PlotDatePage(navController) }
@@ -324,7 +420,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("plotPage/{plot_id}") { backStackEntry ->
                 PlotPage(
                     navController,
-                    backStackEntry.arguments?.getString("plot_id")!!.toInt(),
+                    backStackEntry.arguments?.get("plot_id").toString().toInt(),
                     userViewModel
                 )
             }
@@ -352,34 +448,53 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
 
 class BottomSheetViewModel: ViewModel() {
     var bottomSheetType: BottomSheetType? by mutableStateOf(null)
+    var profile by mutableStateOf<Profile?>(null)
+    var plotName by mutableStateOf<String?>(null)
+    var plotEmoji by mutableStateOf<String?>(null)
+    var plotDate by mutableStateOf<Date?>(null)
+
+
+
+
 
 }
 
 enum class BottomSheetType() {
-    TYPE1, TYPE2, TYPE3
+    Planning1, Planning2, Planning3, Profile
 }
 
+@RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun SheetLayout(
-    bottomSheetType: BottomSheetType,
     bottomSheetViewModel: BottomSheetViewModel,
     userViewModel: UserViewModel,
     closeSheet : () -> Unit
 ){
 
-    when(bottomSheetType){
-        BottomSheetType.TYPE1 -> Screen1(closeSheet, bottomSheetViewModel)
-        BottomSheetType.TYPE2 -> Screen2(closeSheet, bottomSheetViewModel)
-        BottomSheetType.TYPE3 -> Screen3(closeSheet, userViewModel)
+    when(bottomSheetViewModel.bottomSheetType){
+        BottomSheetType.Planning1 -> Screen1(closeSheet, bottomSheetViewModel)
+        BottomSheetType.Planning2 -> Screen2(closeSheet, bottomSheetViewModel)
+        BottomSheetType.Planning3 -> Screen3(closeSheet, bottomSheetViewModel, userViewModel)
+        BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetViewModel = bottomSheetViewModel)
+        else ->
+            Spacer(Modifier.height(1.dp))
     }
 
 }
 
+@RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun Screen3(closeSheet: () -> Unit, userViewModel: UserViewModel) {
+fun Screen3(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, userViewModel: UserViewModel) {
     val configuration = LocalConfiguration.current
 
     val screenHeight = configuration.screenHeightDp.dp
+
+    var selectedGroupId by remember { mutableStateOf<Int?>(null) }
+    var selectedProfileIds by remember {
+        mutableStateOf(mutableListOf<Int>())
+    }
+
+
     Column {
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)){
@@ -407,24 +522,67 @@ fun Screen3(closeSheet: () -> Unit, userViewModel: UserViewModel) {
 
             Text("Groups", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
 
-            userViewModel.groupsOrder?.forEach { index ->
-                userViewModel.groups!![index]?.let { SelectGroupItem(group = it, selected = false, modifier = Modifier
-                    .clickable {}
+            userViewModel.groups.forEach { (index, group) ->
+                userViewModel.groups[index]?.let { SelectGroupItem(group = group, selected = selectedGroupId == group.id, modifier = Modifier
+                    .clickable {
+                        if (selectedGroupId == it.id) {
+                            selectedGroupId = null
+                        } else {
+                            selectedGroupId = it.id
+                            selectedProfileIds = mutableListOf<Int>()
+                        }
+                    }
                     .padding(horizontal = 8.dp)) }
             }
 
             Text("Friends", style = MaterialTheme.typography.h4, modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp), color = ExtendedTheme.colors.Black60)
 
-            userViewModel.friendsOrder?.forEach { index ->
-                userViewModel.friends!![index]?.let { SelectProfileItem(profile = it, selected = false, modifier = Modifier
-                    .clickable {}
+            userViewModel.friends.forEach { (index, friend) ->
+                userViewModel.friends[index]?.let { SelectProfileItem(profile = friend, selected = selectedProfileIds.contains(friend.user_id), modifier = Modifier
+                    .clickable {
+                        if (selectedProfileIds.contains(friend.user_id)) {
+                            selectedProfileIds.remove(friend.user_id)
+                        } else {
+                            selectedGroupId = null
+                            selectedProfileIds.add(friend.user_id)
+                        }
+                    }
                     .padding(horizontal = 8.dp)) }
             }
         }
 
         Divider(color = ExtendedTheme.colors.LightGray, thickness = 1.dp)
 
-        CustomButton(buttonText = "Invite", onClick = {}, modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp, top = 18.dp))
+        CustomButton(buttonText = "Invite", onClick = {
+            try {
+                var body: MutableMap<String, Any?> = mutableMapOf(
+                    "starttime" to bottomSheetViewModel.plotDate,
+                    "name" to bottomSheetViewModel.plotName,
+                    "emoji" to bottomSheetViewModel.plotEmoji,
+
+                    )
+                when {
+                    selectedGroupId != null -> {
+                        body["group"] = selectedGroupId
+                    }
+                    selectedProfileIds.count() == 1 -> {
+                        body["relationship"] = userViewModel.friends[selectedProfileIds[0]]?.relationship_id
+                    }
+                    else -> {
+                        body["invited"] = selectedProfileIds
+                    }
+                }
+                val plot = WeeklyApi.retrofitService.createPlot(
+                    mapOf("Authorization" to "token ${userViewModel.token}"),
+                    body
+                )
+                userViewModel.addPlot(plot)
+            } catch (exception: Exception){
+                Log.d("createplanexception", exception.toString())
+                closeSheet()
+            }
+
+        }, modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp, top = 18.dp))
     }
 }
 
@@ -477,15 +635,35 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             })
         }
         else {
-            ScrollPicker(options = listOf(List(12){ index -> (index+1).toString()}, listOf("AM", "PM")))
+            ScrollPicker(options = listOf(List(12){ index -> (index+1).toString()}, listOf("AM", "PM")), selectItem = listOf(
+                {   it ->
+                    Log.d("selector", it.toString())
+                    val calendar = Calendar.getInstance()
+                    calendar.time = selectedDate
+                    calendar[Calendar.HOUR] = it+1
+                    selectedDate = calendar.time
+
+                }, {
+                    Log.d("selector", it.toString())
+
+                    val calendar = Calendar.getInstance()
+                    calendar.time = selectedDate
+                    calendar[Calendar.AM_PM] = it
+                    selectedDate = calendar.time
+                    Log.d("selecteddate", selectedDate.toString())
+                }, {}
+            ))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         if (!displayCalendar) {
-            CustomButton(buttonText = "Next") { bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE3 }
+            CustomButton(buttonText = "Next") {
+                bottomSheetViewModel.plotDate = selectedDate
+                bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning3
+            }
         } else {
-            CustomButton(buttonText = "Skip", backgroundColor = MaterialTheme.colors.background, foregroundColor = ExtendedTheme.colors.Black60) {  bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE3 }
+            CustomButton(buttonText = "Skip", backgroundColor = MaterialTheme.colors.background, textColor = ExtendedTheme.colors.Black60) {  bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning3 }
         }
     }
 }
@@ -498,14 +676,12 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
     var title by remember{
         mutableStateOf("")
     }
-    var emoji by remember{
-        mutableStateOf("")
-    }
+    var emoji = title.replace("[A-Za-z0-9 ]".toRegex(), "")
 
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(key1 = bottomSheetViewModel.bottomSheetType == BottomSheetType.TYPE1){
+    LaunchedEffect(key1 = bottomSheetViewModel.bottomSheetType == BottomSheetType.Planning1){
         focusRequester.requestFocus()
     }
 
@@ -515,12 +691,14 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             EmojiCircle(emoji = emoji)
             Spacer(modifier = Modifier.height(24.dp))
         }
-        
-        CustomTextField(helper = "Title", hint = "What are you doing?", input = emoji, onChange = {
-            emoji = it
+
+        CustomTextField(helper = "Title (add an emoji)", hint = "What are you doing?", input = title.replace("[^A-Za-z0-9 ]".toRegex(), ""), onChange = {
+            title = it
         }, modifier = Modifier.focusRequester(focusRequester), keyboardActions = KeyboardActions(onNext = {
+            bottomSheetViewModel.plotEmoji = emoji
+            bottomSheetViewModel.plotName = title.replace("[^A-Za-z0-9 ]".toRegex(), "")
             focusManager.clearFocus()
-            bottomSheetViewModel.bottomSheetType = BottomSheetType.TYPE2
+            bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning2
         }),)
     }
 }
@@ -529,11 +707,12 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 fun HomePage(navController: NavController, userViewModel: UserViewModel, openSheet: () -> Unit){
     var bottomBarSelection by rememberSaveable{ mutableStateOf(0) }
 
+
     Box(modifier = Modifier.fillMaxSize()){
         when(bottomBarSelection){
-           0 -> CalendarPage(navController = navController, userViewModel = userViewModel)
-           1 -> ChatPage(navController = navController, userViewModel = userViewModel)
-           2 -> AccountPage(navController = navController, userViewModel = userViewModel)
+            0 -> CalendarPage(navController = navController, userViewModel = userViewModel)
+            1 -> ChatPage(navController = navController, userViewModel = userViewModel)
+            2 -> AccountPage(navController = navController, userViewModel = userViewModel)
         }
         Column(
             Modifier
@@ -551,7 +730,7 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel, openShe
                 .fillMaxWidth()
                 .height(60.dp)
                 .background(color = MaterialTheme.colors.background)) {
-                
+
                 IconButton(onClick = {bottomBarSelection = 0},
                     Modifier
                         .fillMaxSize()
@@ -565,17 +744,7 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel, openShe
                     )
                 }
 
-                IconButton(onClick = { openSheet() },
-                    Modifier
-                        .fillMaxSize()
-                        .weight(1f)) {
-                    Icon(
-                        modifier = Modifier.size(28.dp),
-                        painter = painterResource(id = R.drawable.ic_add_circle_line),
-                        contentDescription = null,
-                        tint = Black40
-                    )
-                }
+                Spacer(Modifier.weight(1f))
 
                 IconButton(onClick = {bottomBarSelection = 1},
                     Modifier
@@ -589,40 +758,26 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel, openShe
                     )
                 }
 
-//                IconButton(onClick = {bottomBarSelection = 2}, modifier =
-//                Modifier
-//                    .fillMaxSize()
-//                    .weight(1f)) {
-//                    Box(contentAlignment = Alignment.Center, modifier =
-//                    Modifier
-//                        .fillMaxSize()) {
-//
-//                        Card(
-//                            shape = CircleShape,
-//                            modifier = Modifier.size(38.dp),
-//                            border = BorderStroke(3.dp,if (bottomBarSelection == 2) Black else White),
-//                            elevation = 0.dp
-//
-//                        ){
-//
-//                        }
-//                        ProfilePicture(
-//                            url = userViewModel.profile?.profile_picture,
-//                            size = 24
-//                        )
-//
-//
-//
-//                    }
-//                }
-
-
-
-
             }
+
+
+
         }
+
+        FloatingActionButton(onClick = { openSheet() }, Modifier
+            .padding(bottom = 24.dp)
+            .align(Alignment.BottomCenter)
+            .size(56.dp)
+        ) {
+            Icon(
+                modifier = Modifier.size(36.dp),
+                painter = painterResource(id = R.drawable.ic_add_line),
+                contentDescription = null,
+                tint = MaterialTheme.colors.onPrimary
+            )
+        }
+
     }
 }
-
 
 

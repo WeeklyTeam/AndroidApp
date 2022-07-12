@@ -16,6 +16,7 @@ import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.Group
 import com.ottogo.weekly.ui.calendar.ui.components.PlotMemberList
 import com.ottogo.weekly.ui.components.CustomButton
+import com.ottogo.weekly.ui.components.GroupPicture
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -54,7 +55,6 @@ fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserVie
 
         CustomButton(buttonText = "Leave",
             modifier = Modifier.padding(bottom = 120.dp, start = 16.dp, end = 16.dp),
-            foregroundColor = Black80,
             backgroundColor = LightGray,
             onClick = {})
     }
@@ -88,7 +88,7 @@ fun AddMember(navController: NavController, groupId: Int) {
 @Composable
 fun GroupInfo(group: Group?) {
     if (group != null) {
-        ProfilePicture(url = group.image, modifier = Modifier.size(72.dp))
+        GroupPicture(group = group, size = 72)
         Spacer(modifier = Modifier.padding(bottom = 16.dp))
         Text(text = group.name, style = MaterialTheme.typography.h1)
     }
