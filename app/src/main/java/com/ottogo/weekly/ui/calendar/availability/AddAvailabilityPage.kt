@@ -47,13 +47,16 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
 
     var notBusy by remember { mutableStateOf(false) }
     var availabilityName by remember { mutableStateOf("") }
-    var timeRange by remember { mutableStateOf("") }
+    var starttime by remember { mutableStateOf(Date()) }
+    var endtime by remember { mutableStateOf(Date()) }
 
-    var endtimeCalendar by remember { mutableStateOf(Calendar.getInstance()) }
+
+
+    var endtimeCalendar = Calendar.getInstance()
     val endtimeHour = endtimeCalendar[Calendar.HOUR_OF_DAY]
     val endtimeMinute = endtimeCalendar[Calendar.MINUTE]
 
-    var starttimeCalendar by remember { mutableStateOf(Calendar.getInstance()) }
+    var starttimeCalendar = Calendar.getInstance()
     val starttimeHour = starttimeCalendar[Calendar.HOUR_OF_DAY]
     val starttimeMinute = starttimeCalendar[Calendar.MINUTE]
 
@@ -65,16 +68,19 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
     val endtimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
-            endtimeCalendar.set(Calendar.HOUR, mHour)
+            endtimeCalendar.set(Calendar.HOUR_OF_DAY, mHour)
             endtimeCalendar.set(Calendar.MINUTE, mMinute)
+            endtime = endtimeCalendar.time
         }, endtimeHour, endtimeMinute, false
     )
 
     val starttimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
-            starttimeCalendar.set(Calendar.HOUR, mHour)
+            starttimeCalendar.set(Calendar.HOUR_OF_DAY, mHour)
             starttimeCalendar.set(Calendar.MINUTE, mMinute)
+            starttime = starttimeCalendar.time
+
 
             endtimePickerDialog.show()
         }, starttimeHour, starttimeMinute, false
@@ -110,16 +116,19 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Row(verticalAlignment = Alignment.Bottom){
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)){
 
                 Column() {
                     Text("From", style = MaterialTheme.typography.h4)
                     Spacer(Modifier.height(16.dp))
-                    Text(SimpleDateFormat("EEEE, MMM dd h:mm a").format(starttimeCalendar.time) + " to " + SimpleDateFormat("h:mm a").format(endtimeCalendar.time), style = MaterialTheme.typography.body1)
+                    Text(SimpleDateFormat("EEE, MMM dd h:mma").format(starttime) + " to " + SimpleDateFormat("h:mma").format(endtime), style = MaterialTheme.typography.body1)
                 }
 
+                Spacer(Modifier.width(16.dp))
 
-                CustomButton(buttonText = "Change", onClick = {datePickerDialog.show()})
+
+
+                CustomButton(buttonText = "Change", onClick = {datePickerDialog.show()}, outlineColor = ExtendedTheme.colors.LightGray, textColor = MaterialTheme.colors.primary, backgroundColor = MaterialTheme.colors.onPrimary)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -135,16 +144,18 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
             CustomButton(
                 buttonText = "Add",
                 onClick = {
-                        WeeklyApi.retrofitService.addAvailability(
-                            mapOf("Authorization" to "token ${userViewModel.token}"),
-                            mapOf(
-                                "busy" to !notBusy,
-                                "starttime" to Date(),
-                                "endtime" to Date(),
-                                "title" to availabilityName,
-                                "days_of_week" to listOf<Int>()
+                    userViewModel.addAvailability(
+                            WeeklyApi.retrofitService.addAvailability(
+                                mapOf("Authorization" to "token ${userViewModel.token}"),
+                                mapOf(
+                                    "busy" to !notBusy,
+                                    "starttime" to starttime,
+                                    "endtime" to endtime,
+                                    "title" to availabilityName,
+                                    "days_of_week" to listOf<Int>()
+                                )
                             )
-                        )
+                    )
 
                 }, modifier = Modifier.padding(horizontal = 16.dp) )
 

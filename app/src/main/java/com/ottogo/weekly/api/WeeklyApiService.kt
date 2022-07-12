@@ -34,7 +34,7 @@ private val retrofit = Retrofit.Builder()
 interface WeeklyApiService {
     @JvmSuppressWildcards
     @POST("api/calendar/")
-    suspend fun createCalendar(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>)
+    suspend fun createCalendar(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any?>): FriendCalendar
 
 
 
@@ -69,6 +69,24 @@ interface WeeklyApiService {
         @Part profile_picture: MultipartBody.Part? = null
     ): Profile
 
+    @GET("api/plot/{id}/going/")
+    suspend fun acceptPlotInvitation(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/plot/{id}/notgoing/")
+    suspend fun rejectPlotInvitation(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
+    @GET("api/profile/{id}/add/")
+    suspend fun add(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/accept/")
+    suspend fun accept(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/reject/")
+    suspend fun reject(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/block/")
+    suspend fun block(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/report/")
+    suspend fun report(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/unblock/")
+    suspend fun unblock(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
     @Multipart
     @JvmSuppressWildcards
     @POST("api/group/")
@@ -77,6 +95,13 @@ interface WeeklyApiService {
         @PartMap partMap: Map<String, RequestBody>,
         @Part image: MultipartBody.Part? = null
     ): Group
+
+    @JvmSuppressWildcards
+    @POST("api/plot/")
+    suspend fun createPlot(
+        @HeaderMap headers: Map<String, String>,
+        @Body body: Map<String, Any?>,
+    ): Plot
 
     @GET("api/activities/")
     suspend fun activity(@HeaderMap header: Map<String, String>):List<ActivityCategory>

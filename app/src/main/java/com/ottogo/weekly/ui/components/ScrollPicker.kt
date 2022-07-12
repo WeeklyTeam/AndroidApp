@@ -36,14 +36,15 @@ import dev.chrisbanes.snapper.*
 @Composable
 fun ScrollPicker(
     options: List<List<String>>,
+    selectItem: List<(Int) -> Unit>,
     modifier: Modifier = Modifier
 ) {
 
 
 
     Row(modifier.height(125.dp), verticalAlignment = Alignment.CenterVertically) {
-        options.forEach{ list ->
-            SingleScrollPicker(list = list, modifier = Modifier.weight(1F))
+        options.forEachIndexed{ index, list ->
+            SingleScrollPicker(list = list, modifier = Modifier.weight(1F), selectItem = selectItem[index])
         }
     }
 }
@@ -52,10 +53,17 @@ fun ScrollPicker(
 
 @OptIn(ExperimentalSnapperApi::class)
 @Composable
-fun SingleScrollPicker(list: List<String>, modifier: Modifier = Modifier){
+fun SingleScrollPicker(list: List<String>, selectItem: (Int) -> Unit, modifier: Modifier = Modifier){
     val lazyListState: LazyListState = rememberLazyListState()
     val layoutInfo: LazyListSnapperLayoutInfo = rememberLazyListSnapperLayoutInfo(lazyListState)
     val contentPadding = PaddingValues(vertical = 62.dp)
+
+
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        if (!lazyListState.isScrollInProgress) {
+            layoutInfo.currentItem?.let { selectItem(it.index) }
+        }
+    }
 
     LazyColumn(
         modifier = modifier,

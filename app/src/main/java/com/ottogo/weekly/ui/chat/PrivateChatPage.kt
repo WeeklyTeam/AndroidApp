@@ -1,15 +1,10 @@
 package com.ottogo.weekly.ui.chat
 
-import android.app.Activity
-import android.graphics.Paint
 import android.util.Log
-import androidx.compose.animation.Animatable
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,43 +15,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.Group
-import androidx.compose.ui.modifier.modifierLocalConsumer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import coil.Coil
-import coil.compose.rememberImagePainter
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.pagerTabIndicatorOffset
-import com.google.accompanist.pager.rememberPagerState
-import com.ottogo.weekly.ui.theme.Black
-import com.ottogo.weekly.ui.theme.Black40
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
-import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.*
-import kotlinx.coroutines.launch
-import org.java_websocket.WebSocket
 import org.java_websocket.client.WebSocketClient
 
 
@@ -66,18 +37,21 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     var message by remember {
         mutableStateOf("")
     }
-    var friend = userViewModel.friends?.get(userId)
+    val friend = userViewModel.friends[userId]
 
 
 
     Column() {
+        Log.d("recomp", "recomp1")
 
 
-            TitleBar(navController = navController, title = userViewModel.friends?.get(userId)?.name ?: "")
+            TitleBar(navController = navController, title = friend?.name ?: "")
 
             Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-            ChatMessages(messages = userViewModel.friends?.get(userId)?.messages ?: listOf(), userId = userId, currentUserId = userViewModel.profile!!.user_id, modifier = Modifier.weight(1F))
+            ChatMessages(messages = userViewModel.friends[userId]?.messages ?: listOf(), userId = userId, currentUserId = userViewModel.profile!!.user_id, modifier = Modifier.weight(1F))
+
+//        Text(userViewModel.friends[userId]?.messages.toString())
 
             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextField(
@@ -105,11 +79,11 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
 
                 IconButton(onClick = {
                     webSocket?.send("{\"recipient\": $userId, \"message\": \"$message\"}")
-                    userViewModel.sendMessage(
-                        recipientId = userId,
+                    userViewModel.addPrivateMessage(
                         message = ChatMessage(
                             user_id = userViewModel.profile!!.user_id,
-                            message = message
+                            message = message,
+                            recipient = userId
                         )
                     )
                     message = ""
@@ -138,15 +112,17 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
 
 @Composable
 fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, modifier: Modifier = Modifier){
-    var lazyListState = rememberLazyListState()
+    val lazyListState = rememberLazyListState()
 
     LazyColumn(state = lazyListState, reverseLayout = true, modifier = modifier) {
+        Log.d("recomp", "recomp2")
+
         for (index in messages.indices) {
             val previousMessage = messages.getOrNull(index - 1)
             val nextMessage = messages.getOrNull(index + 1)
             lateinit var shape: Shape
 
-            if (previousMessage?.user_id != messages[index].user_id){
+            if (previousMessage?.user_id ?: -1 != messages[index].user_id){
                 shape = if (messages[index].user_id == currentUserId) {
                     RoundedCornerShape(topEnd = 3.dp, topStart = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp)
 
@@ -154,7 +130,7 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
                     RoundedCornerShape(topEnd = 20.dp, topStart = 3.dp, bottomEnd = 20.dp, bottomStart = 20.dp)
 
                 }
-            } else if (nextMessage?.user_id != messages[index].user_id) {
+            } else if (nextMessage?.user_id ?: -1 != messages[index].user_id) {
                 shape = if (messages[index].user_id == currentUserId) {
                     RoundedCornerShape(topEnd = 20.dp, topStart = 20.dp, bottomEnd = 3.dp, bottomStart = 20.dp)
 

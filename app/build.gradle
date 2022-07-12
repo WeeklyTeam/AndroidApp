@@ -93,5 +93,7 @@ dependencies {
     implementation "dev.chrisbanes.snapper:snapper:0.2.1"
 
 
+    implementation "androidx.datastore:datastore-preferences:1.0.0"
+    implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
 
 }
