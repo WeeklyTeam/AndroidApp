@@ -38,9 +38,6 @@ fun AddGroupMembersPage(navController: NavController, groupId: Int, userViewMode
         mutableStateListOf<Int>()
     }
 
-    Log.d("groups", userViewModel.friends.toString())
-    Log.d("groups", group?.members.toString())
-
     Column {
         TitleBar(navController = navController, title = "Add")
         Divider(thickness = 2.dp, color = ExtendedTheme.colors.LightGray)
@@ -86,7 +83,7 @@ fun AddGroupMembersPage(navController: NavController, groupId: Int, userViewMode
 //            ))
 //
 //            navController.popBackStack("groupPage/{group_id}", inclusive = false)
-        }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 12.dp))
+        }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 50.dp, top = 12.dp))
     }
 }
 

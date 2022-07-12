@@ -26,6 +26,9 @@ import com.ottogo.weekly.ui.theme.LightGray
 fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserViewModel){
     val group = userViewModel.groups?.get(groupId)
 
+    Log.d("groups", group.toString())
+    Log.d("group", group?.members.toString())
+
     Column (horizontalAlignment = Alignment.CenterHorizontally) {
         TitleBar(navController = navController, title = "", iconButtons = {
             IconButton(onClick = { navController.navigate("editGroupPage/$groupId") }, modifier = Modifier.size(56.dp)) {
@@ -50,7 +53,7 @@ fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserVie
         }
 
         CustomButton(buttonText = "Leave",
-            modifier = Modifier.padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+            modifier = Modifier.padding(bottom = 120.dp, start = 16.dp, end = 16.dp),
             foregroundColor = Black80,
             backgroundColor = LightGray,
             onClick = {})

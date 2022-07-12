@@ -16,7 +16,7 @@ fun FriendItem(profile: Profile, imgSize : Int) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ProfilePicture(url = profile.profile_picture, size = imgSize)
+        ProfilePicture(url = profile.profile_picture)
         Spacer(modifier = Modifier.padding(bottom = 8.dp))
         Text(text = profile.name, style = MaterialTheme.typography.body2, maxLines = 1)
         Spacer(modifier = Modifier.padding(bottom = 2.dp))

@@ -1,6 +1,7 @@
 package com.ottogo.weekly.ui.calendar.plot
 
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.horizontalScroll
 import com.ottogo.weekly.ui.theme.Black80
 import com.ottogo.weekly.ui.theme.LightGray
@@ -23,6 +24,7 @@ import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
+import java.text.SimpleDateFormat
 
 
 @Composable
@@ -63,13 +65,17 @@ fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewM
     }
 }
 
+@SuppressLint("SimpleDateFormat")
 @Composable
 fun PlotInfo(plot: Plot) {
+    val date = SimpleDateFormat("EEEE, MMM dd").format(plot.starttime)
+    val time = SimpleDateFormat("h:mm a").format(plot.starttime)
+
     EmojiCircle(emoji = plot.emoji, Modifier.size(72.dp))
     Spacer(modifier = Modifier.padding(bottom = 16.dp))
     Text(text = plot.name, style = MaterialTheme.typography.h1)
     Spacer(modifier = Modifier.padding(bottom = 8.dp))
-    Text(text = plot.starttime.toString(), style = MaterialTheme.typography.body2)
+    Text(text = "$date at $time", style = MaterialTheme.typography.body2)
 }
 
 @Composable
