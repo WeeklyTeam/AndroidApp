@@ -1,7 +1,10 @@
 package com.ottogo.weekly.ui.chat.group
 
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,11 +24,11 @@ import com.ottogo.weekly.ui.theme.LightGray
 
 @Composable
 fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserViewModel){
-    val group = userViewModel.groups?.get(133)
-    // TODO: Fix groupid value being set to 0 for all calls
-    Column(modifier = Modifier.padding(top=44.dp, bottom = 16.dp)) {
+    val group = userViewModel.groups?.get(groupId)
+
+    Column (horizontalAlignment = Alignment.CenterHorizontally) {
         TitleBar(navController = navController, title = "", iconButtons = {
-            IconButton(onClick = { navController.navigate("editGroupPage") }, modifier = Modifier.size(56.dp)) {
+            IconButton(onClick = { navController.navigate("editGroupPage/$groupId") }, modifier = Modifier.size(56.dp)) {
                 Icon(
                     modifier = Modifier.size(24.dp),
                     painter = painterResource(id = R.drawable.ic_edit_2_line),
@@ -34,23 +37,34 @@ fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserVie
             }
         })
 
+        Spacer(modifier = Modifier.padding(top = 44.dp))
+
         if (group != null) {
             GroupInfo(group)
             AddMember(navController, groupId)
-            PlotMemberList(title = "Members", members = group.members.asIterable(), 25, 0)
-            LeaveBtn()
+            Column(modifier = Modifier
+                .weight(1F)
+                .verticalScroll(rememberScrollState())) {
+                PlotMemberList(title = "Members", members = group.members.asIterable())
+            }
         }
+
+        CustomButton(buttonText = "Leave",
+            modifier = Modifier.padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+            foregroundColor = Black80,
+            backgroundColor = LightGray,
+            onClick = {})
     }
 }
 
 @Composable
 fun AddMember(navController: NavController, groupId: Int) {
     Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 20.dp, bottom = 30.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
     ) {
         IconButton(
             onClick = { navController.navigate("groupAddMembersPage/$groupId") },
@@ -68,32 +82,11 @@ fun AddMember(navController: NavController, groupId: Int) {
     }
 }
 
-// TODO: Implement Leave btn functionality
-@Composable
-fun LeaveBtn () {
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 122.dp),
-        verticalArrangement = Arrangement.Bottom
-    ) {
-        CustomButton(buttonText = "Leave",
-            foregroundColor = Black80,
-            backgroundColor = LightGray,
-            onClick = {})
-    }
-}
-
 @Composable
 fun GroupInfo(group: Group?) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (group != null) {
-            ProfilePicture(url = group.image, modifier = Modifier.size(72.dp))
-            Spacer(modifier = Modifier.padding(bottom = 16.dp))
-            Text(text = group.name, style = MaterialTheme.typography.h1)
-        }
+    if (group != null) {
+        ProfilePicture(url = group.image, modifier = Modifier.size(72.dp))
+        Spacer(modifier = Modifier.padding(bottom = 16.dp))
+        Text(text = group.name, style = MaterialTheme.typography.h1)
     }
 }

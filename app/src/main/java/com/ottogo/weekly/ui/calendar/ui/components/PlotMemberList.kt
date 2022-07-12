@@ -12,45 +12,36 @@ import com.ottogo.weekly.api.models.Profile
 import kotlin.collections.ArrayList
 
 @Composable
-fun PlotMemberList(title: String, members: Iterable<Profile>, paddingX: Int, paddingY: Int) {
+fun PlotMemberList(title: String, members: Iterable<Profile>) {
     val membersPerRow = 4
     var count = 0
     val rows : MutableList<MutableList<Profile>> = ArrayList()
     var rowMembers: MutableList<Profile> = ArrayList()
 
-    Column(
-        modifier = Modifier
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = paddingX.dp)
-            .padding(top = paddingY.dp)
-    ) {
-        Column {
-            Text(text = title, style = MaterialTheme.typography.body1)
-            Spacer(modifier = Modifier.padding(bottom = 17.dp))
+    Text(text = title, style = MaterialTheme.typography.body1, modifier = Modifier.padding(start = 16.dp))
+    Spacer(modifier = Modifier.padding(bottom = 17.dp))
 
-            // group the members into groups of 4
-            for (member in members) {
-                if (count % membersPerRow == 0) {
-                    rowMembers = ArrayList()
-                    rows.addAll(listOf(rowMembers))
-                    count = 0
-                }
-                rowMembers.add(member)
-                count++
-            }
+    // group the members into groups of 4
+    for (member in members) {
+        if (count % membersPerRow == 0) {
+            rowMembers = ArrayList()
+            rows.addAll(listOf(rowMembers))
+            count = 0
+        }
+        rowMembers.add(member)
+        count++
+    }
 
-            // display the groups in row layouts
-            for (group in rows) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    for (member in group) {
-                        FriendItem(profile = member, imgSize = 60)
-                    }
-                }
+    // display the groups in row layouts
+    for (group in rows) {
+        Spacer(modifier = Modifier.padding(bottom = 16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            for (member in group) {
+                FriendItem(profile = member, imgSize = 60)
             }
         }
     }
-
 }

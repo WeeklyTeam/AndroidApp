@@ -32,12 +32,14 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
 @Composable
-fun AddGroupMembersPage(navController: NavController, userViewModel: UserViewModel) {
-    val context = LocalContext.current
-
+fun AddGroupMembersPage(navController: NavController, groupId: Int, userViewModel: UserViewModel) {
+    val group = userViewModel.groups?.get(groupId)
     val selectedIds = remember {
         mutableStateListOf<Int>()
     }
+
+    Log.d("groups", userViewModel.friends.toString())
+    Log.d("groups", group?.members.toString())
 
     Column {
         TitleBar(navController = navController, title = "Add")
@@ -47,23 +49,23 @@ fun AddGroupMembersPage(navController: NavController, userViewModel: UserViewMod
             Spacer(modifier = Modifier.height(8.dp))
             userViewModel.friends?.forEach { (userId, profile) ->
                 val selected = selectedIds.contains(userId)
-                SelectProfileItem(
-                    profile = profile
-                    , selected = selected
-                    , modifier = Modifier.clickable{
-                        if (selected){
-                            selectedIds.remove(userId)
-                        } else {
-                            selectedIds.add(userId)
-                        }
-                    })
+                if (profile !in group!!.members) {
+                    SelectProfileItem(
+                        profile = profile, selected = selected, modifier = Modifier.clickable {
+                            if (selected){
+                                selectedIds.remove(userId)
+                            } else {
+                                selectedIds.add(userId)
+                            }
+                        })
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         Divider(thickness = 2.dp, color = ExtendedTheme.colors.LightGray)
         // TODO: Implement the button functionality
-        CustomButton(buttonText = "Create", onClick = {
+        CustomButton(buttonText = "Done", onClick = {
 //            val file: File? = imageUri?.let { getFile(imageUri = it, context = context) }
 //            val membersList = selectedIds.toList().toString().toRequestBody("text/plain".toMediaTypeOrNull())
 //            val groupName = name.toRequestBody("text/plain".toMediaTypeOrNull())

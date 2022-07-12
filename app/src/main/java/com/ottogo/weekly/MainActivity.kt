@@ -291,20 +291,21 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("createGroupPage") { CreateGroupPage(navController) }
             composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel) }
             composable("groupPage/{group_id}") { backStackEntry ->
-                Log.d("groups", backStackEntry.arguments?.getInt("group_id").toString())
                 GroupPage(
                     navController,
-                    backStackEntry.arguments?.getInt("group_id")!!,
+                    backStackEntry.arguments?.get("group_id").toString().toInt(),
                     userViewModel
                 )
             }
-            composable("groupAddMembersPage/{group_id}") {
-                AddGroupMembersPage(navController, userViewModel)
+            composable("groupAddMembersPage/{group_id}") { backStackEntry ->
+                AddGroupMembersPage(navController,
+                    backStackEntry.arguments?.get("group_id").toString().toInt() ,
+                    userViewModel)
             }
             composable("editGroupPage/{group_id}") { backStackEntry ->
                 EditGroupPage(
                     navController,
-                    backStackEntry.arguments?.getInt("group_id")!!,
+                    backStackEntry.arguments?.get("group_id").toString().toInt(),
                     userViewModel
                 )
             }

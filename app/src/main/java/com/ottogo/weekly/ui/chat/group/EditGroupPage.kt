@@ -44,7 +44,7 @@ fun EditGroupPage(navController: NavController, groupId: Int, userViewModel: Use
     val storagePermissionStatus = rememberPermissionState(
         Manifest.permission.READ_EXTERNAL_STORAGE
     )
-    val group = userViewModel.groups?.get(133)
+    val group = userViewModel.groups?.get(groupId)
     var groupName by remember { mutableStateOf(group?.name) }
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
