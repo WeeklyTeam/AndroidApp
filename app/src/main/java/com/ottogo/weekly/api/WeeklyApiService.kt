@@ -96,12 +96,26 @@ interface WeeklyApiService {
         @Part image: MultipartBody.Part? = null
     ): Group
 
+    // TODO: confirm with Jonathan to make sure this is correct
+    @GET("api/group/{id}/leave/")
+    suspend fun leaveGroup(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
     @JvmSuppressWildcards
     @POST("api/plot/")
     suspend fun createPlot(
         @HeaderMap headers: Map<String, String>,
         @Body body: Map<String, Any?>,
     ): Plot
+
+    // TODO: Fix this api call when you know how it works
+    @Multipart
+    @JvmSuppressWildcards
+    @PATCH("api/plot/{id}")
+    suspend fun editPlot(
+        @HeaderMap headers: Map<String, String>,
+        @Body body: Map<String, String>,
+        @Path("id") id: Int
+    ): Profile
 
     @GET("api/activities/")
     suspend fun activity(@HeaderMap header: Map<String, String>):List<ActivityCategory>

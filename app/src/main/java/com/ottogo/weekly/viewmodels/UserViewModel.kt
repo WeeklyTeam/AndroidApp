@@ -164,7 +164,13 @@ class UserViewModel(): ViewModel() {
         _chats.add(0, temporaryGroup!!)
     }
 
-    
+    @RequiresApi(Build.VERSION_CODES.N)
+    suspend fun leaveGroup(group: Group){
+        WeeklyApi.retrofitService.leaveGroup(mapOf("Authorization" to "token $token"), group.id)
+        Log.d("groups", _groups.map { group -> group.key }.toString())
+        _groups.remove(group.id)
+        Log.d("groups", _groups.map { group -> group.key }.toString())
+    }
 
     @RequiresApi(Build.VERSION_CODES.N)
     fun addMessage(message: ChatMessage){
@@ -179,8 +185,7 @@ class UserViewModel(): ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.N)
     suspend fun acceptPlotInvite(plot: Plot){
-
-        WeeklyApi.retrofitService.acceptPlotInvitation(mapOf("Authorization" to "token ${token}"), plot.id)
+        WeeklyApi.retrofitService.acceptPlotInvitation(mapOf("Authorization" to "token $token"), plot.id)
         _plots.remove(plot)
         var newInvitedList = plot.invited
         var newGoingList = plot.going
@@ -192,9 +197,10 @@ class UserViewModel(): ViewModel() {
     }
 
     suspend fun rejectPlotInvite(plot: Plot){
-        WeeklyApi.retrofitService.rejectPlotInvitation(mapOf("Authorization" to "token ${token}"), plot.id)
+        WeeklyApi.retrofitService.rejectPlotInvitation(mapOf("Authorization" to "token $token"), plot.id)
+        Log.d("plots", _plots.map { plot -> plot.id }.toString())
         _plots.remove(plot)
-
+        Log.d("plots", _plots.map { plot -> plot.id }.toString())
     }
 
 }

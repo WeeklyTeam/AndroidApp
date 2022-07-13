@@ -1,7 +1,9 @@
 package com.ottogo.weekly.ui.chat.group
 
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.Group
@@ -22,7 +25,9 @@ import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.ottogo.weekly.ui.theme.Black80
 import com.ottogo.weekly.ui.theme.LightGray
+import kotlinx.coroutines.runBlocking
 
+@RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserViewModel){
     val group = userViewModel.groups?.get(groupId)
@@ -46,17 +51,25 @@ fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserVie
         if (group != null) {
             GroupInfo(group)
             AddMember(navController, groupId)
-            Column(modifier = Modifier
-                .weight(1F)
-                .verticalScroll(rememberScrollState())) {
+            Column(
+                modifier = Modifier
+                    .weight(1F)
+                    .verticalScroll(rememberScrollState())
+            ) {
                 PlotMemberList(title = "Members", members = group.members.asIterable())
             }
-        }
 
-        CustomButton(buttonText = "Leave",
-            modifier = Modifier.padding(bottom = 120.dp, start = 16.dp, end = 16.dp),
-            backgroundColor = LightGray,
-            onClick = {})
+            CustomButton(buttonText = "Leave",
+                modifier = Modifier.padding(bottom = 120.dp, start = 16.dp, end = 16.dp),
+                backgroundColor = LightGray,
+                textColor = MaterialTheme.colors.primary,
+                onClick = {
+                    runBlocking {
+//                        userViewModel.leaveGroup(group)
+                        navController.popBackStack()
+                    }
+                })
+        }
     }
 }
 

@@ -62,6 +62,7 @@ import com.ottogo.weekly.ui.bottomModals.ProfileBottomModalSheet
 import com.ottogo.weekly.ui.calendar.*
 import com.ottogo.weekly.ui.calendar.availability.AddAvailabilityPage
 import com.ottogo.weekly.ui.calendar.availability.AvailabilityPage
+import com.ottogo.weekly.ui.calendar.plot.PlotEditPage
 import com.ottogo.weekly.ui.calendar.plot.PlotPage
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.chat.*
@@ -419,6 +420,13 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             }
             composable("plotPage/{plot_id}") { backStackEntry ->
                 PlotPage(
+                    navController,
+                    backStackEntry.arguments?.get("plot_id").toString().toInt(),
+                    userViewModel
+                )
+            }
+            composable("plotEditPage/{plot_id}") { backStackEntry ->
+                PlotEditPage(
                     navController,
                     backStackEntry.arguments?.get("plot_id").toString().toInt(),
                     userViewModel
