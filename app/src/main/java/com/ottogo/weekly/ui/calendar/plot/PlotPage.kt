@@ -28,39 +28,40 @@ import java.text.SimpleDateFormat
 
 @Composable
 fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewModel) {
-    val plot = userViewModel.plots.first { it.id == plotId }
-    Log.d("plots", plot.toString())
+    val plot = userViewModel.plots.firstOrNull(){ it.id == plotId }
 
-    Column (horizontalAlignment = Alignment.CenterHorizontally) {
-        TitleBar(navController = navController, title = "", iconButtons = {
-            IconButton(onClick = { navController.navigate("plotEditPage/$plotId") }, modifier = Modifier.size(56.dp)) {
-                Icon(
-                    modifier = Modifier.size(24.dp),
-                    painter = painterResource(id = R.drawable.ic_edit_2_line),
-                    contentDescription = null,
-                )
+    if (plot != null) {
+        Column (horizontalAlignment = Alignment.CenterHorizontally) {
+            TitleBar(navController = navController, title = "", iconButtons = {
+                IconButton(onClick = { navController.navigate("plotEditPage/$plotId") }, modifier = Modifier.size(56.dp)) {
+                    Icon(
+                        modifier = Modifier.size(24.dp),
+                        painter = painterResource(id = R.drawable.ic_edit_2_line),
+                        contentDescription = null,
+                    )
+                }
+            })
+
+            PlotInfo(plot = plot)
+            Spacer(modifier = Modifier.padding(bottom = 24.dp))
+            CustomButton(buttonText = "Chat",
+                modifier = Modifier.padding(horizontal = 125.dp),
+                onClick = {
+                    navController.navigate("groupChatPage/${plot.group_id}")
+                },)
+            Spacer(modifier = Modifier.padding(bottom = 24.dp))
+            Column(modifier = Modifier
+                .weight(1F)
+                .verticalScroll(rememberScrollState())) {
+                PlotMemberList(title = "Going", members = plot.going.asIterable())
             }
-        })
 
-        PlotInfo(plot = plot)
-        Spacer(modifier = Modifier.padding(bottom = 24.dp))
-        CustomButton(buttonText = "Chat",
-            modifier = Modifier.padding(horizontal = 125.dp),
-            onClick = {
-                      navController.navigate("groupChatPage/${plot.group_id}")
-            },)
-        Spacer(modifier = Modifier.padding(bottom = 24.dp))
-        Column(modifier = Modifier
-            .weight(1F)
-            .verticalScroll(rememberScrollState())) {
-            PlotMemberList(title = "Going", members = plot.going.asIterable())
-        }
-
-        Column(horizontalAlignment = Alignment.Start) {
-            if ( plot.is_going) {
-                RainCheckBtn(plot, userViewModel, navController)
+            Column(horizontalAlignment = Alignment.Start) {
+                if ( plot.is_going) {
+                    RainCheckBtn(plot, userViewModel, navController)
+                }
+                Spacer(modifier = Modifier.padding(bottom = 16.dp))
             }
-            Spacer(modifier = Modifier.padding(bottom = 16.dp))
         }
     }
 }
@@ -80,9 +81,6 @@ fun PlotInfo(plot: Plot) {
 
 @Composable
 fun RainCheckBtn(plot: Plot, userViewModel: UserViewModel, navController: NavController) {
-    Log.d("plots", plot.id.toString())
-    Log.d("plots", userViewModel.plots.map { plot -> plot.id }.toString())
-
     Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
     Text(text = "Can't make it?",
         style = MaterialTheme.typography.body1,
@@ -93,10 +91,7 @@ fun RainCheckBtn(plot: Plot, userViewModel: UserViewModel, navController: NavCon
         backgroundColor = LightGray,
         textColor = MaterialTheme.colors.primary,
         onClick = {
-            runBlocking {
-//                TODO: Fix bug where program crashing after the reject api call is made
-//                userViewModel.rejectPlotInvite(plot)
-                navController.navigate("homePage")
-            }
+            userViewModel.rejectPlotInvite(plot)
+            navController.navigateUp()
         })
 }

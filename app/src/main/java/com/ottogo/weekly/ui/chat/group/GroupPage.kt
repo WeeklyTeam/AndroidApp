@@ -30,25 +30,22 @@ import kotlinx.coroutines.runBlocking
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserViewModel){
-    val group = userViewModel.groups?.get(groupId)
+    val group = userViewModel.groups[groupId]
 
-    Log.d("groups", group.toString())
-    Log.d("group", group?.members.toString())
+    if (group!= null) {
+        Column (horizontalAlignment = Alignment.CenterHorizontally) {
+            TitleBar(navController = navController, title = "", iconButtons = {
+                IconButton(onClick = { navController.navigate("editGroupPage/$groupId") }, modifier = Modifier.size(56.dp)) {
+                    Icon(
+                        modifier = Modifier.size(24.dp),
+                        painter = painterResource(id = R.drawable.ic_edit_2_line),
+                        contentDescription = null,
+                    )
+                }
+            })
 
-    Column (horizontalAlignment = Alignment.CenterHorizontally) {
-        TitleBar(navController = navController, title = "", iconButtons = {
-            IconButton(onClick = { navController.navigate("editGroupPage/$groupId") }, modifier = Modifier.size(56.dp)) {
-                Icon(
-                    modifier = Modifier.size(24.dp),
-                    painter = painterResource(id = R.drawable.ic_edit_2_line),
-                    contentDescription = null,
-                )
-            }
-        })
+            Spacer(modifier = Modifier.padding(top = 44.dp))
 
-        Spacer(modifier = Modifier.padding(top = 44.dp))
-
-        if (group != null) {
             GroupInfo(group)
             AddMember(navController, groupId)
             Column(
@@ -64,10 +61,8 @@ fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserVie
                 backgroundColor = LightGray,
                 textColor = MaterialTheme.colors.primary,
                 onClick = {
-                    runBlocking {
-//                        userViewModel.leaveGroup(group)
-                        navController.popBackStack()
-                    }
+                    userViewModel.leaveGroup(group)
+                    navController.navigateUp()
                 })
         }
     }

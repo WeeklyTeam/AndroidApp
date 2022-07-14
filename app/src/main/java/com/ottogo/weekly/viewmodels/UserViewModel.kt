@@ -79,8 +79,6 @@ class UserViewModel(): ViewModel() {
         }
 
         for (group in data.groups) {
-
-
             _groups[group.id] = group
             _chats.add(group)
         }
@@ -167,15 +165,12 @@ class UserViewModel(): ViewModel() {
     @RequiresApi(Build.VERSION_CODES.N)
     suspend fun leaveGroup(group: Group){
         WeeklyApi.retrofitService.leaveGroup(mapOf("Authorization" to "token $token"), group.id)
-        Log.d("groups", _groups.map { group -> group.key }.toString())
         _groups.remove(group.id)
-        Log.d("groups", _groups.map { group -> group.key }.toString())
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
     fun addMessage(message: ChatMessage){
         if (message.recipient != null) {
-
             addPrivateMessage(message = message)
         } else {
             addGroupMessage(message = message)
@@ -198,9 +193,7 @@ class UserViewModel(): ViewModel() {
 
     suspend fun rejectPlotInvite(plot: Plot){
         WeeklyApi.retrofitService.rejectPlotInvitation(mapOf("Authorization" to "token $token"), plot.id)
-        Log.d("plots", _plots.map { plot -> plot.id }.toString())
         _plots.remove(plot)
-        Log.d("plots", _plots.map { plot -> plot.id }.toString())
     }
 
 }
