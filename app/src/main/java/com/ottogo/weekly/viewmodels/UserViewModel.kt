@@ -145,8 +145,8 @@ class UserViewModel(): ViewModel() {
         _friends[profile.user_id] = profile
     }
 
-    fun addFriendRequest() {
-        //requests.add()
+    fun addFriendRequest(profile: Profile) {
+        requests.add(profile)
     }
 
     fun addPlot(plot: Plot){

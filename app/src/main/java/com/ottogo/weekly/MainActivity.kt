@@ -192,13 +192,25 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         }
-                        Log.d("WebSocket",data.toString())
 
-                        if (data["friend_request"] == true) {
-//                            Profile(
-//                                user_id = data["user_id"] as Int,
-//                                name = data[name]
-//                            )
+                        // other user sends us friend request
+                        if (data["friend_request_accepted"] == true) {
+                            userViewModel.addFriendRequest(
+                                Profile(
+                                    user_id = (data["user_id"] as Double).toInt(),
+                                    name = (data["name"] as String),
+                                    username = (data["username"] as String),
+                                    profile_picture = (data[" profile_picture"] as String),
+                                    requesting = true,
+                                    urequested = false,
+                                    friend = false,
+                                    blocked = false,
+                                    relationship_id = 0
+                                )
+                            )
+                            for (request in userViewModel.requests) {
+                                Log.d("status", "Request: $request")
+                            }
                         }
                     }
                 }

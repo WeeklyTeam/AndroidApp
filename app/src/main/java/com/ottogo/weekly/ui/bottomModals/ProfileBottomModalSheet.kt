@@ -17,6 +17,7 @@ import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.chat.PopUpBlockSheetContent
 import com.ottogo.weekly.ui.chat.PopUpConfirmationSheetContent
+import com.ottogo.weekly.ui.chat.SearchPageViewModel
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.theme.Black
