@@ -73,6 +73,7 @@ import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.flow.Flow
@@ -164,7 +165,7 @@ class MainActivity : ComponentActivity() {
 
             val headers = mapOf("authorization" to "token ${userViewModel.token}")
 
-            val uri: URI? = URI("wss://plotsme.herokuapp.com/chat/")
+            val uri: URI? = URI("wss://www.theweeklyapp.com/chat/")
 
             webSocket = object : WebSocketClient(uri, headers) {
                 override fun onOpen(handshakedata: ServerHandshake?) {
@@ -173,32 +174,39 @@ class MainActivity : ComponentActivity() {
 
                 override fun onMessage(message: String?) {
 
+                    Log.d("WebSocket", "Message: " + message.toString())
+                    val moshi: Moshi = Moshi.Builder().build();
+                    val jsonAdapter: JsonAdapter<Map<String, Any>> = moshi.adapter(Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java))
 
-                      Log.d("WebSocket", message.toString())
+                    val data: Map<String, Any>? = jsonAdapter.fromJson(message)
 
+                    if (data != null) {
+                        if (data["typeing"] == true) {
+                            userViewModel.addGroup(
+                                Group(
+                                    id = (data["username"] as Double).toInt(),
+                                    name = "AllHailAnya",
+                                    image = "https://wegotthiscovered.com/wp-content/uploads/2022/05/Spy-x-Family-anya-1536x864.png",
+                                    messages = listOf(),
+                                    members = listOf()
+                                )
+                            )
+                        }
+                        Log.d("WebSocket",data.toString())
 
-//                    Log.d("WebSocket", message.toString())
-//                    val moshi = Moshi.Builder().add(Date::class.java, Rfc3339DateJsonAdapter()).add(
-//                        KotlinJsonAdapterFactory()
-//                    ).build()
-//                    val adapter: JsonAdapter<ChatMessage> = moshi.adapter(ChatMessage::class.java)
-//                    val chatMessage = adapter.fromJson(message)
-//                    if (chatMessage != null) {
-//                        Log.d("WebSocket", chatMessage.toString())
-//
-//                        if (userViewModel.profile?.user_id != chatMessage.user_id) {
-//                            userViewModel.addMessage(chatMessage)
-//
-//                        }
-//
-//                    }
-
+                        if (data["friend_request"] == true) {
+//                            Profile(
+//                                user_id = data["user_id"] as Int,
+//                                name = data[name]
+//                            )
+                        }
+                    }
                 }
 
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
                     Log.d("WebSocket", "Closed")
                     if (reason != null) {
-                        Log.d("WebSocket", reason)
+                        Log.d("WebSocket", "Reason: $reason, Code: $code")
                     }
 
 
@@ -349,13 +357,16 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                         closeSheet()
                     },
                     bottomSheetViewModel = bottomSheetViewModel,
-                    userViewModel = userViewModel,)
+                    userViewModel = userViewModel, webSocket = webSocket)
             }
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-        NavHost(navController = navController, startDestination = "homePage") {
+        NavHost(navController = navController, startDestination = "searchPage") {
 
+            composable("webSocketTest") {
+                WebSocketTest(navController = navController, userViewModel = userViewModel, webSocket = webSocket)
+            }
             composable("homePage") { HomePage(navController, userViewModel) {
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
                 openSheet()
@@ -452,14 +463,15 @@ enum class BottomSheetType() {
 fun SheetLayout(
     bottomSheetViewModel: BottomSheetViewModel,
     userViewModel: UserViewModel,
-    closeSheet : () -> Unit
+    closeSheet : () -> Unit,
+    webSocket: WebSocketClient?
 ){
 
     when(bottomSheetViewModel.bottomSheetType){
         BottomSheetType.Planning1 -> Screen1(closeSheet, bottomSheetViewModel)
         BottomSheetType.Planning2 -> Screen2(closeSheet, bottomSheetViewModel)
         BottomSheetType.Planning3 -> Screen3(closeSheet, bottomSheetViewModel, userViewModel)
-        BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetViewModel = bottomSheetViewModel)
+        BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetViewModel = bottomSheetViewModel, webSocket = webSocket)
         else ->
             Spacer(Modifier.height(1.dp))
     }

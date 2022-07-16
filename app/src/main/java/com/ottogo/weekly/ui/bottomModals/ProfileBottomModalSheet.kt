@@ -24,9 +24,10 @@ import com.ottogo.weekly.ui.theme.Black60
 import com.ottogo.weekly.ui.theme.LightGray
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
+import org.java_websocket.client.WebSocketClient
 
 @Composable
-fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: BottomSheetViewModel) {
+fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: BottomSheetViewModel, webSocket: WebSocketClient?) {
 
     var showDialog by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
@@ -205,7 +206,7 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
                             bottomSheetViewModel.profile = bottomSheetViewModel.profile?.copy(urequested = true)
 
                             // To recompose search results with updated profile
-                            //TODO: ADD NEW ACtion
+                            webSocket?.send("{\"friend_request\": ${true}, \"user_id\": ${userViewModel.profile?.user_id}, \"name\": \"${userViewModel.profile?.name}\", \"username\": \"${userViewModel.profile?.username}\", \"recipients\": ${listOf(bottomSheetViewModel.profile?.user_id, 42)}, \"profile_picture\": \"${userViewModel.profile?.profile_picture}\"}")
 
                         })
                 }

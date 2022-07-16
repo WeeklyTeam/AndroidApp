@@ -57,6 +57,7 @@ class UserViewModel(): ViewModel() {
         _groups[group.id] = group
     }
 
+
     fun addAvailability(availability: Availability){
         _availability.add(availability)
     }
@@ -142,6 +143,10 @@ class UserViewModel(): ViewModel() {
     fun addFriend(profile: Profile){
         _chats.add(0, profile)
         _friends[profile.user_id] = profile
+    }
+
+    fun addFriendRequest() {
+        //requests.add()
     }
 
     fun addPlot(plot: Plot){
