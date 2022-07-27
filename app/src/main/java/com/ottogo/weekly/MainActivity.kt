@@ -194,7 +194,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // other user sends us friend request
-                        if (data["friend_request_accepted"] == true) {
+                        if (data["friend_request"] == true) {
                             userViewModel.addFriendRequest(
                                 Profile(
                                     user_id = (data["user_id"] as Double).toInt(),
