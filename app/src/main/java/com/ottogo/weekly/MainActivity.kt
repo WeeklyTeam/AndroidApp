@@ -181,14 +181,20 @@ class MainActivity : ComponentActivity() {
                     val data: Map<String, Any>? = jsonAdapter.fromJson(message)
 
                     if (data != null) {
-                        if (data["typeing"] == true) {
-                            userViewModel.addGroup(
-                                Group(
-                                    id = (data["username"] as Double).toInt(),
-                                    name = "AllHailAnya",
-                                    image = "https://wegotthiscovered.com/wp-content/uploads/2022/05/Spy-x-Family-anya-1536x864.png",
-                                    messages = listOf(),
-                                    members = listOf()
+
+                        // other user accepts our friend request
+                        if (data["friend_request_accepted"] == true) {
+                            userViewModel.addFriend(
+                                Profile(
+                                    user_id = (data["user_id"] as Double).toInt(),
+                                    name = (data["name"] as String),
+                                    username = (data["username"] as String),
+                                    profile_picture = (data[" profile_picture"] as String?),
+                                    requesting = false,
+                                    urequested = false,
+                                    friend = true,
+                                    blocked = false,
+                                    relationship_id = 0
                                 )
                             )
                         }
@@ -208,9 +214,6 @@ class MainActivity : ComponentActivity() {
                                     relationship_id = 0
                                 )
                             )
-                            for (request in userViewModel.requests) {
-                                Log.d("status", "Request: $request")
-                            }
                         }
                     }
                 }
@@ -374,7 +377,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-        NavHost(navController = navController, startDestination = "searchPage") {
+        NavHost(navController = navController, startDestination = "homePage") {
 
             composable("webSocketTest") {
                 WebSocketTest(navController = navController, userViewModel = userViewModel, webSocket = webSocket)

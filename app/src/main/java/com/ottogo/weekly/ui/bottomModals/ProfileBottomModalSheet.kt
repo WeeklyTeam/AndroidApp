@@ -189,6 +189,7 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
                             bottomSheetViewModel.profile?.let { userViewModel.addFriend(it) }
 
                             //TODO: ADD NEW ACtion
+                            webSocket?.send("{\"friend_request_accepted\": ${true}, \"name\": \"${userViewModel.profile?.name}\", \"username\": \"${userViewModel.profile?.username}\", \"user_id\": ${userViewModel.profile?.user_id}, \"recipients\": ${listOf(bottomSheetViewModel.profile?.user_id)}, \"profile_picture\": \"${userViewModel.profile?.profile_picture}\"")
 
                         }
                     }

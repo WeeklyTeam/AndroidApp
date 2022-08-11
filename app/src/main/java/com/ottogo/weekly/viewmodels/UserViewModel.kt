@@ -38,8 +38,9 @@ class UserViewModel(): ViewModel() {
     private val _plots = mutableStateListOf<Plot>()
     val plots: List<Plot>
         get() = _plots
-    var requests by mutableStateOf<MutableList<Profile>>(mutableListOf())
-
+    private val _requests = mutableStateListOf<Profile>()
+    val requests: List<Profile>
+        get() = _requests
 
 
 
@@ -97,7 +98,7 @@ class UserViewModel(): ViewModel() {
         }
 
         _availability.addAll(data.availability)
-        requests = data.requests.toMutableList()
+        _requests.addAll(data.requests.toMutableList())
         _calendars.addAll(data.calendars)
 
         _plots.addAll(data.plots)
@@ -146,7 +147,7 @@ class UserViewModel(): ViewModel() {
     }
 
     fun addFriendRequest(profile: Profile) {
-        requests.add(profile)
+        _requests.add(profile)
     }
 
     fun addPlot(plot: Plot){
