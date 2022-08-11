@@ -379,9 +379,6 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         ) {
         NavHost(navController = navController, startDestination = "homePage") {
 
-            composable("webSocketTest") {
-                WebSocketTest(navController = navController, userViewModel = userViewModel, webSocket = webSocket)
-            }
             composable("homePage") { HomePage(navController, userViewModel) {
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
                 openSheet()
