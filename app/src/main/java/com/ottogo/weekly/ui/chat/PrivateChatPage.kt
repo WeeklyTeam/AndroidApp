@@ -1,9 +1,10 @@
 package com.ottogo.weekly.ui.chat
 
+import android.os.Build
 import android.util.Log
-import android.widget.ImageView
 import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
+import android.widget.ScrollView
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,130 +28,185 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
-import androidx.recyclerview.widget.RecyclerView
-import com.giphy.sdk.ui.GPHSettings
+import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
-import com.giphy.sdk.ui.themes.GPHTheme
-import com.giphy.sdk.ui.themes.GridType
-import com.giphy.sdk.ui.views.GiphyDialogFragment
-import com.giphy.sdk.ui.views.GiphyGridView
+import com.giphy.sdk.ui.views.*
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.UserViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.java_websocket.client.WebSocketClient
 
-
+@RequiresApi(Build.VERSION_CODES.N)
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?) {
 
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
 
-    GiphyView()
+    var giphySheetState = rememberBottomSheetScaffoldState(
+        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
+    )
+    var test by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
+    BottomSheetScaffold(
+        scaffoldState = giphySheetState,
+        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        sheetPeekHeight = 0.dp,
+        sheetContent = {
+
+            Box(modifier= Modifier
+                .fillMaxWidth()
+                .height(24.dp)
+                .clickable {
+                    coroutineScope.launch {
+                        giphySheetState.bottomSheetState.collapse()
+                    }
+                })
+            GiphyView() {
+                coroutineScope.launch {
+                    giphySheetState.bottomSheetState.collapse()
+                }
+            }
+        },
+        sheetGesturesEnabled = false) {
+
+        PrivateChatPageContent(navController, userViewModel, userId, webSocket, giphySheetState, coroutineScope)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.N)
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun PrivateChatPageContent(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?, giphySheetState: BottomSheetScaffoldState, coroutineScope: CoroutineScope) {
     var message by remember {
         mutableStateOf("")
     }
     val friend = userViewModel.friends[userId]
 
-
-
     Column() {
         Log.d("recomp", "recomp1")
 
 
-            TitleBar(navController = navController, title = friend?.name ?: "")
+        TitleBar(navController = navController, title = friend?.name ?: "")
 
-            Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
+        Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-            ChatMessages(messages = userViewModel.friends[userId]?.messages ?: listOf(), userId = userId, currentUserId = userViewModel.profile!!.user_id, modifier = Modifier.weight(1F))
+        ChatMessages(messages = userViewModel.friends[userId]?.messages ?: listOf(), userId = userId, currentUserId = userViewModel.profile!!.user_id, modifier = Modifier.weight(1F))
 
 //        Text(userViewModel.friends[userId]?.messages.toString())
 
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
 
-                IconButton(onClick = {
-                    // TODO: GIPHY
-                }){
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_file_gif_line),
-                        contentDescription = "gif",
-                        modifier = Modifier.height(24.dp)
-                    )
+            IconButton(onClick = {
+                coroutineScope.launch {
+                    if (giphySheetState.bottomSheetState.isCollapsed) {
+                        giphySheetState.bottomSheetState.expand()
+                    } else {
+                        giphySheetState.bottomSheetState.collapse()
+                    }
                 }
-
-                TextField(
-                    value = message,
-                    onValueChange = { message = it }, Modifier.weight(1F),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Send
-                    ),
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = ExtendedTheme.colors.LightGray,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    visualTransformation = VisualTransformation.None,
-                    placeholder = { Text("Message...") },
-                    shape = RoundedCornerShape(28.dp),
-                    singleLine = false,
-                    keyboardActions = KeyboardActions(onSend = {
-
-                    }),
+            }){
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_file_gif_line),
+                    contentDescription = "gif",
+                    modifier = Modifier.height(24.dp)
                 )
+            }
 
-                Spacer(modifier = Modifier.width(16.dp))
+            TextField(
+                value = message,
+                onValueChange = { message = it }, Modifier.weight(1F),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Send
+                ),
+                colors = TextFieldDefaults.textFieldColors(
+                    backgroundColor = ExtendedTheme.colors.LightGray,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                visualTransformation = VisualTransformation.None,
+                placeholder = { Text("Message...") },
+                shape = RoundedCornerShape(28.dp),
+                singleLine = false,
+                keyboardActions = KeyboardActions(onSend = {
 
-                IconButton(onClick = {
-                    webSocket?.send("{\"recipient\": $userId, \"message\": \"$message\"}")
-                    userViewModel.addPrivateMessage(
-                        message = ChatMessage(
-                            user_id = userViewModel.profile!!.user_id,
-                            message = message,
-                            recipient = userId
-                        )
+                }),
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            IconButton(onClick = {
+                webSocket?.send("{\"recipient\": $userId, \"message\": \"$message\"}")
+                userViewModel.addPrivateMessage(
+                    message = ChatMessage(
+                        user_id = userViewModel.profile!!.user_id,
+                        message = message,
+                        recipient = userId
                     )
-                    message = ""
+                )
+                message = ""
 
-                }, Modifier.clip(CircleShape)) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_send_plane_fill),
-                        contentDescription = "send",
-                        tint = MaterialTheme.colors.onPrimary,
-                        modifier = Modifier
-                            .background(MaterialTheme.colors.primary)
-                            .padding(12.dp)
-                            .size(24.dp)
-                    )
-                }
-        }
-
-
-
-
-
-    }
-
-}
-
-@Composable
-fun GiphyView() {
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            val gridView = GiphyGridView(context)
-            gridView.content = GPHContent.trendingGifs
-            gridView.apply {
-
+            }, Modifier.clip(CircleShape)) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_send_plane_fill),
+                    contentDescription = "send",
+                    tint = MaterialTheme.colors.onPrimary,
+                    modifier = Modifier
+                        .background(MaterialTheme.colors.primary)
+                        .padding(12.dp)
+                        .size(24.dp)
+                )
             }
         }
-    )
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun GiphyView(
+    toggleSheet: () -> Unit
+) {
+        var close by remember { mutableStateOf(false) }
+        if (close) {
+            toggleSheet.invoke()
+            close = false
+        }
+
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize().clickable { toggleSheet.invoke() },
+            factory = { context ->
+                val gridView = GiphyGridView(context)
+
+                gridView.content = GPHContent.trendingGifs
+                gridView.callback = object : GPHGridCallback {
+                    override fun contentDidUpdate(resultCount: Int) {
+                        Log.d("status", "test")
+                    }
+
+                    override fun didSelectMedia(media: Media) {
+                        Log.d("status", "${media.bitlyGifUrl}")
+                        close = true
+                    }
+                }
+
+                gridView.apply {}
+            }
+        )
+
 }
 
 @Composable
