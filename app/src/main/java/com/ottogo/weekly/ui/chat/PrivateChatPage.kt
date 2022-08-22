@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +32,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
@@ -46,6 +48,18 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.java_websocket.client.WebSocketClient
+
+class PrivateChatPageViewModel: ViewModel() {
+    val messageLiveData: LiveData<String>
+        get() = message
+
+    var message = MutableLiveData<String>()
+
+    fun setMessage(message: String) {
+        this.message.value = message
+    }
+
+}
 
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class)
@@ -90,9 +104,9 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PrivateChatPageContent(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?, giphySheetState: BottomSheetScaffoldState, coroutineScope: CoroutineScope) {
-    var message by remember {
-        mutableStateOf("")
-    }
+
+    val model =  PrivateChatPageViewModel()
+    val message by model.messageLiveData.observeAsState("")
     val friend = userViewModel.friends[userId]
 
     Column() {
@@ -127,7 +141,7 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
 
             TextField(
                 value = message,
-                onValueChange = { message = it }, Modifier.weight(1F),
+                onValueChange = { model.setMessage(it) }, Modifier.weight(1F),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Send
@@ -157,7 +171,7 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
                         recipient = userId
                     )
                 )
-                message = ""
+                model.setMessage("")
 
             }, Modifier.clip(CircleShape)) {
                 Icon(
@@ -187,7 +201,8 @@ fun GiphyView(
 
         AndroidView(
             modifier = Modifier
-                .fillMaxSize().clickable { toggleSheet.invoke() },
+                .fillMaxSize()
+                .clickable { toggleSheet.invoke() },
             factory = { context ->
                 val gridView = GiphyGridView(context)
 
