@@ -26,11 +26,13 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -73,7 +75,7 @@ class PrivateChatPageViewModel: ViewModel() {
 }
 
 @RequiresApi(Build.VERSION_CODES.N)
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?) {
 
@@ -86,6 +88,8 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     )
     var test by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+
+    var gifSearch by remember {  mutableStateOf("") }
 
     BottomSheetScaffold(
         scaffoldState = giphySheetState,
@@ -101,7 +105,8 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
                         giphySheetState.bottomSheetState.collapse()
                     }
                 })
-            GiphyView() {
+            SearchBar(searchText = gifSearch, searchType = { gifSearch = it })
+            GiphyView(gifSearch) {
                 coroutineScope.launch {
                     giphySheetState.bottomSheetState.collapse()
                 }
@@ -204,59 +209,27 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun GiphyView(
-    toggleSheet: () -> Unit
-) {
+fun GiphyView(gifSearch: String, toggleSheet: () -> Unit) {
+
         var close by remember { mutableStateOf(false) }
         if (close) {
             toggleSheet.invoke()
             close = false
         }
-
+    
         AndroidView(
             modifier = Modifier
                 .fillMaxSize(),
             factory = { context ->
+                var gifSearch = ""
                 val gridView = GiphyGridView(context)
-                val linearLayout = LinearLayout(context)
-                linearLayout.orientation = LinearLayout.VERTICAL
 
+                if (gifSearch == "") {
+                    gridView.content = GPHContent.trendingGifs
+                } else {
+                    gridView.content = GPHContent.searchQuery(gifSearch)
+                }
 
-                val editTextView = EditText(context)
-                editTextView.maxLines=1
-                editTextView.inputType = InputType.TYPE_CLASS_TEXT
-                editTextView.imeOptions = EditorInfo.IME_ACTION_DONE
-                
-
-                // clears focus and disables soft keyboard
-                editTextView.setOnEditorActionListener(OnEditorActionListener { v, actionId, event ->
-                    if (actionId == EditorInfo.IME_ACTION_DONE) {
-                        editTextView.clearFocus()
-                        val imm = v.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                        imm.hideSoftInputFromWindow(v.windowToken, 0)
-                        return@OnEditorActionListener true
-                    }
-                    false
-                })
-
-                // changes content as user types
-                editTextView.addTextChangedListener(object: TextWatcher {
-                    override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-                    override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                        var searchText = editTextView.text.toString()
-                        Log.d("status", "$searchText")
-                        if (searchText == "") {
-                            gridView.content = GPHContent.trendingGifs
-                        } else {
-                            gridView.content = GPHContent.searchQuery(searchText)
-                        }
-                    }
-                    override fun afterTextChanged(p0: Editable?) {}
-                })
-
-
-
-                gridView.content = GPHContent.trendingGifs
                 gridView.callback = object : GPHGridCallback {
                     override fun contentDidUpdate(resultCount: Int) {
                     }
@@ -267,9 +240,14 @@ fun GiphyView(
                     }
                 }
 
-                linearLayout.addView(editTextView)
-                linearLayout.addView(gridView)
-                linearLayout.apply { }
+                gridView.apply { }
+            },
+            update = {
+                if (gifSearch == "") {
+                    it.content = GPHContent.trendingGifs
+                } else {
+                    it.content = GPHContent.searchQuery(gifSearch)
+                }
             }
         )
 
