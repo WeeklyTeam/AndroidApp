@@ -90,6 +90,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     val coroutineScope = rememberCoroutineScope()
 
     var gifSearch by remember {  mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     BottomSheetScaffold(
         scaffoldState = giphySheetState,
@@ -104,12 +105,14 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
                     coroutineScope.launch {
                         giphySheetState.bottomSheetState.collapse()
                     }
+                    keyboardController?.hide()
                 })
             SearchBar(searchText = gifSearch, searchType = { gifSearch = it })
             GiphyView(gifSearch) {
                 coroutineScope.launch {
                     giphySheetState.bottomSheetState.collapse()
                 }
+                keyboardController?.hide()
                 model.addMessage("hi")
             }
         },
