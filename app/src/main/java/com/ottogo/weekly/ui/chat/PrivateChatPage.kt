@@ -1,11 +1,19 @@
 package com.ottogo.weekly.ui.chat
 
+import android.content.Context
 import android.os.Build
+import android.text.Editable
+import android.text.InputType
+import android.text.TextWatcher
 import android.util.Log
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
+import android.widget.TextView.OnEditorActionListener
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -32,22 +40,21 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
-import com.giphy.sdk.ui.views.*
+import com.giphy.sdk.ui.views.GPHGridCallback
+import com.giphy.sdk.ui.views.GiphyGridView
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.ui.components.TitleBar
-import com.ottogo.weekly.ui.theme.*
+import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.java_websocket.client.WebSocketClient
+
 
 class PrivateChatPageViewModel: ViewModel() {
     val messageLiveData: LiveData<String>
@@ -55,8 +62,12 @@ class PrivateChatPageViewModel: ViewModel() {
 
     var message = MutableLiveData<String>()
 
-    fun setMessage(message: String) {
-        this.message.value = message
+    fun setMessage(mess: String) {
+        message.value = mess
+    }
+
+    fun addMessage(mess: String) {
+        message.value += mess
     }
 
 }
@@ -67,6 +78,8 @@ class PrivateChatPageViewModel: ViewModel() {
 fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?) {
 
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
+
+    val model =  PrivateChatPageViewModel()
 
     var giphySheetState = rememberBottomSheetScaffoldState(
         bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
@@ -92,6 +105,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
                 coroutineScope.launch {
                     giphySheetState.bottomSheetState.collapse()
                 }
+                model.addMessage("hi")
             }
         },
         sheetGesturesEnabled = false) {
@@ -201,24 +215,61 @@ fun GiphyView(
 
         AndroidView(
             modifier = Modifier
-                .fillMaxSize()
-                .clickable { toggleSheet.invoke() },
+                .fillMaxSize(),
             factory = { context ->
                 val gridView = GiphyGridView(context)
+                val linearLayout = LinearLayout(context)
+                linearLayout.orientation = LinearLayout.VERTICAL
+
+
+                val editTextView = EditText(context)
+                editTextView.maxLines=1
+                editTextView.inputType = InputType.TYPE_CLASS_TEXT
+                editTextView.imeOptions = EditorInfo.IME_ACTION_DONE
+                
+
+                // clears focus and disables soft keyboard
+                editTextView.setOnEditorActionListener(OnEditorActionListener { v, actionId, event ->
+                    if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        editTextView.clearFocus()
+                        val imm = v.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                        imm.hideSoftInputFromWindow(v.windowToken, 0)
+                        return@OnEditorActionListener true
+                    }
+                    false
+                })
+
+                // changes content as user types
+                editTextView.addTextChangedListener(object: TextWatcher {
+                    override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+                    override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                        var searchText = editTextView.text.toString()
+                        Log.d("status", "$searchText")
+                        if (searchText == "") {
+                            gridView.content = GPHContent.trendingGifs
+                        } else {
+                            gridView.content = GPHContent.searchQuery(searchText)
+                        }
+                    }
+                    override fun afterTextChanged(p0: Editable?) {}
+                })
+
+
 
                 gridView.content = GPHContent.trendingGifs
                 gridView.callback = object : GPHGridCallback {
                     override fun contentDidUpdate(resultCount: Int) {
-                        Log.d("status", "test")
                     }
 
                     override fun didSelectMedia(media: Media) {
-                        Log.d("status", "${media.bitlyGifUrl}")
+                        //TODO: send to user
                         close = true
                     }
                 }
 
-                gridView.apply {}
+                linearLayout.addView(editTextView)
+                linearLayout.addView(gridView)
+                linearLayout.apply { }
             }
         )
 
