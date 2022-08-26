@@ -27,7 +27,7 @@
             android:exported="true"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustPan"
             android:theme="@style/Theme.Weekly">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
