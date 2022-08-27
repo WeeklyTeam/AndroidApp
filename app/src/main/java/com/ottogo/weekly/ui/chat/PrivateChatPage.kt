@@ -12,15 +12,19 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView.OnEditorActionListener
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -32,11 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,6 +49,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -53,6 +60,8 @@ import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
 import com.giphy.sdk.ui.views.GPHGridCallback
 import com.giphy.sdk.ui.views.GiphyGridView
+import com.google.accompanist.insets.LocalWindowInsets
+import com.google.accompanist.insets.imePadding
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.ui.components.TitleBar
@@ -81,7 +90,9 @@ class PrivateChatPageViewModel: ViewModel() {
 }
 
 @RequiresApi(Build.VERSION_CODES.N)
-@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class,
+    ExperimentalFoundationApi::class
+)
 @Composable
 fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?) {
 
@@ -97,18 +108,36 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     var gifSearch by remember {  mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    var sheetSwipeableState = rememberSwipeableState(initialValue = "A")
+    var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
     var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
-    var halfExpandedHeight = fullyExpandedHeight - (fullyExpandedHeight / 3)
-    val anchors = mapOf(0f to "A", halfExpandedHeight.toFloat() to "B", fullyExpandedHeight.toFloat() to "C")
+    var halfExpandedHeight = fullyExpandedHeight / 2
+    val anchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
 
 
-    // Hides keyboard if user swipes bottom sheet with keyboard open
-    if (sheetSwipeableState.currentValue == "A") {
+    // Hides keyboard and resets gif search if user closes bottom sheet
+    if (sheetSwipeableState.currentValue == "none") {
         keyboardController?.hide()
+        gifSearch = ""
     }
 
+
+//    if (sheetSwipeableState.currentValue == "full" && keyboardState.value) {
+//        Log.d("status", sheetSwipeableState.currentValue + keyboardState.value)
+//        coroutineScope.launch {
+//            sheetSwipeableState.animateTo("half")
+//        }
+//    }
+
+
+
     BottomSheetScaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(onTap = {
+                coroutineScope.launch {
+                    sheetSwipeableState.animateTo("none")
+                }
+            })
+        },
         scaffoldState = giphySheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetPeekHeight = sheetSwipeableState.offset.value.dp,
@@ -134,7 +163,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
 
             GiphyView(gifSearch) {
                 coroutineScope.launch {
-                    sheetSwipeableState.animateTo("A")
+                    sheetSwipeableState.animateTo("none")
                 }
                 keyboardController?.hide()
                 model.addMessage("hi")
@@ -144,7 +173,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
 
         PrivateChatPageContent(navController, userViewModel, userId, webSocket) {
             coroutineScope.launch {
-                    sheetSwipeableState.animateTo("B")
+                sheetSwipeableState.animateTo("half")
             }
         }
     }

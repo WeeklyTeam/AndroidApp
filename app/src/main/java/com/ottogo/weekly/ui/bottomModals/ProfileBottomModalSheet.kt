@@ -3,13 +3,16 @@ package com.ottogo.weekly.ui.bottomModals
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.ottogo.weekly.BottomSheetViewModel
@@ -27,6 +30,7 @@ import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
 import org.java_websocket.client.WebSocketClient
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: BottomSheetViewModel, webSocket: WebSocketClient?) {
 
@@ -67,7 +71,6 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = bottomSheetViewModel.profile?.username ?: "", style = MaterialTheme.typography.body2, color = Black60)
         Spacer(modifier = Modifier.height(16.dp))
-
         Row(
             horizontalArrangement = Arrangement.Center, modifier = Modifier
                 .fillMaxWidth()
