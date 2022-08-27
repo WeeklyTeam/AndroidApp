@@ -73,22 +73,6 @@ import org.java_websocket.client.WebSocketClient
 import kotlin.math.roundToInt
 
 
-class PrivateChatPageViewModel: ViewModel() {
-    val messageLiveData: LiveData<String>
-        get() = message
-
-    var message = MutableLiveData<String>()
-
-    fun setMessage(mess: String) {
-        message.value = mess
-    }
-
-    fun addMessage(mess: String) {
-        message.value += mess
-    }
-
-}
-
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class,
     ExperimentalFoundationApi::class
@@ -97,8 +81,6 @@ class PrivateChatPageViewModel: ViewModel() {
 fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?) {
 
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
-
-    val model =  PrivateChatPageViewModel()
 
     var giphySheetState = rememberBottomSheetScaffoldState(
         bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
@@ -166,7 +148,6 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
                     sheetSwipeableState.animateTo("none")
                 }
                 keyboardController?.hide()
-                model.addMessage("hi")
             }
         },
         sheetGesturesEnabled = false) {
@@ -190,8 +171,7 @@ fun PrivateChatPageContent(
     toggleSwipeState: () -> Unit
 ) {
 
-    val model =  PrivateChatPageViewModel()
-    val message by model.messageLiveData.observeAsState("")
+    var message by remember { mutableStateOf("") }
     val friend = userViewModel.friends[userId]
 
     Column() {
@@ -220,7 +200,7 @@ fun PrivateChatPageContent(
 
             TextField(
                 value = message,
-                onValueChange = { model.setMessage(it) }, Modifier.weight(1F),
+                onValueChange = { message = it }, Modifier.weight(1F),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Send
@@ -250,7 +230,7 @@ fun PrivateChatPageContent(
                         recipient = userId
                     )
                 )
-                model.setMessage("")
+                message = ""
 
             }, Modifier.clip(CircleShape)) {
                 Icon(
