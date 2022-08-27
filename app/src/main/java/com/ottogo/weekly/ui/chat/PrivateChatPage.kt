@@ -102,13 +102,13 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
         gifSearch = ""
     }
 
-
-//    if (sheetSwipeableState.currentValue == "full" && keyboardState.value) {
-//        Log.d("status", sheetSwipeableState.currentValue + keyboardState.value)
-//        coroutineScope.launch {
-//            sheetSwipeableState.animateTo("half")
-//        }
-//    }
+// TODO: fix keyboard bringing up bottom sheet
+    //    if (sheetSwipeableState.currentValue == "full" && keyboardState.value) {
+    //        Log.d("status", sheetSwipeableState.currentValue + keyboardState.value)
+    //        coroutineScope.launch {
+    //            sheetSwipeableState.animateTo("half")
+    //        }
+    //    }
 
 
 
@@ -147,6 +147,15 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
                 coroutineScope.launch {
                     sheetSwipeableState.animateTo("none")
                 }
+                webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
+                //TODO: Update userViewModel
+//                userViewModel.addPrivateMessage(
+//                    message = ChatMessage(
+//                        user_id = userViewModel.profile!!.user_id,
+//                        message = message,
+//                        recipient = userId
+//                    )
+//                )
                 keyboardController?.hide()
             }
         },
@@ -249,13 +258,14 @@ fun PrivateChatPageContent(
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun GiphyView(gifSearch: String, toggleSheet: () -> Unit) {
+fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
 
         var close by remember { mutableStateOf(false) }
-        if (close) {
-            toggleSheet.invoke()
-            close = false
-        }
+
+//        if (close) {
+//            toggleSheet.invoke(media)
+//            close = false
+//        }
     
         AndroidView(
             modifier = Modifier
@@ -272,11 +282,10 @@ fun GiphyView(gifSearch: String, toggleSheet: () -> Unit) {
                 }
 
                 gridView.callback = object : GPHGridCallback {
-                    override fun contentDidUpdate(resultCount: Int) {
-                    }
+                    override fun contentDidUpdate(resultCount: Int) { }
 
                     override fun didSelectMedia(media: Media) {
-                        //TODO: send to user
+                        media.embedUrl?.let { toggleSheet.invoke(it) }
                         close = true
                     }
                 }
