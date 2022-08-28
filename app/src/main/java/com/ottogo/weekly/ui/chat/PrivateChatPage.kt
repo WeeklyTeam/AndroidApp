@@ -80,93 +80,18 @@ import kotlin.math.roundToInt
 @Composable
 fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?) {
 
-    Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
-
-    var giphySheetState = rememberBottomSheetScaffoldState(
-        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
-    )
-    val coroutineScope = rememberCoroutineScope()
-
-    var gifSearch by remember {  mutableStateOf("") }
-    val keyboardController = LocalSoftwareKeyboardController.current
 
     var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
-    var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
-    var halfExpandedHeight = fullyExpandedHeight / 2
-    val anchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
+    val coroutineScope = rememberCoroutineScope()
 
-
-    // Hides keyboard and resets gif search if user closes bottom sheet
-    if (sheetSwipeableState.currentValue == "none") {
-        keyboardController?.hide()
-        gifSearch = ""
-    }
-
-// TODO: fix keyboard bringing up bottom sheet
-    //    if (sheetSwipeableState.currentValue == "full" && keyboardState.value) {
-    //        Log.d("status", sheetSwipeableState.currentValue + keyboardState.value)
-    //        coroutineScope.launch {
-    //            sheetSwipeableState.animateTo("half")
-    //        }
-    //    }
-
-
-
-    BottomSheetScaffold(
-        modifier = Modifier.pointerInput(Unit) {
-            detectTapGestures(onTap = {
-                coroutineScope.launch {
-                    sheetSwipeableState.animateTo("none")
-                }
-            })
-        },
-        scaffoldState = giphySheetState,
-        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetPeekHeight = sheetSwipeableState.offset.value.dp,
-        sheetContent = {
-
-            Box(modifier= Modifier
-                .fillMaxWidth()
-                .height(24.dp)
-                .swipeable(
-                    state = sheetSwipeableState,
-                    anchors = anchors,
-                    thresholds = { _, _ -> FractionalThreshold(0.5f) },
-                    orientation = Orientation.Vertical,
-                    reverseDirection = true
-                )
-            ) {
-                Box(modifier = Modifier.clip(
-                    RoundedCornerShape(24.dp)).width(48.dp).height(4.dp).align(Alignment.Center).background(color = Color.Gray))
-            }
-            SearchBar(searchText = gifSearch, searchType = { gifSearch = it }, modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp))
-
-            GiphyView(gifSearch) {
-                coroutineScope.launch {
-                    sheetSwipeableState.animateTo("none")
-                }
-                webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
-                //TODO: Update userViewModel
-//                userViewModel.addPrivateMessage(
-//                    message = ChatMessage(
-//                        user_id = userViewModel.profile!!.user_id,
-//                        message = message,
-//                        recipient = userId
-//                    )
-//                )
-                keyboardController?.hide()
-            }
-        },
-        sheetGesturesEnabled = false) {
-
+    GiphyBottomModalSheet(sheetSwipeableState, webSocket, coroutineScope, userId) {
         PrivateChatPageContent(navController, userViewModel, userId, webSocket) {
             coroutineScope.launch {
                 sheetSwipeableState.animateTo("half")
             }
         }
     }
+
 }
 
 @RequiresApi(Build.VERSION_CODES.N)
@@ -256,21 +181,105 @@ fun PrivateChatPageContent(
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
+@Composable
+fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, coroutineScope: CoroutineScope, userId: Int, mainContent: @Composable () -> Unit) {
+
+    var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
+    var halfExpandedHeight = fullyExpandedHeight / 2
+    val anchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
+
+    Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
+
+    var gifSearch by remember {  mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    var giphySheetState = rememberBottomSheetScaffoldState(
+        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
+    )
+
+    // Hides keyboard and resets gif search if user closes bottom sheet
+    if (sheetSwipeableState.currentValue == "none") {
+        keyboardController?.hide()
+        gifSearch = ""
+    }
+
+    // TODO: fix keyboard bringing up bottom sheet
+    //    if (sheetSwipeableState.currentValue == "full" && keyboardState.value) {
+    //        Log.d("status", sheetSwipeableState.currentValue + keyboardState.value)
+    //        coroutineScope.launch {
+    //            sheetSwipeableState.animateTo("half")
+    //        }
+    //    }
+
+
+
+    BottomSheetScaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(onTap = {
+                coroutineScope.launch {
+                    sheetSwipeableState.animateTo("none")
+                }
+            })
+        },
+        scaffoldState = giphySheetState,
+        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        sheetPeekHeight = sheetSwipeableState.offset.value.dp,
+        sheetContent = {
+
+            Box(modifier= Modifier
+                .fillMaxWidth()
+                .height(24.dp)
+                .swipeable(
+                    state = sheetSwipeableState,
+                    anchors = anchors,
+                    thresholds = { _, _ -> FractionalThreshold(0.5f) },
+                    orientation = Orientation.Vertical,
+                    reverseDirection = true
+                )
+            ) {
+                Box(modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(24.dp)
+                    )
+                    .width(48.dp)
+                    .height(4.dp)
+                    .align(Alignment.Center)
+                    .background(color = Color.Gray))
+            }
+            SearchBar(searchText = gifSearch, searchType = { gifSearch = it }, modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp))
+
+            GiphyView(gifSearch) {
+                coroutineScope.launch {
+                    sheetSwipeableState.animateTo("none")
+                }
+                webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
+                //TODO: Update userViewModel
+//                userViewModel.addPrivateMessage(
+//                    message = ChatMessage(
+//                        user_id = userViewModel.profile!!.user_id,
+//                        message = message,
+//                        recipient = userId
+//                    )
+//                )
+                keyboardController?.hide()
+            }
+        },
+        sheetGesturesEnabled = false) {
+
+        mainContent()
+    }
+}
+
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
-
-        var close by remember { mutableStateOf(false) }
-
-//        if (close) {
-//            toggleSheet.invoke(media)
-//            close = false
-//        }
     
         AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 12.dp, end = 12.dp, top = 12.dp),
+            modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 12.dp),
             factory = { context ->
                 var gifSearch = ""
                 val gridView = GiphyGridView(context)
@@ -283,10 +292,8 @@ fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
 
                 gridView.callback = object : GPHGridCallback {
                     override fun contentDidUpdate(resultCount: Int) { }
-
                     override fun didSelectMedia(media: Media) {
                         media.embedUrl?.let { toggleSheet.invoke(it) }
-                        close = true
                     }
                 }
 
@@ -300,7 +307,6 @@ fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
                 }
             }
         )
-
 }
 
 @Composable
