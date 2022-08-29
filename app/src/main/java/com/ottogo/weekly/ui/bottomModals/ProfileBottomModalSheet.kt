@@ -30,7 +30,7 @@ import org.java_websocket.client.WebSocketClient
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetState: Boolean, bottomSheetViewModel: BottomSheetViewModel, webSocket: WebSocketClient?) {
+fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: BottomSheetViewModel, webSocket: WebSocketClient?) {
 
     var showDialog by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
@@ -38,22 +38,7 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetState: Bool
 
     var onConfirm by remember { mutableStateOf({ }) }
 
-    LaunchedEffect(key1 = bottomSheetState, block = {
-        var relationship = bottomSheetViewModel.profile?.user_id?.let {
-            WeeklyApi.retrofitService.relationship(
-                mapOf("Authorization" to "token ${userViewModel.token}"), it
-            )
-        }
 
-        if (relationship != null) {
-            bottomSheetViewModel.profile?.requesting = relationship["requesting"]
-            bottomSheetViewModel.profile?.urequested = relationship["urequested"]
-            bottomSheetViewModel.profile?.friend = relationship["friend"]
-            bottomSheetViewModel.profile?.blocked = relationship["blocked"]
-        }
-
-        Log.d("status", "Printing id: " + bottomSheetViewModel.profile?.user_id.toString() + "; Printing relationship: " + relationship)
-    })
 
     if (showDialog && !blockDisplay) {
         PopUpConfirmationSheetContent(title = title,
@@ -87,7 +72,6 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetState: Bool
                 .padding(start = 60.dp, end = 60.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) {
-
                 if (bottomSheetViewModel.profile?.blocked == true) {
                     CustomButton(
                         buttonText = "This user is blocked",

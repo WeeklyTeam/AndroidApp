@@ -194,6 +194,22 @@ fun SearchResults(searchText: String, model: SearchPageViewModel = viewModel(), 
         searchResults.forEachIndexed { profileIndex, searchResult ->
             SearchResultsItem(searchResult.user_id, searchResult.name, searchResult.username, searchResult.profile_picture, modifier = Modifier.clickable{
                 keyboardController?.hide()
+
+                var relationship = searchResult.user_id?.let {
+                    runBlocking {
+                        WeeklyApi.retrofitService.relationship(
+                            mapOf("Authorization" to "token ${userViewModel.token}"), it
+                        )
+                    }
+                }
+
+                if (relationship != null) {
+                    searchResult.requesting = relationship["requesting"]
+                    searchResult.urequested = relationship["urequested"]
+                    searchResult.friend = relationship["friend"]
+                    searchResult.blocked = relationship["blocked"]
+                }
+
                 openSheet(searchResult)
             })
         }
@@ -206,7 +222,9 @@ fun SearchResults(searchText: String, model: SearchPageViewModel = viewModel(), 
 fun SearchResultsItem(userId: Int, name: String, userName: String, profilePicture: String?, modifier: Modifier = Modifier)  {
 
 
-    Row(modifier = modifier.padding(vertical = 8.dp, horizontal = 16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = modifier
+        .padding(vertical = 8.dp, horizontal = 16.dp)
+        .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
 
         ProfilePicture(profilePicture)
 

@@ -367,12 +367,10 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             Spacer(Modifier.height(1.dp))
 
             bottomSheetViewModel.bottomSheetType?.let {
-
                 SheetLayout(
                     closeSheet = {
                         closeSheet()
                     },
-                    bottomSheetState = modalBottomSheetState.isVisible,
                     bottomSheetViewModel = bottomSheetViewModel,
                     userViewModel = userViewModel, webSocket = webSocket)
             }
@@ -387,8 +385,10 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             }
             }
             composable("searchPage") { SearchPage(navController, userViewModel){
+
                 bottomSheetViewModel.profile = it
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Profile
+
                 openSheet()
             } }
             composable("settingsPage") { SettingsPage(navController) }
@@ -473,7 +473,6 @@ fun SheetLayout(
     bottomSheetViewModel: BottomSheetViewModel,
     userViewModel: UserViewModel,
     closeSheet : () -> Unit,
-    bottomSheetState: Boolean,
     webSocket: WebSocketClient?
 ){
 
@@ -481,7 +480,7 @@ fun SheetLayout(
         BottomSheetType.Planning1 -> Screen1(closeSheet, bottomSheetViewModel)
         BottomSheetType.Planning2 -> Screen2(closeSheet, bottomSheetViewModel)
         BottomSheetType.Planning3 -> Screen3(closeSheet, bottomSheetViewModel, userViewModel)
-        BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetState = bottomSheetState, bottomSheetViewModel = bottomSheetViewModel, webSocket = webSocket)
+        BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetViewModel = bottomSheetViewModel, webSocket = webSocket)
         else ->
             Spacer(Modifier.height(1.dp))
     }
