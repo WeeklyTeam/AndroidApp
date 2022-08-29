@@ -2,8 +2,10 @@ package com.ottogo.weekly.ui.chat
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.graphics.Rect
 import android.os.Build
 import android.util.Log
+import android.view.ViewTreeObserver
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -171,7 +173,8 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
 
     var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
     var halfExpandedHeight = fullyExpandedHeight / 2
-    val anchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
+    val keyboardClosedAnchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
+    val keyboardOpenAnchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", halfExpandedHeight.toFloat() to "full")
 
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
 
@@ -187,6 +190,8 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
         keyboardController?.hide()
         gifSearch = ""
     }
+
+    val isKeyboardOpen by keyboardAsState()
 
     BottomSheetScaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -206,7 +211,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                 .height(24.dp)
                 .swipeable(
                     state = sheetSwipeableState,
-                    anchors = anchors,
+                    anchors = if (isKeyboardOpen == Keyboard.Opened) keyboardOpenAnchors else keyboardClosedAnchors,
                     thresholds = { _, _ -> FractionalThreshold(0.5f) },
                     orientation = Orientation.Vertical,
                     reverseDirection = true
@@ -375,3 +380,33 @@ fun LazyListState.OnBottomReached(
 ////                    TextStyle(color = , fontSize = 16, fontFamily = nunitoFamily)
 //    }
 //}
+
+enum class Keyboard {
+    Opened, Closed
+}
+
+@Composable
+fun keyboardAsState(): State<Keyboard> {
+    val keyboardState = remember { mutableStateOf(Keyboard.Closed) }
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val onGlobalListener = ViewTreeObserver.OnGlobalLayoutListener {
+            val rect = Rect()
+            view.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = view.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+            keyboardState.value = if (keypadHeight > screenHeight * 0.15) {
+                Keyboard.Opened
+            } else {
+                Keyboard.Closed
+            }
+        }
+        view.viewTreeObserver.addOnGlobalLayoutListener(onGlobalListener)
+
+        onDispose {
+            view.viewTreeObserver.removeOnGlobalLayoutListener(onGlobalListener)
+        }
+    }
+
+    return keyboardState
+}
