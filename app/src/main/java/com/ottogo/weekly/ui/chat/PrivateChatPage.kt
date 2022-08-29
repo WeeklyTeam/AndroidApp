@@ -1,43 +1,29 @@
 package com.ottogo.weekly.ui.chat
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
-import android.text.Editable
-import android.text.InputType
-import android.text.TextWatcher
 import android.util.Log
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.TextView.OnEditorActionListener
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
@@ -46,22 +32,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
 import com.giphy.sdk.ui.views.GPHGridCallback
 import com.giphy.sdk.ui.views.GiphyGridView
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.imePadding
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.ui.components.TitleBar
@@ -70,7 +48,6 @@ import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.java_websocket.client.WebSocketClient
-import kotlin.math.roundToInt
 
 
 @RequiresApi(Build.VERSION_CODES.N)
@@ -84,7 +61,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
     val coroutineScope = rememberCoroutineScope()
 
-    GiphyBottomModalSheet(sheetSwipeableState, webSocket, coroutineScope, userId) {
+    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId) {
         PrivateChatPageContent(navController, userViewModel, userId, webSocket) {
             coroutineScope.launch {
                 sheetSwipeableState.animateTo("half")
@@ -181,9 +158,16 @@ fun PrivateChatPageContent(
     }
 }
 
+fun Context.getActivity(): AppCompatActivity? = when (this) {
+    is AppCompatActivity -> this
+    is ContextWrapper -> baseContext.getActivity()
+    else -> null
+}
+
+@RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, coroutineScope: CoroutineScope, userId: Int, mainContent: @Composable () -> Unit) {
+fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, userId: Int, mainContent: @Composable () -> Unit) {
 
     var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
     var halfExpandedHeight = fullyExpandedHeight / 2
@@ -203,16 +187,6 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
         keyboardController?.hide()
         gifSearch = ""
     }
-
-    // TODO: fix keyboard bringing up bottom sheet
-    //    if (sheetSwipeableState.currentValue == "full" && keyboardState.value) {
-    //        Log.d("status", sheetSwipeableState.currentValue + keyboardState.value)
-    //        coroutineScope.launch {
-    //            sheetSwipeableState.animateTo("half")
-    //        }
-    //    }
-
-
 
     BottomSheetScaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -247,23 +221,23 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                     .align(Alignment.Center)
                     .background(color = Color.Gray))
             }
-            SearchBar(searchText = gifSearch, searchType = { gifSearch = it }, modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp))
+            SearchBar(searchText = gifSearch,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp)) { gifSearch = it }
 
             GiphyView(gifSearch) {
                 coroutineScope.launch {
                     sheetSwipeableState.animateTo("none")
                 }
                 webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
-                //TODO: Update userViewModel
-//                userViewModel.addPrivateMessage(
-//                    message = ChatMessage(
-//                        user_id = userViewModel.profile!!.user_id,
-//                        message = message,
-//                        recipient = userId
-//                    )
-//                )
+                userViewModel.addPrivateMessage(
+                    message = ChatMessage(
+                        user_id = userViewModel.profile!!.user_id,
+                        recipient = userId,
+                        gif = it
+                    )
+                )
                 keyboardController?.hide()
             }
         },
@@ -279,7 +253,9 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
 fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
     
         AndroidView(
-            modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 12.dp, end = 12.dp, top = 12.dp),
             factory = { context ->
                 var gifSearch = ""
                 val gridView = GiphyGridView(context)
@@ -350,7 +326,7 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
             item {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = messages[index].message,
+                        text = messages[index].message?:"",
                         color = if (messages[index].user_id == currentUserId) {
                             MaterialTheme.colors.onPrimary
                         } else {

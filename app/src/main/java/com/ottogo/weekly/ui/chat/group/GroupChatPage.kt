@@ -189,7 +189,7 @@ fun GroupChatMessages (userViewModel: UserViewModel, messages: List<ChatMessage>
                             }
 
 
-                            Text(text = messages[index].message,
+                            Text(text = messages[index].message?:"",
                                 color = if (messages[index].user_id == currentUserId) { MaterialTheme.colors.onPrimary } else { MaterialTheme.colors.onBackground },
                                 modifier = Modifier
                                     .padding(vertical = 2.dp)

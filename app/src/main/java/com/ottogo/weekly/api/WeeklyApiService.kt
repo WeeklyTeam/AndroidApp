@@ -86,6 +86,8 @@ interface WeeklyApiService {
     suspend fun report(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
     @GET("api/profile/{id}/unblock/")
     suspend fun unblock(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/profile/{id}/relationship/")
+    suspend fun relationship(@HeaderMap header: Map<String, String>, @Path("id") id: Int): Map<String, Boolean>
 
     @Multipart
     @JvmSuppressWildcards

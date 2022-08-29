@@ -320,12 +320,12 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
     //val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-
     val closeSheet = {
         //focusManager.clearFocus()
         keyboardController?.hide()
 
         bottomSheetViewModel.bottomSheetType = null
+
         scope.launch { modalBottomSheetState.hide() }
     }
 
@@ -372,6 +372,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                     closeSheet = {
                         closeSheet()
                     },
+                    bottomSheetState = modalBottomSheetState.isVisible,
                     bottomSheetViewModel = bottomSheetViewModel,
                     userViewModel = userViewModel, webSocket = webSocket)
             }
@@ -461,11 +462,6 @@ class BottomSheetViewModel: ViewModel() {
     var plotName by mutableStateOf<String?>(null)
     var plotEmoji by mutableStateOf<String?>(null)
     var plotDate by mutableStateOf<Date?>(null)
-
-
-
-
-
 }
 
 enum class BottomSheetType() {
@@ -477,6 +473,7 @@ fun SheetLayout(
     bottomSheetViewModel: BottomSheetViewModel,
     userViewModel: UserViewModel,
     closeSheet : () -> Unit,
+    bottomSheetState: Boolean,
     webSocket: WebSocketClient?
 ){
 
@@ -484,7 +481,7 @@ fun SheetLayout(
         BottomSheetType.Planning1 -> Screen1(closeSheet, bottomSheetViewModel)
         BottomSheetType.Planning2 -> Screen2(closeSheet, bottomSheetViewModel)
         BottomSheetType.Planning3 -> Screen3(closeSheet, bottomSheetViewModel, userViewModel)
-        BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetViewModel = bottomSheetViewModel, webSocket = webSocket)
+        BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetState = bottomSheetState, bottomSheetViewModel = bottomSheetViewModel, webSocket = webSocket)
         else ->
             Spacer(Modifier.height(1.dp))
     }

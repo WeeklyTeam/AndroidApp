@@ -3,10 +3,7 @@ package com.ottogo.weekly.ui.bottomModals
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -15,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.giphy.sdk.core.models.enums.RatingType
 import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
@@ -32,7 +30,7 @@ import org.java_websocket.client.WebSocketClient
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: BottomSheetViewModel, webSocket: WebSocketClient?) {
+fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetState: Boolean, bottomSheetViewModel: BottomSheetViewModel, webSocket: WebSocketClient?) {
 
     var showDialog by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
@@ -40,10 +38,22 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
 
     var onConfirm by remember { mutableStateOf({ }) }
 
-    LaunchedEffect(key1 = bottomSheetViewModel.profile?.user_id, block = {
-        Log.d("LE", "hi")
-    })
+    LaunchedEffect(key1 = bottomSheetState, block = {
+        var relationship = bottomSheetViewModel.profile?.user_id?.let {
+            WeeklyApi.retrofitService.relationship(
+                mapOf("Authorization" to "token ${userViewModel.token}"), it
+            )
+        }
 
+        if (relationship != null) {
+            bottomSheetViewModel.profile?.requesting = relationship["requesting"]
+            bottomSheetViewModel.profile?.urequested = relationship["urequested"]
+            bottomSheetViewModel.profile?.friend = relationship["friend"]
+            bottomSheetViewModel.profile?.blocked = relationship["blocked"]
+        }
+
+        Log.d("status", "Printing id: " + bottomSheetViewModel.profile?.user_id.toString() + "; Printing relationship: " + relationship)
+    })
 
     if (showDialog && !blockDisplay) {
         PopUpConfirmationSheetContent(title = title,
