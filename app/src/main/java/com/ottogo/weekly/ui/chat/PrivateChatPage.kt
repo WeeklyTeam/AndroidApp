@@ -26,6 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
@@ -171,27 +175,34 @@ fun Context.getActivity(): AppCompatActivity? = when (this) {
 @Composable
 fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, userId: Int, mainContent: @Composable () -> Unit) {
 
-    var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
-    var halfExpandedHeight = fullyExpandedHeight / 2
-    val keyboardClosedAnchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
-    val keyboardOpenAnchors = mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", halfExpandedHeight.toFloat() to "full")
-
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
-
-    var gifSearch by remember {  mutableStateOf("") }
-    val keyboardController = LocalSoftwareKeyboardController.current
-
     var giphySheetState = rememberBottomSheetScaffoldState(
         bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
     )
 
-    // Hides keyboard and resets gif search if user closes bottom sheet
-    if (sheetSwipeableState.currentValue == "none") {
+
+    val isKeyboardOpen by keyboardAsState()
+    var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
+    var halfExpandedHeight = fullyExpandedHeight / 2
+    val anchors = if (isKeyboardOpen == Keyboard.Closed) {
+        mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
+    } else {
+        mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", (halfExpandedHeight + 1).toFloat() to "full")
+    }
+
+
+    var gifSearch by remember {  mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+
+    // Hides keyboard and resets gif search if user closes bottom sheet with search bar focused
+    val focusRequester = remember { FocusRequester() }
+    var searchFocused by remember { mutableStateOf(false) }
+    if (sheetSwipeableState.currentValue == "none" && searchFocused) {
         keyboardController?.hide()
         gifSearch = ""
     }
 
-    val isKeyboardOpen by keyboardAsState()
 
     BottomSheetScaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -211,24 +222,20 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                 .height(24.dp)
                 .swipeable(
                     state = sheetSwipeableState,
-                    anchors = if (isKeyboardOpen == Keyboard.Opened) keyboardOpenAnchors else keyboardClosedAnchors,
+                    anchors = anchors,
                     thresholds = { _, _ -> FractionalThreshold(0.5f) },
                     orientation = Orientation.Vertical,
                     reverseDirection = true
                 )
-            ) {
-                Box(modifier = Modifier
-                    .clip(
-                        RoundedCornerShape(24.dp)
-                    )
-                    .width(48.dp)
-                    .height(4.dp)
-                    .align(Alignment.Center)
-                    .background(color = Color.Gray))
-            }
+            ) { Box(modifier = Modifier
+                    .clip(RoundedCornerShape(24.dp)).width(48.dp).height(4.dp).align(Alignment.Center).background(color = Color.Gray)) }
+
+
             SearchBar(searchText = gifSearch,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { searchFocused = it.isFocused }
                     .padding(start = 12.dp, end = 12.dp)) { gifSearch = it }
 
             GiphyView(gifSearch) {
