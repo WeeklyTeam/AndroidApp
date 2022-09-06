@@ -44,6 +44,7 @@ import androidx.navigation.NavController
 import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
+import com.giphy.sdk.ui.utils.videoUrl
 import com.giphy.sdk.ui.views.GPHGridCallback
 import com.giphy.sdk.ui.views.GiphyGridView
 import com.ottogo.weekly.R
@@ -281,7 +282,9 @@ fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
                 gridView.callback = object : GPHGridCallback {
                     override fun contentDidUpdate(resultCount: Int) { }
                     override fun didSelectMedia(media: Media) {
-                        media.embedUrl?.let { toggleSheet.invoke(it) }
+                        media.images.original?.gifUrl?.let {
+                            toggleSheet.invoke(it)
+                        }
                     }
                 }
 
