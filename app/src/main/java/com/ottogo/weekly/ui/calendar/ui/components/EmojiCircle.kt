@@ -1,5 +1,6 @@
 package com.ottogo.weekly.ui.calendar.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -35,4 +36,6 @@ fun EmojiCircle(emoji: String, modifier: Modifier = Modifier){
             color = Color(red = 0, blue = 0, green = 0)
         )
     }
+
+    Log.d("status", emoji)
 }

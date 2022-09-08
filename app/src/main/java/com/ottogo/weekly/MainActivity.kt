@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -377,7 +378,8 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-        NavHost(navController = navController, startDestination = "homePage") {
+        NavHost(navController = navController, startDestination = "homePage") { // homePage
+
 
             composable("homePage") { HomePage(navController, userViewModel) {
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
@@ -640,6 +642,7 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             })
         }
         else {
+
             ScrollPicker(options = listOf(List(12){ index -> (index+1).toString()}, listOf("AM", "PM")), selectItem = listOf(
                 {   it ->
                     Log.d("selector", it.toString())
@@ -658,6 +661,9 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
                     Log.d("selecteddate", selectedDate.toString())
                 }, {}
             ))
+
+
+
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -671,6 +677,11 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             CustomButton(buttonText = "Skip", backgroundColor = MaterialTheme.colors.background, textColor = ExtendedTheme.colors.Black60) {  bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning3 }
         }
     }
+}
+
+@Composable
+fun timePicker() {
+    //AndroidView(factory = )
 }
 
 //https://stackoverflow.com/questions/22178349/android-how-to-filter-emoji-emoticons-from-a-string

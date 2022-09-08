@@ -5,9 +5,11 @@ import android.content.ContextWrapper
 import android.graphics.Rect
 import android.os.Build
 import android.util.Log
+import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -15,6 +17,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,9 +32,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
@@ -44,13 +47,15 @@ import androidx.navigation.NavController
 import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
-import com.giphy.sdk.ui.utils.videoUrl
 import com.giphy.sdk.ui.views.GPHGridCallback
 import com.giphy.sdk.ui.views.GiphyGridView
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.ui.components.TitleBar
+import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.ExtendedTheme
+import com.ottogo.weekly.viewmodels.CategoryUnicodes
+import com.ottogo.weekly.viewmodels.PeopleCategoryUnicodes
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -68,7 +73,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
     val coroutineScope = rememberCoroutineScope()
 
-    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId) {
+    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId, false) {
         PrivateChatPageContent(navController, userViewModel, userId, webSocket) {
             coroutineScope.launch {
                 sheetSwipeableState.animateTo("half")
@@ -174,7 +179,7 @@ fun Context.getActivity(): AppCompatActivity? = when (this) {
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, userId: Int, mainContent: @Composable () -> Unit) {
+fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, userId: Int, isGiphyView: Boolean = true, mainContent: @Composable () -> Unit) {
 
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
     var giphySheetState = rememberBottomSheetScaffoldState(
@@ -192,7 +197,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
     }
 
 
-    var gifSearch by remember {  mutableStateOf("") }
+    var search by remember {  mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
 
 
@@ -201,7 +206,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
     var searchFocused by remember { mutableStateOf(false) }
     if (sheetSwipeableState.currentValue == "none" && searchFocused) {
         keyboardController?.hide()
-        gifSearch = ""
+        search = ""
     }
 
 
@@ -229,30 +234,44 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                     reverseDirection = true
                 )
             ) { Box(modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp)).width(48.dp).height(4.dp).align(Alignment.Center).background(color = Color.Gray)) }
+                .clip(RoundedCornerShape(24.dp))
+                .width(48.dp)
+                .height(4.dp)
+                .align(Alignment.Center)
+                .background(color = Color.Gray)) }
 
 
-            SearchBar(searchText = gifSearch,
+            SearchBar(searchText = search,
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
                     .onFocusChanged { searchFocused = it.isFocused }
-                    .padding(start = 12.dp, end = 12.dp)) { gifSearch = it }
+                    .padding(start = 12.dp, end = 12.dp)) { search = it }
 
-            GiphyView(gifSearch) {
-                coroutineScope.launch {
-                    sheetSwipeableState.animateTo("none")
-                }
-                webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
-                userViewModel.addPrivateMessage(
-                    message = ChatMessage(
-                        user_id = userViewModel.profile!!.user_id,
-                        recipient = userId,
-                        gif = it
+            if (isGiphyView) {
+                GiphyView(search) {
+                    coroutineScope.launch {
+                        sheetSwipeableState.animateTo("none")
+                    }
+                    webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
+                    userViewModel.addPrivateMessage(
+                        message = ChatMessage(
+                            user_id = userViewModel.profile!!.user_id,
+                            recipient = userId,
+                            gif = it
+                        )
                     )
-                )
-                keyboardController?.hide()
+                    keyboardController?.hide()
+                }
+            } else {
+                EmojiView(search) {
+                    coroutineScope.launch {
+                        sheetSwipeableState.animateTo("none")
+                    }
+                    search = it
+                }
             }
+
         },
         sheetGesturesEnabled = false) {
 
@@ -260,6 +279,43 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
     }
 }
 
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun EmojiView(emojiSearch: String, toggleSheet: (String) -> Unit) {
+    val results = remember { mutableStateListOf<CategoryUnicodes>() }
+
+    results.clear()
+
+    for (emoji in PeopleCategoryUnicodes.values()) {
+        var emojiName = emoji.name.lowercase()
+        if (emojiName.contains(emojiSearch.lowercase())) {
+            results.add(emoji)
+            Log.d("status", emoji.name)
+        }
+    }
+
+    LazyVerticalGrid(columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(5), horizontalArrangement = Arrangement.Center, modifier = Modifier
+        .fillMaxWidth()
+        .padding(12.dp), content = {
+        items(results.size) { index ->
+            AndroidView(factory = {context ->
+                AppCompatTextView(context).apply {
+                    setTextColor(Black.toArgb())
+                    text = results[index].unicode
+                    textSize = 48.0F
+                    textAlignment = View.TEXT_ALIGNMENT_CENTER
+                    setOnClickListener {
+                        Log.d("status", PeopleCategoryUnicodes.values()[index].toString())
+                        toggleSheet.invoke(results[index].unicode)
+                    }
+                }
+
+            })
+        }
+
+    })
+}
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
