@@ -75,7 +75,7 @@ fun SignupBirthdayPage(navController: NavController) {
 
         }, year, month, day
     )*/
-    
+
     if (openDialog) {
         AndroidView(factory = { context ->
             var setListener: DatePickerDialog.OnDateSetListener = DatePickerDialog.OnDateSetListener { view, newYear, newMonth, newDay ->
@@ -86,7 +86,7 @@ fun SignupBirthdayPage(navController: NavController) {
             }
 
             LinearLayout(context).apply {
-                var datePickerDialog = DatePickerDialog(context, R.style.MySpinnerDatePickerStyle, setListener, year, month, day)
+                var datePickerDialog = DatePickerDialog(context, R.style.SpinnerDatePickerStyle, setListener, year, month, day)
                 datePickerDialog.setOnCancelListener { openDialog = false }
                 datePickerDialog.setOnDismissListener { openDialog = false }
                 datePickerDialog.show()

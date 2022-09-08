@@ -6,8 +6,10 @@
         <item name="android:windowLightStatusBar">true</item>
     </style>
 
-    <style name="MySpinnerDatePickerStyle" parent="android:Theme.Material.Dialog">
-        <item name="android:datePickerStyle">@style/MySpinnerDatePicker</item>
+    <style name="SpinnerDatePickerStyle" parent="android:Theme.Material.Dialog">
+        <item name="android:datePickerStyle">@style/SpinnerDatePicker</item>
+
+        <!-- Change style of dialog (can change programmatically if themes.xml is not ideal) -->
         <item name="android:background">@color/white</item>
         <item name="android:textColorPrimary">@color/black</item>
         <item name="android:buttonBarButtonStyle">@style/ButtonStyle</item>
@@ -19,8 +21,12 @@
         <item name="android:textColor">@color/purple_500</item>
     </style>
 
-    <style name="MySpinnerDatePicker" parent="android:Widget.Material.DatePicker">
+    <style name="SpinnerDatePicker" parent="android:Widget.Material.DatePicker">
         <item name="android:datePickerMode">spinner</item>
         <item name="android:calendarViewShown">false</item>
+    </style>
+
+    <style name="SpinnerTimePicker" parent="android:Widget.Material.TimePicker">
+        <item name="android:timePickerMode">spinner</item>
     </style>
 </resources>

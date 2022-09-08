@@ -1,11 +1,19 @@
 package com.ottogo.weekly
 
 import android.app.Activity
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
+import android.widget.TimePicker
 // for a 'val' variable
 import androidx.compose.runtime.getValue
 
@@ -31,6 +39,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -378,9 +388,8 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-        NavHost(navController = navController, startDestination = "signupBirthdayPage") { // homePage
+        NavHost(navController = navController, startDestination = "homePage") { // homePage
 
-            composable("signupBirthdayPage") { SignupBirthdayPage(navController) }
             composable("homePage") { HomePage(navController, userViewModel) {
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
                 openSheet()
@@ -643,6 +652,7 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
         }
         else {
 
+            /*
             ScrollPicker(options = listOf(List(12){ index -> (index+1).toString()}, listOf("AM", "PM")), selectItem = listOf(
                 {   it ->
                     Log.d("selector", it.toString())
@@ -661,8 +671,40 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
                     Log.d("selecteddate", selectedDate.toString())
                 }, {}
             ))
+            */
+
+            AndroidView(modifier = Modifier.fillMaxWidth(), factory = { context ->
+                var setListener: TimePicker.OnTimeChangedListener = TimePicker.OnTimeChangedListener { _, hour, minute ->
+                    val calendar = Calendar.getInstance()
+                    calendar.time = selectedDate
+                    calendar[Calendar.HOUR] = hour
+                    calendar[Calendar.MINUTE] = minute
+                    selectedDate = calendar.time
+
+                    // TODO: AM/PM not immediately changing time
+                    Log.d("status", selectedDate.toString())
+                }
+                var timePicker = TimePicker(context, null, R.style.SpinnerTimePicker)
+
+                var linearLayout = LinearLayout(context)
 
 
+                linearLayout.addView(timePicker)
+
+                timePicker.apply {
+                    setBackgroundColor(White.toArgb())
+                    setOnTimeChangedListener(setListener)
+                }
+                linearLayout.apply {
+                    gravity = Gravity.CENTER
+                }
+
+                /*
+                TimePickerDialog(context, R.style.MySpinnerDatePickerStyle, setListener, Calendar.HOUR, Calendar.MINUTE, false)
+                timePickerDialog.setOnCancelListener { openDialog = false }
+                timePickerDialog.setOnDismissListener { openDialog = false }
+                timePickerDialog.show()*/
+            })
 
         }
 
