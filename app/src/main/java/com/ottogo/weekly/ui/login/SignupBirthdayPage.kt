@@ -1,7 +1,10 @@
 package com.ottogo.weekly.ui.login
 
 import android.app.DatePickerDialog
+import android.os.Build
 import android.widget.DatePicker
+import android.widget.LinearLayout
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Text
@@ -10,9 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.fragment.app.DialogFragment
 import androidx.navigation.NavController
 import com.google.accompanist.insets.systemBarsPadding
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.ottogo.weekly.R
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.Message
 import com.ottogo.weekly.ui.login.ui.components.LoginTitle
@@ -30,6 +37,7 @@ import java.util.*
 * */
 
 
+@RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun SignupBirthdayPage(navController: NavController) {
     val systemUiController = rememberSystemUiController()
@@ -40,11 +48,13 @@ fun SignupBirthdayPage(navController: NavController) {
 
     val calendar = Calendar.getInstance()
 
+    var openDialog by remember { mutableStateOf(false) }
+
     var year: Int by remember { mutableStateOf(calendar.get(Calendar.YEAR)) }
     var month: Int by remember { mutableStateOf(calendar.get(Calendar.MONTH)) }
     var day: Int by remember { mutableStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
 
-
+    /*
     val datePickerDialog = DatePickerDialog(
         LocalContext.current,
         { _: DatePicker, selectedYear: Int, selectedMonth: Int, selectedDay: Int ->
@@ -64,7 +74,26 @@ fun SignupBirthdayPage(navController: NavController) {
 
 
         }, year, month, day
-    )
+    )*/
+    
+    if (openDialog) {
+        AndroidView(factory = { context ->
+            var setListener: DatePickerDialog.OnDateSetListener = DatePickerDialog.OnDateSetListener { view, newYear, newMonth, newDay ->
+                year = newYear
+                month = newMonth
+                day = newDay
+                openDialog = false
+            }
+
+            LinearLayout(context).apply {
+                var datePickerDialog = DatePickerDialog(context, R.style.MySpinnerDatePickerStyle, setListener, year, month, day)
+                datePickerDialog.setOnCancelListener { openDialog = false }
+                datePickerDialog.setOnDismissListener { openDialog = false }
+                datePickerDialog.show()
+            }
+        })
+    }
+
 
     Column(modifier = Modifier.systemBarsPadding()) {
         LoginTitle(navController = navController, title = "Birthday")
@@ -84,7 +113,7 @@ fun SignupBirthdayPage(navController: NavController) {
             Text(text = "Selected Birthday: $year-$month-$day")
             Spacer(modifier = Modifier.size(16.dp))
             Button(onClick = {
-                datePickerDialog.show()
+                openDialog = true
             }) {
                 Text(text = "Open Date Picker")
             }

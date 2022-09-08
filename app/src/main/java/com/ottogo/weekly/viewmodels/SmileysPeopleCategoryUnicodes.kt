@@ -1,6 +1,6 @@
 package com.ottogo.weekly.viewmodels
 
-enum class PeopleCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
+enum class SmileysPeopleCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     SLIGHTLY_SMILING_FACE("🙂"),
     SMILING_FACE_1("😀"),
     SMILING_FACE_WITH_BIG_EYES("😃"),
@@ -491,5 +491,5 @@ enum class PeopleCategoryUnicodes(override val unicode: String) : CategoryUnicod
     COUPLE_WITH_HEART("💑"),
     PERSON_SPEAKING("🗣"),
     BUST_IN_SILHOUHETTE("👤"),
-    BUSTS_IN_SILHOUETTE("👥"),
+    BUSTS_IN_SILHOUETTE("👥")
 }

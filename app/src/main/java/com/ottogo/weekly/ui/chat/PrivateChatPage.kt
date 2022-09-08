@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
+import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
@@ -55,7 +56,7 @@ import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.CategoryUnicodes
-import com.ottogo.weekly.viewmodels.PeopleCategoryUnicodes
+import com.ottogo.weekly.viewmodels.SmileysPeopleCategoryUnicodes
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -287,7 +288,7 @@ fun EmojiView(emojiSearch: String, toggleSheet: (String) -> Unit) {
 
     results.clear()
 
-    for (emoji in PeopleCategoryUnicodes.values()) {
+    for (emoji in SmileysPeopleCategoryUnicodes.values()) {
         var emojiName = emoji.name.lowercase()
         if (emojiName.contains(emojiSearch.lowercase())) {
             results.add(emoji)
@@ -306,7 +307,7 @@ fun EmojiView(emojiSearch: String, toggleSheet: (String) -> Unit) {
                     textSize = 48.0F
                     textAlignment = View.TEXT_ALIGNMENT_CENTER
                     setOnClickListener {
-                        Log.d("status", PeopleCategoryUnicodes.values()[index].toString())
+                        Log.d("status", SmileysPeopleCategoryUnicodes.values()[index].toString())
                         toggleSheet.invoke(results[index].unicode)
                     }
                 }

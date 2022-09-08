@@ -378,9 +378,9 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-        NavHost(navController = navController, startDestination = "homePage") { // homePage
+        NavHost(navController = navController, startDestination = "signupBirthdayPage") { // homePage
 
-
+            composable("signupBirthdayPage") { SignupBirthdayPage(navController) }
             composable("homePage") { HomePage(navController, userViewModel) {
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
                 openSheet()
