@@ -256,9 +256,11 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                     .onFocusChanged { searchFocused = it.isFocused }
                     .padding(start = 12.dp, end = 12.dp)) { search = it }
 
-            EmojiCategoryBar {
-                emojiResults.clear()
-                emojiResults.addAll(it)
+            if (!searchFocused) {
+                EmojiCategoryBar {
+                    emojiResults.clear()
+                    emojiResults.addAll(it)
+                }
             }
 
             if (isGiphyView) {
