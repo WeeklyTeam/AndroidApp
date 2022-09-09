@@ -289,8 +289,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                 coroutineScope.launch {
                     sheetSwipeableState.animateTo("none")
                 }
-                    // TODO: return result here
-                    search = it
+                    // TODO: return emoji result here using "it"
                 }
             }
 
@@ -306,6 +305,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
 @Composable
 fun EmojiView(results: List<CategoryUnicodes>, toggleSheet: (String) -> Unit) {
 
+    // TODO: Fix vertical grid not recomposing (only recomposes on scroll)
     LazyVerticalGrid(columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(5), horizontalArrangement = Arrangement.Center, modifier = Modifier
         .fillMaxWidth()
         .padding(start = 12.dp, end = 12.dp, bottom = 12.dp), content = {
