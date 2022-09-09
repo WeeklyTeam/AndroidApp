@@ -7,11 +7,10 @@ import android.os.Build
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
-import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatTextView
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -26,14 +25,17 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
@@ -44,6 +46,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.emoji2.widget.EmojiTextView
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
@@ -53,11 +59,10 @@ import com.giphy.sdk.ui.views.GiphyGridView
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.ui.components.TitleBar
+import com.ottogo.weekly.ui.login.coloredShadow
 import com.ottogo.weekly.ui.theme.Black
 import com.ottogo.weekly.ui.theme.ExtendedTheme
-import com.ottogo.weekly.viewmodels.CategoryUnicodes
-import com.ottogo.weekly.viewmodels.SmileysPeopleCategoryUnicodes
-import com.ottogo.weekly.viewmodels.UserViewModel
+import com.ottogo.weekly.viewmodels.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.java_websocket.client.WebSocketClient
@@ -191,6 +196,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
     val isKeyboardOpen by keyboardAsState()
     var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
     var halfExpandedHeight = fullyExpandedHeight / 2
+
     val anchors = if (isKeyboardOpen == Keyboard.Closed) {
         mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
     } else {
@@ -210,6 +216,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
         search = ""
     }
 
+    val emojiResults = remember { mutableStateListOf<CategoryUnicodes>() }
 
     BottomSheetScaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -249,6 +256,11 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                     .onFocusChanged { searchFocused = it.isFocused }
                     .padding(start = 12.dp, end = 12.dp)) { search = it }
 
+            EmojiCategoryBar {
+                emojiResults.clear()
+                emojiResults.addAll(it)
+            }
+
             if (isGiphyView) {
                 GiphyView(search) {
                     coroutineScope.launch {
@@ -265,10 +277,17 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                     keyboardController?.hide()
                 }
             } else {
-                EmojiView(search) {
-                    coroutineScope.launch {
-                        sheetSwipeableState.animateTo("none")
-                    }
+
+
+                emojiResults.clear()
+
+                filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
+
+                EmojiView(emojiResults) {
+                coroutineScope.launch {
+                    sheetSwipeableState.animateTo("none")
+                }
+                    // TODO: return result here
                     search = it
                 }
             }
@@ -283,39 +302,141 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EmojiView(emojiSearch: String, toggleSheet: (String) -> Unit) {
-    val results = remember { mutableStateListOf<CategoryUnicodes>() }
-
-    results.clear()
-
-    for (emoji in SmileysPeopleCategoryUnicodes.values()) {
-        var emojiName = emoji.name.lowercase()
-        if (emojiName.contains(emojiSearch.lowercase())) {
-            results.add(emoji)
-            Log.d("status", emoji.name)
-        }
-    }
+fun EmojiView(results: List<CategoryUnicodes>, toggleSheet: (String) -> Unit) {
 
     LazyVerticalGrid(columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(5), horizontalArrangement = Arrangement.Center, modifier = Modifier
         .fillMaxWidth()
-        .padding(12.dp), content = {
+        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp), content = {
         items(results.size) { index ->
-            AndroidView(factory = {context ->
-                AppCompatTextView(context).apply {
+            AndroidView(factory = { context ->
+                EmojiTextView(context).apply {
                     setTextColor(Black.toArgb())
                     text = results[index].unicode
                     textSize = 48.0F
                     textAlignment = View.TEXT_ALIGNMENT_CENTER
                     setOnClickListener {
-                        Log.d("status", SmileysPeopleCategoryUnicodes.values()[index].toString())
                         toggleSheet.invoke(results[index].unicode)
                     }
                 }
-
             })
         }
-
     })
+
+}
+
+@Composable
+fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .coloredShadow(
+            color = Color(0xFF000000),
+            alpha = 0.03f,
+            offsetX = 3.dp,
+            offsetY = 8.dp
+        )
+        .background(Color.White), horizontalArrangement = Arrangement.Center) {
+        var selectedCategories = remember { mutableStateListOf<Boolean>(false, false, false, false, false, false, false, false) }
+        EmojiCategoryButton(R.drawable.ic_emotion_line, "SmileysPeopleCategory", selectedCategories[0]) {
+            if (selectedCategories[0]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[0] = true
+                changeEmoji(SmileysPeopleCategoryUnicodes.values().asList())
+            }
+        }
+        EmojiCategoryButton(R.drawable.ic_bear_smile_line, "AnimalsNatureCategory", selectedCategories[1]) {
+            if (selectedCategories[1]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[1] = true
+                changeEmoji(AnimalsNatureCategoryUnicodes.values().asList())
+            }
+        }
+        EmojiCategoryButton(R.drawable.ic_cake_3_line, "FoodDrinkCategory", selectedCategories[2]) {
+            if (selectedCategories[2]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[2] = true
+                changeEmoji(FoodDrinkCategoryUnicodes.values().asList())
+            }
+        }
+        EmojiCategoryButton(R.drawable.ic_football_line, "ActivityCategory", selectedCategories[3]) {
+            if (selectedCategories[3]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[3] = true
+                changeEmoji(ActivityCategoryUnicodes.values().asList())
+            }
+        }
+        EmojiCategoryButton(R.drawable.ic_road_map_line, "TravelPlacesCategory", selectedCategories[4]) {
+            if (selectedCategories[4]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[4] = true
+                changeEmoji(TravelPlacesCategoryUnicodes.values().asList())
+            }
+        }
+        EmojiCategoryButton(R.drawable.ic_lightbulb_line, "ObjectsCategoryUnicodes", selectedCategories[5]) {
+            if (selectedCategories[5]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[5] = true
+                changeEmoji(ObjectsCategoryUnicodes.values().asList())
+            }
+        }
+        EmojiCategoryButton(R.drawable.ic_hashtag, "SymbolsCategoryUnicodes", selectedCategories[6]) {
+            if (selectedCategories[6]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[6] = true
+                changeEmoji(SymbolsCategoryUnicodes.values().asList())
+            }
+        }
+        EmojiCategoryButton(R.drawable.ic_flag_line, "FlagsCategoryUnicodes", selectedCategories[7]) {
+            if (selectedCategories[7]) {
+                selectedCategories.fill(false)
+                changeEmoji(AllEmojiUnicodes.values().asList())
+            } else {
+                selectedCategories.fill(false)
+                selectedCategories[7] = true
+                changeEmoji(FlagsCategoryUnicodes.values().asList())
+            }
+        }
+
+    }
+}
+
+@Composable
+fun EmojiCategoryButton(imageId: Int, contentDescription: String, isSelected: Boolean, onClick: () -> Unit) {
+    var tintColor = if (isSelected) Color.DarkGray else Color.LightGray
+    IconButton(onClick = { onClick() }) {
+        Image(painter = painterResource(id = imageId), contentDescription = contentDescription, colorFilter = ColorFilter.tint(tintColor))
+    }
+}
+
+fun filterEmojis(emojisList: List<CategoryUnicodes>, emojiSearch: String, onEmojiFound: (List<CategoryUnicodes>) -> Unit) {
+    var foundEmojis: List<CategoryUnicodes> = emptyList()
+    for (emoji in emojisList) {
+        var emojiName = emoji.name.lowercase()
+        if (emojiName.contains(emojiSearch.lowercase())) {
+            foundEmojis += emoji
+        }
+    }
+    onEmojiFound(foundEmojis)
 }
 
 @OptIn(ExperimentalMaterialApi::class)
