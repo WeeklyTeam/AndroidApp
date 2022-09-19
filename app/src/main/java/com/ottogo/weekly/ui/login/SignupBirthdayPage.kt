@@ -1,6 +1,9 @@
 package com.ottogo.weekly.ui.login
 
 import android.app.DatePickerDialog
+import android.os.Build
+import android.util.AttributeSet
+import android.util.Xml
 import android.widget.DatePicker
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -10,13 +13,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.google.accompanist.insets.systemBarsPadding
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.ottogo.weekly.R
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.Message
 import com.ottogo.weekly.ui.login.ui.components.LoginTitle
+import org.xmlpull.v1.XmlPullParser
 import java.util.*
+
 
 /*
 *
@@ -34,6 +41,7 @@ import java.util.*
 fun SignupBirthdayPage(navController: NavController) {
     val systemUiController = rememberSystemUiController()
     var error: String? by remember {mutableStateOf(value = null)}
+    val context = LocalContext.current
 
 
     systemUiController.setSystemBarsColor(color = Color.White)
@@ -43,7 +51,6 @@ fun SignupBirthdayPage(navController: NavController) {
     var year: Int by remember { mutableStateOf(calendar.get(Calendar.YEAR)) }
     var month: Int by remember { mutableStateOf(calendar.get(Calendar.MONTH)) }
     var day: Int by remember { mutableStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
-
 
     val datePickerDialog = DatePickerDialog(
         LocalContext.current,
@@ -66,6 +73,7 @@ fun SignupBirthdayPage(navController: NavController) {
         }, year, month, day
     )
 
+
     Column(modifier = Modifier.systemBarsPadding()) {
         LoginTitle(navController = navController, title = "Birthday")
 
@@ -81,12 +89,36 @@ fun SignupBirthdayPage(navController: NavController) {
 
             Spacer(Modifier.height(32.dp))
 
-            Text(text = "Selected Birthday: $year-$month-$day")
-            Spacer(modifier = Modifier.size(16.dp))
-            Button(onClick = {
-                datePickerDialog.show()
-            }) {
-                Text(text = "Open Date Picker")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val resources = context.resources
+                val parser: XmlPullParser = resources.getXml(R.xml.datepicker)
+                val attributes: AttributeSet = Xml.asAttributeSet(parser)
+
+                AndroidView(factory = { context ->
+
+                    val dp = DatePicker(context, null)
+                    dp.setSpinnersShown(true)
+                    dp.setOnDateChangedListener { view, newYear, newMonth, newDay ->
+                        year = newYear
+                        month = newMonth
+                        day = newDay
+                    }
+
+
+                    dp
+
+
+                })
+            } else {
+
+                Text(text = "Selected Birthday: $year-$month-$day")
+                Spacer(modifier = Modifier.size(16.dp))
+                Button(onClick = {
+                    datePickerDialog.show()
+                }) {
+                    Text(text = "Open Date Picker")
+                }
             }
 
 

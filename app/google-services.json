@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "384899699098",
+    "project_id": "weekly-50e45",
+    "storage_bucket": "weekly-50e45.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:384899699098:android:b39590e923732a4e946a23",
+        "android_client_info": {
+          "package_name": "com.ottogo.weekly"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "384899699098-odbpm2ddp274i3arjf0g0srdrbougo1f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl36DGR2gQMzTW9VOhR2xpZL9h4MoK7-g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "384899699098-odbpm2ddp274i3arjf0g0srdrbougo1f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

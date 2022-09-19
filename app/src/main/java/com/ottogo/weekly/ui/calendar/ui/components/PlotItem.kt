@@ -29,8 +29,19 @@ import java.text.SimpleDateFormat
 
 @Composable
 fun PlotItem(plot: Plot, userViewModel: UserViewModel, onClick: () -> Unit) {
-    val date = SimpleDateFormat("EEEE, MMM dd").format(plot.starttime)
-    val time = SimpleDateFormat("h:mm a").format(plot.starttime)
+    val date = if (plot.starttime != null){
+        SimpleDateFormat("EEEE, MMM d").format(plot.starttime)
+
+    } else {
+        ""
+    }
+    val time = if (plot.starttime != null){
+        SimpleDateFormat("h:mm a").format(plot.starttime)
+
+    } else {
+        "Date undecided"
+    }
+
 
     Column() {
 
@@ -73,10 +84,10 @@ fun PlotItem(plot: Plot, userViewModel: UserViewModel, onClick: () -> Unit) {
 
                 Row(
                     Modifier
-                        .width(IntrinsicSize.Min)
+                        .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 16.dp)) {
-                    CustomButton(buttonText = "No", onClick = { userViewModel.rejectPlotInvite(plot) }, modifier = Modifier.weight(1F))
+                    CustomButton(buttonText = "No", textColor = ExtendedTheme.colors.Black60, backgroundColor = ExtendedTheme.colors.LightGray, onClick = { userViewModel.rejectPlotInvite(plot) }, modifier = Modifier.weight(1F))
                     Spacer(modifier = Modifier.width(16.dp))
                     CustomButton(buttonText = "Yes", onClick = { userViewModel.acceptPlotInvite(plot) }, modifier = Modifier.weight(1F))
 

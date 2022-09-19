@@ -8,10 +8,13 @@ import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.*
+import java.lang.reflect.Modifier
 import java.util.*
 
 
@@ -36,6 +39,8 @@ interface WeeklyApiService {
     @POST("api/calendar/")
     suspend fun createCalendar(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any?>): FriendCalendar
 
+    @DELETE("api/calendar/{id}/")
+    suspend fun leaveCalendar(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
 
 
     @GET("api/main")
@@ -96,12 +101,46 @@ interface WeeklyApiService {
         @Part image: MultipartBody.Part? = null
     ): Group
 
+    @Multipart
+    @JvmSuppressWildcards
+    @PATCH("api/group/{id}/")
+    suspend fun editGroupImage(
+        @HeaderMap headers: Map<String, String>,
+        @Path("id") id: Int,
+        @PartMap partMap: Map<String, RequestBody>,
+        @Part profile_picture: MultipartBody.Part? = null
+    ): Group
+
+    @JvmSuppressWildcards
+    @PATCH("api/group/{id}/")
+    suspend fun editGroup(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Map<String, Any>)
+
+    @GET("api/group/{id}/leave/")
+    suspend fun leaveGroup(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/group/{id}/accept/")
+    suspend fun acceptGroupInvite(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
     @JvmSuppressWildcards
     @POST("api/plot/")
     suspend fun createPlot(
         @HeaderMap headers: Map<String, String>,
         @Body body: Map<String, Any?>,
     ): Plot
+
+    @JvmSuppressWildcards
+    @GET("api/plot")
+    suspend fun getStatusesAndAdventures(
+        @HeaderMap headers: Map<String, String>,
+        @Query("date", encoded = true) date: String,
+        @Query("time", encoded = true) time: String,
+    ): Response
+
+    @JvmSuppressWildcards
+    @PATCH("api/plot/{id}/")
+    suspend fun editPlot(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Map<String, Any>)
+
+    @DELETE("api/plot/{id}/")
+    suspend fun deletePlot(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
 
     @GET("api/activities/")
     suspend fun activity(@HeaderMap header: Map<String, String>):List<ActivityCategory>
@@ -119,9 +158,21 @@ interface WeeklyApiService {
     @POST("api/profile/contacts/")
     suspend fun searchContacts(@HeaderMap header: Map<String, String>, @Body body: Map<String, List<String>>): List<Profile>
 
+    @GET("api/profile/invite/{phoneNumber}/")
+    suspend fun inviteContact(@HeaderMap header: Map<String, String>, @Path("phoneNumber") phoneNumber: String)
+
     @JvmSuppressWildcards
     @POST("api/availability/")
     suspend fun addAvailability(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>): Availability
+
+    @GET("api/availability/")
+    suspend fun getAvailabilities(@HeaderMap header: Map<String, String>, @Query("user") user_ids: String): List<Availability>
+
+    @DELETE("api/availability/{id}/")
+    suspend fun removeAvailability(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
+    @DELETE("api/account/delete/")
+    suspend fun deleteAccount(@HeaderMap header: Map<String, String>)
 }
 
 object WeeklyApi {

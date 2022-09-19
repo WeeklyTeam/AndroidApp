@@ -44,7 +44,7 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
             onDismiss = { showDialog = false },
             onConfirm = { onConfirm.invoke() })
     } else if (showDialog && blockDisplay) {
-        PopUpBlockSheetContent(title = title, userId = bottomSheetViewModel.profile?.user_id ?: -1,
+        PopUpBlockSheetContent(title = title, userId = bottomSheetViewModel.profile?.user_id ?: -1, userViewModel = userViewModel,
             onDismiss = { showDialog = false },
             onBlock = {
                 // To recompose bottom sheet button
@@ -122,6 +122,8 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
 
                             // To recompose search results with updated profile
                             bottomSheetViewModel.profile?.let { userViewModel.removeFriend(it.user_id) }
+                            userViewModel.removeRequest(bottomSheetViewModel.profile?.user_id ?: -1)
+
                             //TODO: ADD NEW ACtion
                         }
                         showDialog = true
@@ -167,6 +169,8 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
                             // To recompose bottom sheet button
                             bottomSheetViewModel.profile = bottomSheetViewModel.profile?.copy(requesting = false)
 
+                            userViewModel.removeRequest(userId = bottomSheetViewModel.profile?.user_id ?: -1)
+
                             // To recompose search results with updated profile
                             //TODO: ADD NEW ACtion
 
@@ -185,6 +189,7 @@ fun ProfileBottomModalSheet(userViewModel: UserViewModel, bottomSheetViewModel: 
 
                             // To recompose search results with updated profile
                             bottomSheetViewModel.profile?.let { userViewModel.addFriend(it) }
+                            userViewModel.removeRequest(userId = bottomSheetViewModel.profile?.user_id ?: -1)
 
                             //TODO: ADD NEW ACtion
 

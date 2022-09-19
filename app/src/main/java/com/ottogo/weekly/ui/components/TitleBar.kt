@@ -1,5 +1,6 @@
 package com.ottogo.weekly.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -17,7 +18,7 @@ import com.ottogo.weekly.R
 import com.ottogo.weekly.ui.theme.nunitoFamily
 
 @Composable
-fun TitleBar(navController: NavController, title: String, modifier: Modifier = Modifier, iconButtons: @Composable () -> Unit = {}) {
+fun TitleBar(navController: NavController, title: String, modifier: Modifier = Modifier, onTitleTap: () -> Unit = {}, iconButtons: @Composable () -> Unit = {}, spot:  @Composable (() -> Unit)? = null) {
 
 
 
@@ -30,12 +31,20 @@ fun TitleBar(navController: NavController, title: String, modifier: Modifier = M
             )
         }
 
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.clickable { onTitleTap() }.weight(1F)) {
+            if (spot != null){
+                spot()
+                Spacer(modifier = Modifier.width(12.dp))
+            }
 
-        Text(text = title,
-            style = MaterialTheme.typography.h2
-        )
 
-        Spacer(modifier = Modifier.weight(1F))
+            Text(text = title,
+                style = MaterialTheme.typography.h2,
+            )
+
+            Spacer(modifier = Modifier.weight(1F))
+        }
+
 
         iconButtons()
     }

@@ -56,8 +56,8 @@ fun ChatSearchPage(navController: NavController, userViewModel: UserViewModel) {
 fun addGroup(navController: NavController){
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { navController.navigate("createGroupPage") },
+            .clickable { navController.navigate("createGroupPage") }
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
 
     ) {
@@ -137,7 +137,7 @@ fun ChatSearchResultsItem(name: String, userName: String, profilePicture: String
 )  {
 
 
-    Row(modifier.padding(vertical = 8.dp, horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.padding(vertical = 8.dp, horizontal = 16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
 
         if (group != null) {
             GroupPicture(group = group)

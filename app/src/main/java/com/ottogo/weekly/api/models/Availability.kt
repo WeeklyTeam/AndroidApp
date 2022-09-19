@@ -10,5 +10,4 @@ data class Availability(
     @Json(name = "starttime") val starttime: Date,
     @Json(name = "endtime") val endtime: Date,
     @Json(name = "title") val title: String,
-    @Json(name = "days_of_week") val days_of_week: List<Int>
 )

@@ -23,11 +23,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
+import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.Availability
 import com.ottogo.weekly.ui.calendar.*
+import com.ottogo.weekly.ui.calendar.DateFunctions.addDay
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
+import kotlinx.coroutines.runBlocking
 import java.util.*
 
 
@@ -41,7 +44,7 @@ fun AvailabilityPage(navController: NavController, userViewModel: UserViewModel)
         mutableStateOf(beginningOfWeek())
     }
 
-    Column {
+    Column (horizontalAlignment = Alignment.CenterHorizontally) {
         TitleBar(navController = navController, title = "Availability", iconButtons = {
             IconButton(
                 onClick = { navController.navigate("addAvailabilityPage") },
@@ -57,38 +60,160 @@ fun AvailabilityPage(navController: NavController, userViewModel: UserViewModel)
 
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-        WeeklyCalendarComponent(startOfWeek = startOfWeek, selectedDate = selectedDate, modifier = Modifier.padding(16.dp), selectDate = { selectedDate =
-            it!!
-        })
+        WeeklyCalendarComponent(
+            startOfWeek = startOfWeek,
+            selectedDate = selectedDate,
+            modifier = Modifier.padding(16.dp),
+            selectDate = {
+                selectedDate =
+                    it!!
+            })
 
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-        Box(Modifier.verticalScroll(rememberScrollState())){
+        var busyToday = userViewModel.availability.firstOrNull {
+            it.starttime == selectedDate && it.endtime == addDay(
+                selectedDate,
+                1
+            )
+        }
+
+        if (busyToday == null) {
+
+            Box(Modifier.verticalScroll(rememberScrollState())) {
 
 
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-            Column() {
-                (7..12).forEach{ time ->
-                    TimeRow(time = time, anteMeridiem = true)
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+                            .clickable {
+                                runBlocking {
+                                    userViewModel.addAvailability(
+                                        WeeklyApi.retrofitService.addAvailability(
+                                            mapOf("Authorization" to "token ${userViewModel.token}"),
+                                            mapOf(
+                                                "busy" to true,
+                                                "starttime" to selectedDate,
+                                                "endtime" to addDay(selectedDate, 1),
+                                                "title" to "",
+                                            )
+                                        )
+                                    )
+                                }
+                            }
+                            .padding(16.dp)
+                    ) {
+
+
+                        Icon(
+                            painter = painterResource(
+                                id =
+                                if (busyToday != null) {
+                                    R.drawable.ic_checkbox_circle_fill
+                                } else {
+                                    R.drawable.ic_checkbox_blank_circle_line
+                                }
+                            ), contentDescription = "Checkbox",
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .height(24.dp)
+                                .width(24.dp),
+                            tint =
+                            if (busyToday != null) {
+                                MaterialTheme.colors.primary
+                            } else {
+                                ExtendedTheme.colors.Black60
+                            }
+                        )
+
+
+                        Text(text = "Busy today", style = MaterialTheme.typography.body1)
+
+
+                    }
+
+                    (7..12).forEach { time ->
+                        TimeRow(time = time, anteMeridiem = true)
+                    }
+
+                    (1..12).forEach { time ->
+                        TimeRow(time = time, anteMeridiem = false)
+
+                    }
                 }
 
-                (1..12).forEach{ time ->
-                    TimeRow(time = time, anteMeridiem = false)
-
+                userViewModel.availability?.filter {
+                    it.starttime > selectedDate && it.endtime < addDay(
+                        selectedDate,
+                        1
+                    )
                 }
+                    ?.forEach { availability ->
+                        val diff: Long = availability.starttime.time - selectedDate.time
+                        val seconds = diff / 1000
+                        val minutes = seconds / 60
+                        Log.d("availability", availability.starttime.toString())
+                        Log.d("availability", minutes.toString())
+
+                        AvailabilityCard(
+                            availability = availability,
+                            modifier = Modifier.padding(
+                                top = (minutes.toInt() - 6 * 60 - 30 + 24 + 64).dp,
+                                start = 96.dp,
+                                end = 16.dp
+                            )
+                        )
+                    }
+
+
             }
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+                    .clickable {
+                        runBlocking {
+                                WeeklyApi.retrofitService.removeAvailability(
+                                    mapOf("Authorization" to "token ${userViewModel.token}"),
+                                    busyToday.id
+                                )
+                                userViewModel.removeAvailability(busyToday)
+                        }
+                    }
+                    .padding(16.dp)
+            ) {
 
-            userViewModel.availability?.filter { it.starttime > selectedDate && it.endtime < addDay(selectedDate, 1) }
-                ?.forEach { availability ->
-                    val diff: Long = availability.starttime.time - selectedDate.time
-                    val seconds = diff / 1000
-                    val minutes = seconds / 60
-                    Log.d("availability", availability.starttime.toString())
-                    Log.d("availability", minutes.toString())
 
-                    AvailabilityCard(availability = availability, modifier = Modifier.padding(top = (minutes.toInt()-6*60-30).dp, start = 96.dp, end = 16.dp))
-                }
+                Icon(
+                    painter = painterResource(
+                        id =
+                        if (busyToday != null) {
+                            R.drawable.ic_checkbox_circle_fill
+                        } else {
+                            R.drawable.ic_checkbox_blank_circle_line
+                        }
+                    ), contentDescription = "Checkbox",
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .height(24.dp)
+                        .width(24.dp),
+                    tint =
+                    if (busyToday != null) {
+                        MaterialTheme.colors.primary
+                    } else {
+                        ExtendedTheme.colors.Black60
+                    }
+                )
 
+
+                Text(text = "Busy today", style = MaterialTheme.typography.body1)
+
+
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Text("You are busy today", style = MaterialTheme.typography.h5, color = ExtendedTheme.colors.Black60)
+            Spacer(modifier = Modifier.weight(1f))
 
         }
     }
@@ -175,8 +300,13 @@ fun WeeklyCalendarComponent(startOfWeek: Date, modifier: Modifier = Modifier, se
             calendar.time = date
 
 
-            Column(Modifier.width(IntrinsicSize.Min).weight(1F)) {
-                Text(text = daysOfWeek[i], style = MaterialTheme.typography.h4, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth())
+            Column(
+                Modifier
+                    .width(IntrinsicSize.Min)
+                    .weight(1F)) {
+                Text(text = daysOfWeek[i], style = MaterialTheme.typography.h4, textAlign = TextAlign.Center, modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .fillMaxWidth())
 
                 CalendarBox(value = calendar.get(Calendar.DATE).toString(), date = date, isSelected = selectedDate == date, modifier = Modifier
                     .fillMaxWidth()

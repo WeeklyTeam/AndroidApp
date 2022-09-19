@@ -18,9 +18,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ottogo.weekly.R
-import com.ottogo.weekly.ui.calendar.CalendarComponent
-import com.ottogo.weekly.ui.calendar.addMonth
-import com.ottogo.weekly.ui.calendar.initialMonth
+import com.ottogo.weekly.ui.calendar.DateFunctions.addMonth
+import com.ottogo.weekly.ui.calendar.DateFunctions.initialMonth
+import com.ottogo.weekly.ui.calendar.ui.components.CalendarComponent
+
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.ScrollPicker
 import com.ottogo.weekly.ui.components.TitleBar

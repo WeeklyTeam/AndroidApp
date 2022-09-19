@@ -3,23 +3,30 @@ package com.ottogo.weekly.ui.account
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.Divider
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.ottogo.weekly.R
+import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.account.ui.components.AccountOption
+import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
+import com.ottogo.weekly.viewmodels.UserViewModel
 
 @Composable
-fun SettingsPage(navController: NavController){
+fun SettingsPage(userViewModel: UserViewModel, navController: NavController){
     val context = LocalContext.current
 
-    Column() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         TitleBar(navController = navController, title = "Settings")
 
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
@@ -38,6 +45,13 @@ fun SettingsPage(navController: NavController){
             context.startActivity(Intent(context, OssLicensesMenuActivity::class.java))
 
         }
+
+        Spacer(Modifier.weight(1f))
+
+        CustomButton(buttonText = "DELETE ACCOUNT", onClick = {
+            WeeklyApi.retrofitService.deleteAccount(mapOf("Authorization" to "token ${userViewModel.token}"))
+            userViewModel.logout(context = context)
+        }, backgroundColor = MaterialTheme.colors.background, textColor = ExtendedTheme.colors.LoveRed)
 
     }
 }

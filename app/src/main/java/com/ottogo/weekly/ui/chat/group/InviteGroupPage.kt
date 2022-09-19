@@ -73,7 +73,7 @@ fun InviteGroupPage(navController: NavController, name: String, imageUri: Uri?, 
             if (file != null) {
                 val reqFile = file.asRequestBody("image/*".toMediaTypeOrNull())
                 image = MultipartBody.Part.createFormData(
-                    "profile_picture",
+                    "image",
                     file.name, reqFile
                 )
             }

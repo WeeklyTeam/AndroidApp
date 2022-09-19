@@ -3,39 +3,30 @@ package com.ottogo.weekly.ui.calendar.availability
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.util.Log
 import android.widget.DatePicker
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
-import com.ottogo.weekly.api.models.Availability
-import com.ottogo.weekly.ui.calendar.*
+import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.CustomTextField
-import com.ottogo.weekly.ui.components.SelectableOption
 import com.ottogo.weekly.ui.components.TitleBar
 import com.ottogo.weekly.ui.theme.ExtendedTheme
-import com.ottogo.weekly.ui.theme.Typography
 import com.ottogo.weekly.viewmodels.UserViewModel
-import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -45,8 +36,7 @@ import java.util.*
 fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewModel) {
     val context = LocalContext.current
 
-    var notBusy by remember { mutableStateOf(false) }
-    var availabilityName by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf("") }
     var starttime by remember { mutableStateOf(Date()) }
     var endtime by remember { mutableStateOf(Date()) }
 
@@ -56,6 +46,11 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
     val endtimeHour = endtimeCalendar[Calendar.HOUR_OF_DAY]
     val endtimeMinute = endtimeCalendar[Calendar.MINUTE]
 
+    val endtimeDay = endtimeCalendar[Calendar.DAY_OF_MONTH]
+    val endtimeYear = endtimeCalendar[Calendar.YEAR]
+    val endtimeMonth = endtimeCalendar[Calendar.MONTH]
+
+
     var starttimeCalendar = Calendar.getInstance()
     val starttimeHour = starttimeCalendar[Calendar.HOUR_OF_DAY]
     val starttimeMinute = starttimeCalendar[Calendar.MINUTE]
@@ -64,100 +59,178 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
     val starttimeYear = starttimeCalendar[Calendar.YEAR]
     val starttimeMonth = starttimeCalendar[Calendar.MONTH]
 
-
     val endtimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
+            endtimeCalendar.time = endtime
             endtimeCalendar.set(Calendar.HOUR_OF_DAY, mHour)
             endtimeCalendar.set(Calendar.MINUTE, mMinute)
             endtime = endtimeCalendar.time
+
         }, endtimeHour, endtimeMinute, false
     )
 
     val starttimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
+            starttimeCalendar.time = starttime
             starttimeCalendar.set(Calendar.HOUR_OF_DAY, mHour)
             starttimeCalendar.set(Calendar.MINUTE, mMinute)
             starttime = starttimeCalendar.time
 
+            if (starttime > endtime){
+                endtime = starttime
+            }
 
-            endtimePickerDialog.show()
         }, starttimeHour, starttimeMinute, false
     )
 
-    val datePickerDialog = DatePickerDialog(
+    val startDatePickerDialog = DatePickerDialog(
         context,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
             starttimeCalendar.set(Calendar.DAY_OF_MONTH, mDayOfMonth)
             starttimeCalendar.set(Calendar.MONTH, mMonth)
             starttimeCalendar.set(Calendar.YEAR, mYear)
-            endtimeCalendar.set(Calendar.YEAR, mYear)
-            endtimeCalendar.set(Calendar.MONTH, mMonth)
-            endtimeCalendar.set(Calendar.DAY_OF_MONTH, mDayOfMonth)
+            starttime = starttimeCalendar.time
 
-            starttimePickerDialog.show()
+            if (starttime > endtime){
+                endtime = starttime
+            }
+
+
+        }, starttimeYear, starttimeMonth, starttimeDay
+    )
+
+    val endDatePickerDialog = DatePickerDialog(
+        context,
+        { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
+            endtimeCalendar.set(Calendar.DAY_OF_MONTH, mDayOfMonth)
+            endtimeCalendar.set(Calendar.MONTH, mMonth)
+            endtimeCalendar.set(Calendar.YEAR, mYear)
+            endtime = endtimeCalendar.time
+
         }, starttimeYear, starttimeMonth, starttimeDay
     )
 
 
-    val options = listOf("Busy", "Free")
+    var created by remember{
+        mutableStateOf(false)
+    }
 
-    Column() {
+    var emoji by remember{
+        mutableStateOf("\uD83D\uDC40")
+    }
+
+    LaunchedEffect(key1 = title){
+        if(title.contains("[^A-Za-z0-9 ]".toRegex())){
+            emoji = title.replace("[A-Za-z0-9 ]".toRegex(), "")
+        }
+    }
+
+    val localFocusManager = LocalFocusManager.current
+
+        Column() {
         TitleBar(navController, "Add availability")
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
         Column(
             Modifier
                 .verticalScroll(rememberScrollState())) {
 
-            Spacer(modifier = Modifier.height(24.dp))
+            if (created){
+                Spacer(modifier = Modifier.height(24.dp))
 
-            CustomTextField(helper = "Name (Optional)", hint = "i.e. School, Work, etc...", input = availabilityName, onChange = { availabilityName = it }, modifier = Modifier.padding(horizontal = 16.dp))
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)){
-
-                Column() {
-                    Text("From", style = MaterialTheme.typography.h4)
-                    Spacer(Modifier.height(16.dp))
-                    Text(SimpleDateFormat("EEE, MMM dd h:mma").format(starttime) + " to " + SimpleDateFormat("h:mma").format(endtime), style = MaterialTheme.typography.body1)
-                }
-
-                Spacer(Modifier.width(16.dp))
-
-
-
-                CustomButton(buttonText = "Change", onClick = {datePickerDialog.show()}, outlineColor = ExtendedTheme.colors.LightGray, textColor = MaterialTheme.colors.primary, backgroundColor = MaterialTheme.colors.onPrimary)
+                Text(text = "Successfully added!", color = ExtendedTheme.colors.Green, style = MaterialTheme.typography.h5, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            options.forEachIndexed { index, option ->
-                SelectableOption(option, index == notBusy.compareTo(false), modifier = Modifier.clickable{
-                    notBusy = index != 0
-                })
-            }
+            
+            EmojiCircle(emoji = emoji, modifier = Modifier.padding(horizontal = 16.dp))
 
             Spacer(modifier = Modifier.height(24.dp))
+
+
+            CustomTextField(helper = "What you up to?", hint = "i.e. \uD83D\uDCDA School, \uD83D\uDCBC Work, etc...", input = title.replace("[^A-Za-z0-9 ]".toRegex(), ""), onChange = { title = it }, modifier = Modifier.padding(horizontal = 16.dp), done = true, keyboardActions = KeyboardActions(onDone = { localFocusManager.clearFocus() }))
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text("From", modifier = Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.h4)
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(modifier = Modifier.padding(horizontal = 16.dp)){
+
+                Text(SimpleDateFormat("EEE, MMM dd").format(starttime), style = MaterialTheme.typography.body1, modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(8.dp)
+                    )
+                    .background(ExtendedTheme.colors.LightGray)
+                    .clickable { startDatePickerDialog.show() }
+                    .padding(horizontal = 12.dp, vertical = 8.dp))
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(SimpleDateFormat("h:mma").format(starttime), style = MaterialTheme.typography.body1, modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(8.dp)
+                    )
+                    .background(ExtendedTheme.colors.LightGray)
+                    .clickable { starttimePickerDialog.show() }
+                    .padding(horizontal = 12.dp, vertical = 8.dp))
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text("to", style = MaterialTheme.typography.body1, modifier = Modifier
+                    .padding(horizontal = 12.dp, vertical = 8.dp))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(modifier = Modifier.padding(horizontal = 16.dp)){
+
+                Text(SimpleDateFormat("EEE, MMM dd").format(endtime), style = MaterialTheme.typography.body1, modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(8.dp)
+                    )
+                    .background(ExtendedTheme.colors.LightGray)
+                    .clickable { endDatePickerDialog.show() }
+                    .padding(horizontal = 12.dp, vertical = 8.dp))
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(SimpleDateFormat("h:mma").format(endtime), style = MaterialTheme.typography.body1, modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(8.dp)
+                    )
+                    .background(ExtendedTheme.colors.LightGray)
+                    .clickable { endtimePickerDialog.show() }
+                    .padding(horizontal = 12.dp, vertical = 8.dp))
+
+
+
+            }
+
+            Spacer(modifier = Modifier.height(36.dp))
 
             CustomButton(
                 buttonText = "Add",
                 onClick = {
-                    userViewModel.addAvailability(
-                            WeeklyApi.retrofitService.addAvailability(
+                    userViewModel.addPlot(
+                            WeeklyApi.retrofitService.createPlot(
                                 mapOf("Authorization" to "token ${userViewModel.token}"),
                                 mapOf(
-                                    "busy" to !notBusy,
                                     "starttime" to starttime,
                                     "endtime" to endtime,
-                                    "title" to availabilityName,
-                                    "days_of_week" to listOf<Int>()
-                                )
+                                    "name" to title,
+                                    "emoji" to emoji,
+                                    )
                             )
                     )
+                    created = true
 
                 }, modifier = Modifier.padding(horizontal = 16.dp) )
+
+            Spacer(modifier = Modifier.height(36.dp))
+
 
         }
 

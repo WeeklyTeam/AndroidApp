@@ -14,4 +14,5 @@ data class Profile (@Json(name = "user_id") val user_id: Int,
                     @Json(name = "blocked") val blocked: Boolean?,
                     @Json(name = "timestamp") val timestamp: Date = Date(),
                     @Json(name = "relationship_id") val relationship_id: Int?,
+                    @Json(name = "phone") val phone: String?,
                     )

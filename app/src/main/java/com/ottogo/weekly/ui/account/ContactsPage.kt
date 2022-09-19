@@ -3,8 +3,7 @@ package com.ottogo.weekly.ui.account
 import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.Context
-import androidx.compose.material.Button
-import androidx.compose.material.Divider
+import android.os.Build
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -17,52 +16,85 @@ import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
 import android.provider.ContactsContract
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import com.ottogo.weekly.api.models.Profile
+import com.ottogo.weekly.ui.chat.CancelButton
 import com.ottogo.weekly.ui.chat.SearchBar
 import com.ottogo.weekly.ui.components.ProfilePicture
+import com.ottogo.weekly.ui.theme.Purple
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.reflect.jvm.internal.impl.descriptors.Visibilities
 
 data class ContactsModel(val phone: String, val name: String)
 
 @SuppressLint("Range")
-class ContactsViewModel(private val token: String, private val context: Context): ViewModel(){
+class ContactsViewModel(): ViewModel(){
 
     private val _contacts = mutableStateListOf<ContactsModel>()
     val contacts: List<ContactsModel> = _contacts
     private val _profiles = mutableStateListOf<Profile>()
     val profiles: List<Profile> = _profiles
 
-    init {
-        Log.d("contacts", "init")
+
+    fun addData(map: Map<String, Any>){
+        _contacts.addAll(map["contacts"] as Collection<ContactsModel>)
+        _profiles.addAll(map["profiles"] as Collection<Profile>)
 
     }
 
-    suspend fun getContacts(){
+
+
+}
+val regex = Regex("[^0-9]")
+
+@SuppressLint("Range")
+@RequiresApi(Build.VERSION_CODES.N)
+suspend fun getContacts(token: String, context: Context): Map<String, Any>{
+
+        val tempContacts = mutableListOf<ContactsModel>()
+
 
         val resolver: ContentResolver = context.contentResolver
-        val cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null,
-            null)
+        val cursor = resolver.query(
+            ContactsContract.Contacts.CONTENT_URI, null, null, null,
+            null
+        )
+
+        Log.d("contact", "hey")
 
         if (cursor != null) {
+            Log.d("contact", cursor.toString())
+            Log.d("contact", cursor.count.toString())
+
             if (cursor.count > 0) {
                 while (cursor.moveToNext()) {
-                    val id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
-                    val name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
+                    val id =
+                        cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
+                    val name =
+                        cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
                     val phoneNumber = cursor.getString(
-                        cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)).toInt()
+                        cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)
+                    ).toInt()
 
                     Log.d("contact", id)
 
@@ -71,15 +103,27 @@ class ContactsViewModel(private val token: String, private val context: Context)
                     if (phoneNumber > 0) {
                         val cursorPhone = resolver.query(
                             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=?", arrayOf(id), null)
+                            null,
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=?",
+                            arrayOf(id),
+                            null
+                        )
 
                         if (cursorPhone != null) {
-                            if(cursorPhone.count > 0) {
+                            if (cursorPhone.count > 0) {
                                 while (cursorPhone.moveToNext()) {
                                     val phoneNumValue = cursorPhone.getString(
-                                        cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                                        cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                                    )
 
-                                    _contacts.add(ContactsModel(phone = phoneNumValue, name = name))
+                                    tempContacts.add(
+                                        ContactsModel(
+                                            phone = regex.replace(
+                                                phoneNumValue,
+                                                ""
+                                            ).takeLast(10), name = name
+                                        )
+                                    )
 
                                 }
                             }
@@ -92,27 +136,31 @@ class ContactsViewModel(private val token: String, private val context: Context)
             }
         }
         cursor?.close()
-        searchContacts()
-    }
-
-    suspend fun searchContacts(){
-        val contactsList: List<String> = getNumbersList()
-        _profiles.clear()
-        Log.d("CONTacts", "HEY")
-        _profiles.addAll(WeeklyApi.retrofitService.searchContacts(mapOf("Authorization" to "token $token"), mapOf("contacts" to contactsList)))
-
-    }
-
-    private fun getNumbersList(): List<String> {
-        val returnList = mutableListOf<String>()
-        val regex = Regex("[^0-9]")
-        for (contact in contacts) {
-            returnList.add(regex.replace(contact.phone, "").takeLast(10))
+        val profiles = searchContacts(token, tempContacts)
+        profiles.forEach{ profile ->
+            tempContacts.removeIf { it.phone == profile.phone }
         }
-        return returnList.toList()
-    }
+        return mapOf("contacts" to tempContacts, "profiles" to profiles)
+
 }
 
+@RequiresApi(Build.VERSION_CODES.N)
+suspend fun searchContacts(token: String, contacts: List<ContactsModel>): List<Profile> {
+    val contactsList: List<String> = getNumbersList(contacts)
+    Log.d("CONTacts", "HEY")
+    return WeeklyApi.retrofitService.searchContacts(mapOf("Authorization" to "token $token"), mapOf("contacts" to contactsList))
+
+}
+
+private fun getNumbersList(contacts: List<ContactsModel>): List<String> {
+    val returnList = mutableListOf<String>()
+    for (contact in contacts) {
+        returnList.add(contact.phone)
+    }
+    return returnList.toList()
+}
+
+@SuppressLint("NewApi")
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun ContactsPage(navController: NavController, userViewModel: UserViewModel) {
@@ -121,22 +169,64 @@ fun ContactsPage(navController: NavController, userViewModel: UserViewModel) {
         android.Manifest.permission.READ_CONTACTS
     )
 
+Log.d("contacts", "recomposing")
     val context = LocalContext.current
 
+    var contacts = remember{
+        mutableStateListOf<ContactsModel>()
+    }
+    var profiles = remember{
+        mutableStateListOf<Profile>()
+    }
 
-    Column() {
+    LaunchedEffect(key1 = contactPermissionState.status, block = {
+        if (contactPermissionState.status == PermissionStatus.Granted) {
+            Log.d("contacts", "launching")
+            withContext(Dispatchers.IO) {
+
+
+                val map = getContacts(userViewModel?.token ?: "", context = context)
+                Log.d("map", map["profiles"].toString())
+                //            contactsViewModel.addData(map)
+                //            Log.d("viewmodel", contactsViewModel.contacts.toList().toString())
+                contacts.addAll(map["contacts"] as Collection<ContactsModel>)
+                profiles.addAll(map["profiles"] as Collection<Profile>)
+
+            }
+        }
+
+    })
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         TitleBar(navController = navController, title = "Contacts")
 
         when (contactPermissionState.status) {
             // If the camera permission is granted, then show screen with the feature enabled
-            PermissionStatus.Granted -> {
-                    ContactsScreen(navController = navController, userViewModel = userViewModel, contactsViewModel = ContactsViewModel(context = context, token = userViewModel.token ?: ""))
+            is PermissionStatus.Granted -> {
+                if (contacts.isNotEmpty() || profiles.isNotEmpty()) {
+                    ContactsScreen(
+                        navController = navController,
+                        contacts,
+                        profiles,
+                        userViewModel = userViewModel
+                    )
+                } else {
+                    Spacer(Modifier.weight(1F))
+
+                    CircularProgressIndicator()
+
+                    Spacer(Modifier.weight(1F))
+
+                }
+
             }
             is PermissionStatus.Denied -> {
 
                 Spacer(Modifier.weight(1F))
 
-                Text("Add access to contacts\nfor this feature", style = MaterialTheme.typography.h2, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 32.dp).fillMaxWidth())
+                Text("Add access to contacts\nfor this feature", style = MaterialTheme.typography.h2, textAlign = TextAlign.Center, modifier = Modifier
+                    .padding(horizontal = 32.dp)
+                    .fillMaxWidth())
 
                 CustomButton(buttonText = "Allow", onClick = { contactPermissionState.launchPermissionRequest() }, modifier = Modifier.padding(horizontal = 32.dp, vertical = 32.dp))
 
@@ -149,27 +239,36 @@ fun ContactsPage(navController: NavController, userViewModel: UserViewModel) {
 }
 
 @Composable
-fun ContactsScreen(navController: NavController, userViewModel: UserViewModel, contactsViewModel: ContactsViewModel) {
+fun ContactsScreen(navController: NavController, contacts: List<ContactsModel>, profiles: List<Profile>, userViewModel: UserViewModel) {
 
     var searchText by remember {
         mutableStateOf("")
     }
 
-    val scope = rememberCoroutineScope()
+    Log.d("contacts", "recomposing2")
 
 
-    LaunchedEffect(key1 = 1, block = {
-        scope.launch {
-            contactsViewModel.getContacts()
-            Log.d("CONTacts", "lawnefex")
 
-        }
-    })
+
 
     Column {
 
-        SearchBar(searchText, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) { searchText = it }
 
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(modifier = Modifier.width(16.dp))
+
+
+            SearchBar(searchText, Modifier.weight(1f)) { searchText = it }
+
+//            Spacer(modifier = Modifier.width(16.dp))
+//
+//            CancelButton(navController)
+            Spacer(modifier = Modifier.width(16.dp))
+
+
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
         Column(modifier = Modifier
@@ -180,8 +279,11 @@ fun ContactsScreen(navController: NavController, userViewModel: UserViewModel, c
 
             Spacer(Modifier.height(8.dp))
 
-            contactsViewModel.profiles.forEach{ profile ->
-                ContactProfileItem(profile = profile)
+            profiles.filter {
+                it.username.lowercase().contains(searchText.lowercase())
+                it.name.lowercase().contains(searchText.lowercase())
+            }.forEach{ profile ->
+                ContactProfileItem(profile = profile, userViewModel = userViewModel)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -189,13 +291,15 @@ fun ContactsScreen(navController: NavController, userViewModel: UserViewModel, c
             Text("Contacts", style = MaterialTheme.typography.h4, modifier = Modifier.padding(horizontal = 16.dp))
 
             Spacer(Modifier.height(8.dp))
-            Log.d("CONTacts", contactsViewModel.profiles.count().toString())
+//            Log.d("CONTacts", profiles.count().toString())
 
 
             //.filter { searchText.isEmpty() || it.name.lowercase().contains(searchText.lowercase()) }
 
-            contactsViewModel.contacts.forEach{ contact ->
-                ContactItem(contact = contact)
+            contacts.filter {
+                it.name.lowercase().contains(searchText.lowercase())
+            }.forEach{ contact ->
+                ContactItem(contact = contact, userViewModel = userViewModel)
             }
         }
 
@@ -205,7 +309,11 @@ fun ContactsScreen(navController: NavController, userViewModel: UserViewModel, c
 }
 
 @Composable
-fun ContactItem(contact: ContactsModel){
+fun ContactItem(contact: ContactsModel, userViewModel: UserViewModel){
+    var invited by remember {
+        mutableStateOf(false)
+    }
+
     Row() {
         ProfilePicture(url = null, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) )
 
@@ -216,13 +324,28 @@ fun ContactItem(contact: ContactsModel){
 
         Spacer(modifier = Modifier.weight(1F))
 
-        CustomSmallButton(buttonText = "Add", onClick = {})
+        if (!invited) {
+            CustomSmallButton(buttonText = "Invite", onClick = {
+                    WeeklyApi.retrofitService.inviteContact(
+                        mapOf("Authorization" to "token ${userViewModel.token}"),
+                        contact.phone
+                    )
+
+            }, backgroundColor = ExtendedTheme.colors.LightGray, textColor = MaterialTheme.colors.primary)
+        } else {
+            CustomSmallButton(buttonText = "Sent", textColor = ExtendedTheme.colors.Green, backgroundColor = MaterialTheme.colors.onPrimary, onClick = {
+
+            })
+        }
 
     }
 }
 
 @Composable
-fun ContactProfileItem(profile: Profile){
+fun ContactProfileItem(profile: Profile, userViewModel: UserViewModel){
+    var profile by remember {
+        mutableStateOf(profile)
+    }
     Row() {
         ProfilePicture(url = profile.profile_picture, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) )
 
@@ -233,7 +356,29 @@ fun ContactProfileItem(profile: Profile){
 
         Spacer(modifier = Modifier.weight(1F))
 
-        CustomSmallButton(buttonText = "Add", onClick = {})
+        if (profile.friend == true) {
+//            CustomSmallButton(buttonText = "Added", onClick = {
+//
+//            }, backgroundColor = MaterialTheme.colors.background,  )
+            Text("Added", color = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, modifier = Modifier.width(125.dp).padding(horizontal = 16.dp, vertical = 8.dp))
+        } else if (profile.urequested == true) {
+//            CustomSmallButton(buttonText = "Requested", textColor = ExtendedTheme.colors.Black60, backgroundColor = ExtendedTheme.colors.LightGray, onClick = {
+//
+//            })
+            Text("Requested", color = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, modifier = Modifier.width(125.dp).padding(horizontal = 16.dp, vertical = 8.dp))
+
+        } else if (profile.requesting == true) {
+            CustomSmallButton(buttonText = "Add", onClick = {
+                WeeklyApi.retrofitService.accept(mapOf("Authorization" to "token ${userViewModel.token}"), profile.user_id)
+                profile = profile.copy(requesting = false, friend = true)
+                userViewModel.addFriend(profile = profile)
+            })
+        } else {
+            CustomSmallButton(buttonText = "Add", onClick = {
+                WeeklyApi.retrofitService.add(mapOf("Authorization" to "token ${userViewModel.token}"), profile.user_id)
+                profile = profile.copy(urequested = true)
+            })
+        }
 
     }
 }
@@ -241,9 +386,12 @@ fun ContactProfileItem(profile: Profile){
 @Composable
 fun CustomSmallButton(
     buttonText: String,
+    backgroundColor: Color = Purple,
+    textColor: Color = Color.White,
     modifier: Modifier = Modifier,
-    onClick: suspend () -> Unit
-) {
+    onClick: suspend () -> Unit,
+
+    ) {
     var buttonloading: String by remember { mutableStateOf(buttonText) }
     val scope = rememberCoroutineScope()
 
@@ -251,21 +399,19 @@ fun CustomSmallButton(
 
 
         scope.launch {
-            runBlocking {
-                onClick()
-                buttonloading = buttonText
-            }
+            onClick()
+            buttonloading = buttonText
+
 
         }
 
         buttonloading = "loading"
 
-    }, shape = CircleShape, modifier =
+    }, elevation = null, colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor), shape = RoundedCornerShape(24.dp), modifier =
     modifier
         .padding(vertical = 8.dp, horizontal = 24.dp)
-        .width(96.dp)
-        .clip(CircleShape)) {
-        Text(text = buttonloading, style = MaterialTheme.typography.h4)
+        .width(96.dp)) {
+        Text(text = buttonloading, style = MaterialTheme.typography.h4, color = textColor)
 
     }
 }

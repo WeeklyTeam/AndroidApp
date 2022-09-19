@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.accompanist.insets.systemBarsPadding
+import com.onesignal.OneSignal
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.CustomTextField
@@ -47,6 +48,7 @@ fun SignupPage(navController: NavController, dob: String) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error: String? by remember {mutableStateOf(value = null)}
+
     val focusManager = LocalFocusManager.current
 
 
@@ -106,7 +108,8 @@ fun SignupPage(navController: NavController, dob: String) {
                                 "phone" to phoneNumber,
                                 "username" to username,
                                 "password" to password,
-                                "dob" to dob
+                                "dob" to dob,
+
                             )
                         )
 //                        WeeklyApi.retrofitService.createCode(

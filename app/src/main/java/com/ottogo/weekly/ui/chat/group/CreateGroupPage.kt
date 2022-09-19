@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Divider
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +38,7 @@ import java.io.File
 fun CreateGroupPage(navController: NavController){
 
     val context = LocalContext.current
-    var groupName: String by remember { mutableStateOf("") }
+    var groupName: String by rememberSaveable { mutableStateOf("") }
     var imageUri: Uri? by remember { mutableStateOf(null) }
     var file: File? by remember { mutableStateOf(null) }
     var bitmap: Bitmap? by remember { mutableStateOf(null) }

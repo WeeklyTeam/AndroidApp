@@ -44,7 +44,7 @@ fun ScrollPicker(
 
     Row(modifier.height(125.dp), verticalAlignment = Alignment.CenterVertically) {
         options.forEachIndexed{ index, list ->
-            SingleScrollPicker(list = list, modifier = Modifier.weight(1F), selectItem = selectItem[index])
+            SingleScrollPicker(list = list, modifier = Modifier, selectItem = selectItem[index])
         }
     }
 }
@@ -55,8 +55,21 @@ fun ScrollPicker(
 @Composable
 fun SingleScrollPicker(list: List<String>, selectItem: (Int) -> Unit, modifier: Modifier = Modifier){
     val lazyListState: LazyListState = rememberLazyListState()
+    val mutableList = remember {
+        mutableStateListOf<String>()
+    }
+    LaunchedEffect(key1 = list, block = {
+        mutableList.addAll(list)
+        mutableList.addAll(list)
+    })
+    lazyListState.OnBottomReached {
+        mutableList.addAll(list)
+    }
+    lazyListState.OnTopReached {
+        mutableList.addAll(list)
+    }
     val layoutInfo: LazyListSnapperLayoutInfo = rememberLazyListSnapperLayoutInfo(lazyListState)
-    val contentPadding = PaddingValues(vertical = 62.dp)
+//    val contentPadding = PaddingValues(vertical = 62.dp)
 
 
     LaunchedEffect(lazyListState.isScrollInProgress) {
@@ -71,18 +84,18 @@ fun SingleScrollPicker(list: List<String>, selectItem: (Int) -> Unit, modifier: 
         state = lazyListState,
         flingBehavior = rememberSnapperFlingBehavior(
             lazyListState = lazyListState,
-            snapOffsetForItem = SnapOffsets.Start,
-            endContentPadding = contentPadding.calculateBottomPadding(),
+            snapOffsetForItem = SnapOffsets.Center,
+//            endContentPadding = contentPadding.calculateBottomPadding(),
         ),
-        contentPadding = contentPadding,
+//        contentPadding = contentPadding,
     ) {
 
 
-        list.forEachIndexed { index, text ->
+        mutableList.forEachIndexed { index, text ->
             item {
                 Text(
                     text, textAlign = TextAlign.Center,
-                    modifier = Modifier.height(25.dp),
+                    modifier = Modifier.width(72.dp).height(48.dp),
                     style = TextStyle(
                         fontFamily = nunitoFamily,
                         fontWeight = if (layoutInfo.currentItem?.index == index) {
@@ -90,7 +103,7 @@ fun SingleScrollPicker(list: List<String>, selectItem: (Int) -> Unit, modifier: 
                         } else {
                             FontWeight.Normal
                         },
-                        fontSize = 22.sp),
+                        fontSize = 28.sp),
                     color = if (layoutInfo.currentItem?.index == index) {
                         MaterialTheme.colors.onBackground
                     } else {
@@ -102,5 +115,52 @@ fun SingleScrollPicker(list: List<String>, selectItem: (Int) -> Unit, modifier: 
         }
 
 
+    }
+}
+
+
+@Composable
+fun LazyListState.OnBottomReached(
+    loadMore : () -> Unit
+){
+    val shouldLoadMore = remember {
+        derivedStateOf {
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+                ?: return@derivedStateOf true
+
+            lastVisibleItem.index == layoutInfo.totalItemsCount - 1
+        }
+    }
+
+    // Convert the state into a cold flow and collect
+    LaunchedEffect(shouldLoadMore){
+        snapshotFlow { shouldLoadMore.value }
+            .collect {
+                // if should load more, then invoke loadMore
+                if (it) loadMore()
+            }
+    }
+}
+
+@Composable
+fun LazyListState.OnTopReached(
+    loadMore : () -> Unit
+){
+    val shouldLoadMore = remember {
+        derivedStateOf {
+            val firstVisibleItem = layoutInfo.visibleItemsInfo.firstOrNull()
+                ?: return@derivedStateOf true
+
+            firstVisibleItem.index == layoutInfo.totalItemsCount + 1
+        }
+    }
+
+    // Convert the state into a cold flow and collect
+    LaunchedEffect(shouldLoadMore){
+        snapshotFlow { shouldLoadMore.value }
+            .collect {
+                // if should load more, then invoke loadMore
+                if (it) loadMore()
+            }
     }
 }

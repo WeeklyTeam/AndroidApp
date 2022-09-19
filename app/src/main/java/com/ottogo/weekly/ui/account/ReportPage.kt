@@ -31,8 +31,9 @@ fun ReportPage(navController: NavController, userViewModel: UserViewModel) {
     var details by remember{ mutableStateOf("") }
     var category by remember{ mutableStateOf(-1) }
     var response by remember{ mutableStateOf(true) }
+    var submitted by remember{ mutableStateOf(false) }
 
-    val options = listOf("Bug/Issue", "Group", "Plan", "Other")
+    val options = listOf("Bug/Issue", "Group", "Plan", "Feedback", "Other")
 
 
     Column {
@@ -97,13 +98,23 @@ fun ReportPage(navController: NavController, userViewModel: UserViewModel) {
         }
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
 
-        CustomButton(
-            buttonText = "Report",
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .padding(top = 12.dp, bottom = 16.dp)
-        ) {
-            runBlocking {
+        if (submitted) {
+            CustomButton(
+                buttonText = "Submitted",
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 12.dp, bottom = 16.dp),
+                textColor = ExtendedTheme.colors.Green,
+                backgroundColor = MaterialTheme.colors.onPrimary
+            ) {}
+        } else {
+            CustomButton(
+                buttonText = "Report",
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 12.dp, bottom = 16.dp)
+            ) {
+                val categoryChar = if (category != -1) { options[category].first().toString() } else { "O" }
                 WeeklyApi.retrofitService.report(
                     mapOf(
                         "Authorization" to "token ${userViewModel.token}"
@@ -111,9 +122,11 @@ fun ReportPage(navController: NavController, userViewModel: UserViewModel) {
                     mapOf(
                         "details" to details,
                         "response" to response,
-                        "category" to category.toString()
+                        "category" to categoryChar
                     )
                 )
+                submitted = true
+
 
             }
         }

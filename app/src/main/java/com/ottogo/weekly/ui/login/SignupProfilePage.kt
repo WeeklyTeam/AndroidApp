@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +28,7 @@ import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import com.onesignal.OneSignal
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
@@ -63,7 +65,7 @@ import java.lang.Exception
 @Composable
 fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7") {
     var error : String? by remember { mutableStateOf(null) }
-    var name : String by remember { mutableStateOf("") }
+    var name : String by rememberSaveable { mutableStateOf("") }
     var imageUri: Uri? by remember { mutableStateOf(null) }
     var file: File? by remember { mutableStateOf(null) }
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
@@ -146,7 +148,11 @@ fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea
             buttonText = "Next",
             onClick = {
                 try {
+                    val pushTokenId = OneSignal.getDeviceState()?.userId ?: ""
+
                     val profileName = name.toRequestBody("text/plain".toMediaTypeOrNull())
+                    val pushToken = pushTokenId.toRequestBody("text/plain".toMediaTypeOrNull())
+
                     var picture: MultipartBody.Part? = null
 
                     if (file != null) {
@@ -159,7 +165,7 @@ fun SignupProfilePage(navController: NavController, token: String = "8375e2ec5ea
 
                     WeeklyApi.retrofitService.patchProfile(
                         mapOf("Authorization" to "token $token"),
-                        mapOf("name" to profileName),
+                        mapOf("name" to profileName, "token" to pushToken),
                         picture
                     )
                 } catch (e: Exception) {

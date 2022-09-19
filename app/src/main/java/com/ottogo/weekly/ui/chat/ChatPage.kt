@@ -18,13 +18,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.accompanist.pager.*
+import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.ui.theme.Black40
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.ottogo.weekly.R
+import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.Group
 import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.components.CustomButton
@@ -37,7 +40,7 @@ import java.util.*
 
 
 @Composable
-fun ChatPage(navController: NavController, userViewModel: UserViewModel) {
+fun ChatPage(navController: NavController, userViewModel: UserViewModel, openSheet: (profile: Profile?) -> Unit) {
     Column {
         ChatTitleBar(navController = navController, userViewModel = userViewModel)
 
@@ -46,12 +49,12 @@ fun ChatPage(navController: NavController, userViewModel: UserViewModel) {
         if (userViewModel.friends.count() > 0) {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (userViewModel.requests.count() > 0) {
-                    FriendRequests(requests = userViewModel.requests)
+                    FriendRequests(requests = userViewModel.requests, openSheet)
                 }
 
-                chatTabRow(userViewModel = userViewModel, navController = navController)
+                chatTabRow(userViewModel = userViewModel, navController = navController, openSheet = openSheet)
 
-                Spacer(Modifier.height(60.dp))
+                Spacer(Modifier.height(96.dp))
             }
 
         } else {
@@ -73,7 +76,7 @@ fun ChatPage(navController: NavController, userViewModel: UserViewModel) {
                 
                 Spacer(modifier = Modifier.height(64.dp))
 
-                FriendRequests(requests = userViewModel.requests)
+                FriendRequests(requests = userViewModel.requests, openSheet)
 
                 Spacer(Modifier.weight(1F))
             }
@@ -83,10 +86,10 @@ fun ChatPage(navController: NavController, userViewModel: UserViewModel) {
 }
 
 @Composable
-fun FriendRequests(requests: List<Profile>){
+fun FriendRequests(requests: List<Profile>, openSheet: (profile: Profile) -> Unit){
     Column(Modifier.padding(top = 4.dp)) {
         requests.forEach{ profile ->
-            Row(Modifier.clickable{}) {
+            Row(Modifier.clickable{openSheet(profile)}) {
                 ProfilePicture(url = profile.profile_picture, modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
 
                 Column() {
@@ -113,7 +116,7 @@ fun FriendRequests(requests: List<Profile>){
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun chatTabRow(userViewModel: UserViewModel, navController: NavController){
+fun chatTabRow(userViewModel: UserViewModel, navController: NavController, openSheet: (profile: Profile) -> Unit){
     val pagerState = rememberPagerState()
     val tabItems = listOf("Friends", "Groups")
 
@@ -127,19 +130,57 @@ fun chatTabRow(userViewModel: UserViewModel, navController: NavController){
 
         Spacer(Modifier.height(12.dp))
 
-        userViewModel.chats.forEach {
+        userViewModel.chats.forEach { it ->
             when (it) {
                 is Profile ->
                     ChatListItem(name = it.name, description = it.messages.firstOrNull()?.message
                         ?: "Say Hi!", profilePicture = it.profile_picture, modifier = Modifier.clickable{
                         navController.navigate("privateChatPage/${it.user_id}")
-                    }, timestamp = it.messages.firstOrNull()?.timestamp, notSeen = it.messages.firstOrNull()?.seen == false)
+                    }, timestamp = it.messages.firstOrNull()?.timestamp, notSeen = it.messages.firstOrNull()?.seen == false && it.messages.firstOrNull()?.user_id != userViewModel.profile?.user_id, onImageClick = {openSheet(it)})
                 is Group ->
-                    GroupChatListItem(group=it,
-                            onImageClick = {navController.navigate("groupPage/${it.id}")},
-                            modifier = Modifier.clickable{
-                            navController.navigate("groupChatPage/${it.id}")
+                    if (!it.is_invited) {
+                        GroupChatListItem(group = it,
+                            onImageClick = { navController.navigate("groupPage/${it.id}") },
+                            modifier = Modifier.clickable {
+                                navController.navigate("groupChatPage/${it.id}")
+                            })
+                    } else {
+                        GroupChatInviteListItem(
+                            navController = navController,
+                            group = it,
+                            onAcceptInvite = {
+                                try {
+                                    WeeklyApi.retrofitService.acceptGroupInvite(mapOf("Authorization" to "token ${userViewModel.token}"), it.id)
+                                    userViewModel.removeGroup(it.id)
+                                    val newInvited = it.invited.toMutableList()
+                                    newInvited.removeAll { it.user_id == userViewModel.profile?.user_id ?: -1 }
+                                    val newMembers = it.members.toMutableList()
+                                    newMembers.removeAll { it.user_id == userViewModel.profile?.user_id ?: -1 }
+
+                                    userViewModel.addGroup(it.copy(
+                                        invited = newInvited,
+                                        members = newMembers,
+                                        is_invited = false
+
+                                    ))
+
+                                } catch (e: Exception) {
+                                    
+                                }
+                                             },
+                            modifier = Modifier.clickable {
+                                navController.navigate("groupChatPage/${it.id}")
+                            },
+                        onDenyInvite = {
+                            try {
+                                WeeklyApi.retrofitService.leaveGroup(mapOf("Authorization" to "token ${userViewModel.token}"), it.id)
+                                userViewModel.removeGroup(it.id)
+
+                            } catch (e: Exception) {
+
+                            }
                         })
+                    }
 
             }
 
@@ -199,6 +240,7 @@ fun ChatListItem(
         }
     }
 
+
     Row(
         modifier
             .fillMaxWidth()
@@ -217,7 +259,7 @@ fun ChatListItem(
             Column() {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = name, style = MaterialTheme.typography.body1, maxLines = 1
+                    text = name, style = MaterialTheme.typography.body1, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
@@ -225,6 +267,7 @@ fun ChatListItem(
                 )
             }
         }
+
 
         Column(
             Modifier
@@ -297,9 +340,9 @@ fun GroupChatListItem(
                 group,
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clickable {
-                        onImageClick()
-                    }
+                    ,
+                onImageClick = onImageClick
+
             )
 
             Column() {
@@ -334,6 +377,64 @@ fun GroupChatListItem(
             Spacer(Modifier.height(8.dp))
         }
 
+    }
+}
+
+@Composable
+fun GroupChatInviteListItem(
+    navController: NavController,
+    group: Group,
+    modifier: Modifier = Modifier,
+    onAcceptInvite: suspend () -> Unit,
+    onDenyInvite: suspend () -> Unit,
+){
+   val coroutine = rememberCoroutineScope()
+
+    Column() {
+
+        Row(
+            modifier
+                .clickable {
+                    navController.navigate("groupPage/${group.id}")
+                }
+                .fillMaxWidth()
+                .height(intrinsicSize = IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row() {
+                GroupPicture(
+                    group,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+
+                Column() {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = group.name, style = MaterialTheme.typography.body1, maxLines = 1
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "You've been invited!",
+                        style = MaterialTheme.typography.body2,
+                        color = Black40,
+                        maxLines = 1
+                    )
+                }
+            }
+
+        }
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp, top = 8.dp)) {
+            CustomButton(buttonText = "Deny", textColor = ExtendedTheme.colors.Black60, backgroundColor = ExtendedTheme.colors.LightGray, onClick = { coroutine.launch { onDenyInvite() } }, modifier = Modifier.weight(1F))
+            Spacer(modifier = Modifier.width(16.dp))
+            CustomButton(buttonText = "Accept", onClick = { coroutine.launch { onAcceptInvite() } }, modifier = Modifier.weight(1F))
+
+        }
     }
 }
 

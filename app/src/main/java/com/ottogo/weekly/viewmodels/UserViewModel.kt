@@ -1,13 +1,21 @@
 package com.ottogo.weekly.viewmodels
 
+import android.accounts.Account
+import android.accounts.AccountManager
+import android.accounts.AccountManagerCallback
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
 import android.os.Build
+import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ottogo.weekly.MainActivity
 import com.ottogo.weekly.api.ActivityCategory
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.WeeklyApiService
@@ -16,9 +24,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.*
 
-class UserViewModel(): ViewModel() {
+class UserViewModel: ViewModel() {
 
-    var token by mutableStateOf<String?>("8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7")
+    var token by mutableStateOf<String?>(null)
     var profile by mutableStateOf<Profile?>(null)
     private val _friends = mutableStateMapOf<Int, Profile>()
     val friends: Map<Int, Profile>
@@ -38,7 +46,9 @@ class UserViewModel(): ViewModel() {
     private val _plots = mutableStateListOf<Plot>()
     val plots: List<Plot>
         get() = _plots
-    var requests by mutableStateOf<MutableList<Profile>>(mutableListOf())
+    private val _requests = mutableStateListOf<Profile>()
+    val requests: List<Profile>
+        get() = _requests
 
 
 
@@ -57,8 +67,23 @@ class UserViewModel(): ViewModel() {
         _groups[group.id] = group
     }
 
+    fun removeGroup(groupId: Int){
+        _chats.removeIf {
+            it is Group && it.id == groupId
+        }
+        _groups.remove(groupId)
+    }
+
+    fun removeCalendar(index: Int){
+        _calendars.removeAt(index)
+    }
+
     fun addAvailability(availability: Availability){
         _availability.add(availability)
+    }
+
+    fun removeAvailability(availability: Availability){
+        _availability.remove(availability)
     }
 
     fun addCalendar(calendar: FriendCalendar){
@@ -69,7 +94,6 @@ class UserViewModel(): ViewModel() {
         val data = WeeklyApi.retrofitService.main(mapOf("Authorization" to "token $token"))
         Log.d("ViewModel", data.toString())
 
-        clear()
 
         profile = data.profile
 
@@ -96,15 +120,17 @@ class UserViewModel(): ViewModel() {
         }
 
         _availability.addAll(data.availability)
-        requests = data.requests.toMutableList()
+        _requests.addAll(data.requests)
         _calendars.addAll(data.calendars)
 
         _plots.addAll(data.plots)
 
     }
 
-    private fun clear() {
+    fun clear() {
         _friends.clear()
+        _chats.clear()
+        _requests.clear()
         _plots.clear()
         _groups.clear()
     }
@@ -131,12 +157,34 @@ class UserViewModel(): ViewModel() {
         _chats.add(0, temporaryProfile!!)
     }
 
+    fun inviteToGroup(groupId: Int, selectedIds: List<Int>){
+        var tempGroup = _groups[groupId]
+        val invitees = (tempGroup?.invited ?: listOf<Profile>()).toMutableList()
+        for (id in selectedIds) {
+            _friends[id]?.let { invitees.add(it) }
+        }
+        tempGroup = tempGroup?.copy(invited = invitees)
+        _groups.put(groupId, tempGroup!!)
+    }
+
+    fun updateGroup(groupId: Int, group: Group){
+
+        _groups.put(groupId, group)
+    }
+
     @RequiresApi(Build.VERSION_CODES.N)
     fun removeFriend(userId: Int){
         _chats.removeIf {
             it is Profile && it.user_id == userId
         }
         _friends.remove(userId)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun removeRequest(userId: Int){
+        _requests.removeIf {
+            it is Profile && it.user_id == userId
+        }
     }
 
     fun addFriend(profile: Profile){
@@ -176,6 +224,7 @@ class UserViewModel(): ViewModel() {
 
     }
 
+
     suspend fun acceptPlotInvite(plot: Plot){
 
         WeeklyApi.retrofitService.acceptPlotInvitation(mapOf("Authorization" to "token ${token}"), plot.id)
@@ -192,6 +241,108 @@ class UserViewModel(): ViewModel() {
     suspend fun rejectPlotInvite(plot: Plot){
         WeeklyApi.retrofitService.rejectPlotInvitation(mapOf("Authorization" to "token ${token}"), plot.id)
         _plots.remove(plot)
+
+    }
+
+    fun removePlot(plotId: Int){
+        _plots.removeAll { it.id == plotId }
+
+    }
+
+    fun updatePlot(plotId: Int, plot: Plot){
+        _plots[_plots.indexOfFirst { plotId == it.id }] = plot
+    }
+
+    fun addCalendarAvailabilities(selectedCalendar: Int, availabilities: List<Availability>) {
+        val newCalendar = _calendars[selectedCalendar].copy(availabilities = availabilities)
+        _calendars[selectedCalendar] = newCalendar
+    }
+
+    fun seenChatMessages(userId: Int? = null, groupId: Int? = null){
+        if (userId != null) {
+            _chats.replaceAll {
+                if (it is Profile && it.user_id == userId){
+                    val messages = it.messages.toMutableList()
+                    messages.replaceAll { it.copy(seen = true) }
+                    it.copy(messages = messages)
+                }
+                else {
+                    it
+                }
+            }
+        } else {
+            _chats.replaceAll {
+                if (it is Group && it.id == groupId){
+                    val messages = it.messages.toMutableList()
+                    messages.replaceAll { it.copy(seen = true) }
+                    it.copy(messages = messages)
+                }
+                else {
+                    it
+                }
+            }
+        }
+    }
+
+    val ACCOUNT_TYPE = "com.ottogo.weekly"
+
+    fun getToken(context: Context) {
+        val accountManager = AccountManager.get(context)
+        try {
+
+
+            val account = accountManager.getAccountsByType(ACCOUNT_TYPE)[0]
+
+            accountManager.getAuthToken(account, ACCOUNT_TYPE, null, false, AccountManagerCallback {
+                //val token = it.getResult()
+//                    token = token
+                Log.d("tokenGet", it.getResult().toString())
+                Log.d("tokenGet", account.toString())
+                Log.d("tokenGet", it.isDone.toString())
+                token = it.getResult().get("authtoken") as String
+
+
+                viewModelScope.launch {
+                    getMain()
+
+                }
+            }, null)
+
+
+        } catch (ignored: Exception) {
+            Log.d("tokenGet", ignored.toString())
+
+
+        }
+    }
+
+    fun setToken(username: String, token: String, context: Context){
+        Log.d("tokenSet", token)
+        val accountManager = AccountManager.get(context)
+        val account = Account(username, ACCOUNT_TYPE)
+        accountManager.addAccountExplicitly(account, "", null);
+        accountManager.setAuthToken(account, ACCOUNT_TYPE, token)
+        this.token = token
+        viewModelScope.launch {
+            getMain()
+        }
+    }
+
+    fun logout(context: Context){
+        val accountManager = AccountManager.get(context)
+        val account = accountManager.getAccountsByType(ACCOUNT_TYPE)[0]
+        accountManager.removeAccount(account, AccountManagerCallback {
+            profile = null
+            _friends.clear()
+            _chats.clear()
+            _groups.clear()
+            _calendars.clear()
+            _availability.clear()
+            _plots.clear()
+            _requests.clear()
+            token = null
+
+        }, null)
 
     }
 

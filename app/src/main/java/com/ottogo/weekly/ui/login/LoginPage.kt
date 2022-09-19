@@ -27,7 +27,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.navigation.NavController
 import com.google.accompanist.insets.systemBarsPadding
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.ottogo.weekly.StoreUserToken
+import com.onesignal.OneSignal
 import com.ottogo.weekly.api.Activity
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.CustomButton
@@ -38,6 +38,10 @@ import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.nunitoFamily
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -67,10 +71,8 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
     var passwordValue by remember { mutableStateOf("") }
     var error: String? by remember {mutableStateOf(value = null)}
     val focusManager = LocalFocusManager.current
+
     val context = LocalContext.current
-    val dataStore = StoreUserToken(context = context)
-
-
 
 
     val systemUiController = rememberSystemUiController()
@@ -116,22 +118,40 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
+
+
             CustomButton(buttonText = "Login") {
-                runBlocking {
                     try {
+                        Log.d("tokenSet", "token")
+
                         val responseMap = WeeklyApi.retrofitService.login(
                                 mapOf(
-                                    "username" to usernameValue,
+                                    "username" to usernameValue.lowercase(),
                                     "password" to passwordValue
                                 )
                             )
 
+                        val pushTokenId = OneSignal.getDeviceState()?.userId ?: ""
+
+                        val pushToken = pushTokenId.toRequestBody("text/plain".toMediaTypeOrNull())
+
                         val token = responseMap["token"]
+
+
+                        WeeklyApi.retrofitService.patchProfile(
+                            mapOf("Authorization" to "token $token"),
+                            mapOf("token" to pushToken),
+                        )
+
                         if (token != null) {
-                            dataStore.saveToken(token)
+                            userViewModel.setToken(usernameValue, token, context)
+                            Log.d("token", token)
+
+                        }
+                        else {
+                            throw java.lang.Exception("token is null")
                         }
 
-                        userViewModel.token = token
 
                     } catch (e: Exception) {
                         Log.d("AM", e.toString())
@@ -149,17 +169,22 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
                             is IOException -> {
                                 error = "Check your connection"
                             }
+                            else -> {
+                                "An unexpected error occurred"
+                            }
                         }
-                    }
+
                 }
 
             }
+            
+            Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "Forgot your password?" ,
                 style = MaterialTheme.typography.h5,
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable {
-                    navController.navigate("webviewPage/Weekly?url=www.theweeklyapp.com/account/password_reset")
+                    navController.navigate("webviewPage/Weekly?url=https://www.theweeklyapp.com/account/password_reset/")
                 }
 
             )

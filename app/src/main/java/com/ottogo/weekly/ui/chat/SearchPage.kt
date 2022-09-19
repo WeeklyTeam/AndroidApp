@@ -15,6 +15,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -237,18 +238,19 @@ fun SearchBar(searchText: String, modifier: Modifier = Modifier, searchType: (St
             shape = RoundedCornerShape(12.dp),
             placeholder = { Text("Search", style = MaterialTheme.typography.body2, color = Black60) },
             singleLine = true,
-            leadingIcon = { Image(painter = painterResource(id = R.drawable.ic_search_line), contentDescription = "search icon") },
+            leadingIcon = { Image(painter = painterResource(id = R.drawable.ic_search_line), contentDescription = "search icon", colorFilter = ColorFilter.tint(color = ExtendedTheme.colors.Black60)) },
             colors = TextFieldDefaults.textFieldColors(
-                textColor = Black60,
+                textColor = MaterialTheme.colors.onBackground,
                 leadingIconColor = Black60,
                 backgroundColor = LightGray,
                 cursorColor = Black60,
+                placeholderColor = Black60,
 
                 // removes underline
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             ),
-            textStyle = MaterialTheme.typography.body2,
+            textStyle = MaterialTheme.typography.body1,
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
 
@@ -271,7 +273,7 @@ fun CancelButton(navController: NavController) {
 }
 
 @Composable
-fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit, onBlock: () -> Unit) {
+fun PopUpBlockSheetContent(title: String, userId: Int, userViewModel: UserViewModel, onDismiss: () -> Unit, onBlock: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -293,7 +295,7 @@ fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit, on
                     onDismiss.invoke()
                     runBlocking {
                         WeeklyApi.retrofitService.block(
-                            mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
+                            mapOf("Authorization" to "token ${userViewModel.token}"),
                             userId
                         )
                     }
@@ -311,11 +313,11 @@ fun PopUpBlockSheetContent(title: String, userId: Int, onDismiss: () -> Unit, on
                     onDismiss.invoke()
                     runBlocking {
                         WeeklyApi.retrofitService.block(
-                            mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
+                            mapOf("Authorization" to "token ${userViewModel.token}"),
                             userId
                         )
                         WeeklyApi.retrofitService.report(
-                            mapOf("Authorization" to "token 8375e2ec5ea97021bcf0ecb5bad9304cce0b6ef7"),
+                            mapOf("Authorization" to "token ${userViewModel.token}"),
                             userId
                         )
                     }

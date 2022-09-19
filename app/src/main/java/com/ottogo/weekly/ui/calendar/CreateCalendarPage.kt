@@ -35,8 +35,8 @@ fun CreateCalendarPage(navController: NavController, userViewModel: UserViewMode
     }
 
     var selectedGroupId by remember { mutableStateOf<Int?>(null) }
-    var selectedProfileIds by remember {
-        mutableStateOf(mutableListOf<Int>())
+    val selectedProfileIds = remember {
+        mutableStateListOf<Int>()
     }
 
     Column() {
@@ -61,7 +61,7 @@ fun CreateCalendarPage(navController: NavController, userViewModel: UserViewMode
                             selectedGroupId = null
                         } else {
                             selectedGroupId = it.id
-                            selectedProfileIds = mutableListOf<Int>()
+                            selectedProfileIds.clear()
                         }
                     }
                     .padding(horizontal = 8.dp)) }

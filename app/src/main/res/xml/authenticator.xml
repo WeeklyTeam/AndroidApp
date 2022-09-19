@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accountType="com.ottogo.weekly"
+    android:icon="@drawable/ic_user_add_line"
+    android:smallIcon="@drawable/ic_user_add_line"
+    android:label="Account"
+    android:accountPreferences="@xml/prefs"/>

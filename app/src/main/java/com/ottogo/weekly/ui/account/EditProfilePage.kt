@@ -4,6 +4,8 @@ import android.Manifest
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Environment
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -14,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,10 +31,7 @@ import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
-import com.ottogo.weekly.ui.components.CustomButton
-import com.ottogo.weekly.ui.components.CustomTextField
-import com.ottogo.weekly.ui.components.Message
-import com.ottogo.weekly.ui.components.TitleBar
+import com.ottogo.weekly.ui.components.*
 import com.ottogo.weekly.ui.login.getFile
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -40,7 +40,10 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
+import kotlin.math.min
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -48,8 +51,8 @@ fun EditProfilePage(navController: NavController, userViewModel: UserViewModel) 
 
     val context = LocalContext.current
     var error: String? by remember { mutableStateOf(null) }
-    var name: String by remember { mutableStateOf(userViewModel.profile?.name ?: "") }
-    var username: String by remember { mutableStateOf(userViewModel.profile?.username ?: "") }
+    var name: String by rememberSaveable { mutableStateOf(userViewModel.profile?.name ?: "") }
+    var username: String by rememberSaveable { mutableStateOf(userViewModel.profile?.username ?: "") }
     var imageUri: Uri? by remember { mutableStateOf(null) }
     var file: File? by remember { mutableStateOf(null) }
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
@@ -61,8 +64,19 @@ fun EditProfilePage(navController: NavController, userViewModel: UserViewModel) 
         onResult = {
                 uri: Uri? -> imageUri = uri
             if (imageUri != null) {
-                file = getFile(imageUri = imageUri!!, context)
-                bitmap = BitmapFactory.decodeFile(file?.path)
+                val tempFile = getFile(imageUri = imageUri!!, context)
+                bitmap = BitmapFactory.decodeFile(tempFile?.path).toSquare()
+                    ?.let { Bitmap.createScaledBitmap(it, 400, 400, false) }
+                var fileName = tempFile?.nameWithoutExtension
+                var compressFormat = Bitmap.CompressFormat.JPEG
+                if (tempFile?.extension == "jpg"){
+                    fileName += ".jpeg"
+                } else if (tempFile?.extension == "png"){
+                    compressFormat = Bitmap.CompressFormat.PNG
+                }
+
+                file = bitmap?.let { bitmapToFile(bitmap = it, fileNameToSave = tempFile?.name ?: "weekly/androidProfilePicture.jpeg", compressFormat = compressFormat) }
+                Log.d("Bitmap", file.toString())
             }
         }
     )
@@ -102,31 +116,25 @@ fun EditProfilePage(navController: NavController, userViewModel: UserViewModel) 
                         )
                 )
             } else {
-                Image(
-                    painter = painterResource(id = R.drawable.default_profile_picture),
-                    contentDescription = "Profile Photo",
-                    contentScale = ContentScale.Crop,
+                ProfilePicture(url = userViewModel.profile?.profile_picture,
+                    size = 96,
                     modifier = Modifier
-                        .size(96.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                            enabled = true,
-                            onClickLabel = "Choose Profile Image",
-                            onClick = {
-                                when (storagePermissionStatus.status) {
-                                    // If the camera permission is granted, then show screen with the feature enabled
-                                    PermissionStatus.Granted -> {
-                                        galleryLauncher.launch("image/")
-                                    }
-                                    is PermissionStatus.Denied -> {
-                                        storagePermissionStatus.launchPermissionRequest()
-
-                                    }
-                                }
-
-                            }
+                        .clip(
+                            CircleShape
                         )
-                )
+                        .clickable {
+                            when (storagePermissionStatus.status) {
+                                // If the camera permission is granted, then show screen with the feature enabled
+                                PermissionStatus.Granted -> {
+                                    galleryLauncher.launch("image/")
+                                }
+                                is PermissionStatus.Denied -> {
+                                    storagePermissionStatus.launchPermissionRequest()
+
+                                }
+                            }
+                        })
+
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -192,3 +200,43 @@ fun EditProfilePage(navController: NavController, userViewModel: UserViewModel) 
 
 }
 
+fun Bitmap.toSquare(): Bitmap?{
+    val side = min(width, height)
+
+    val xOffset = (width - side)/2
+    val yOffset = (height - side)/2
+
+    return Bitmap.createBitmap(
+    this,
+        xOffset,
+        yOffset,
+        side,
+        side
+    )
+}
+
+
+fun bitmapToFile(bitmap: Bitmap, fileNameToSave: String, compressFormat: Bitmap.CompressFormat): File? { // File name like "image.png"
+    //create a file to write bitmap data
+    var file: File? = null
+    return try {
+        file = File(Environment.getExternalStorageDirectory().toString() + File.separator + fileNameToSave)
+        file.createNewFile()
+
+        //Convert bitmap to byte array
+        val bos = ByteArrayOutputStream()
+        bitmap.compress(compressFormat, 100, bos) // YOU can also save it in JPEG
+        val bitmapdata = bos.toByteArray()
+
+        //write the bytes in file
+        val fos = FileOutputStream(file)
+        fos.write(bitmapdata)
+        fos.flush()
+        fos.close()
+        Log.d("FILE", file.toString())
+        file
+    } catch (e: Exception) {
+        e.printStackTrace()
+        file // it will return null
+    }
+}
