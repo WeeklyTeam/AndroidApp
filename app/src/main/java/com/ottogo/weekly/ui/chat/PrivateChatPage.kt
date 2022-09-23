@@ -3,7 +3,6 @@ package com.ottogo.weekly.ui.chat
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Rect
-import android.inputmethodservice.Keyboard
 import android.os.Build
 import android.util.Log
 import android.view.View
@@ -51,6 +50,7 @@ import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
 import com.giphy.sdk.ui.views.GPHGridCallback
+import com.giphy.sdk.ui.views.GiphyDialogFragment
 import com.giphy.sdk.ui.views.GiphyGridView
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
@@ -78,7 +78,8 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
 
     ExpandingBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId,
         sheetContent = { search, coroutineScope, sheetSwipeableState, webSocket, userId, userViewModel, keyboardController ->
-            GiphySheet(search, coroutineScope, sheetSwipeableState, webSocket, userId, userViewModel, keyboardController)
+            //GiphySheet(search, coroutineScope, sheetSwipeableState, webSocket, userId, userViewModel, keyboardController)
+            EmojiSheet(search = search, coroutineScope, sheetSwipeableState)
         },
         mainContent = {
             PrivateChatPageContent(navController, userViewModel, userId, webSocket) {
@@ -185,7 +186,6 @@ fun Context.getActivity(): AppCompatActivity? = when (this) {
 }
 
 
-// TODO: Separate into Emoji and Giphy Sheets
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -195,7 +195,6 @@ fun ExpandingBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSo
     var sheetState = rememberBottomSheetScaffoldState(
         bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
     )
-
 
     val isKeyboardOpen by keyboardAsState()
     var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
@@ -207,20 +206,17 @@ fun ExpandingBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSo
         mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", (halfExpandedHeight + 1).toFloat() to "full")
     }
 
-
     var search by remember {  mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
 
 
-    // Hides keyboard and resets gif search if user closes bottom sheet with search bar focused
+    // Hides keyboard and resets search bar if user closes bottom sheet with search bar focused
     val focusRequester = remember { FocusRequester() }
     var searchFocused by remember { mutableStateOf(false) }
     if (sheetSwipeableState.currentValue == "none" && searchFocused) {
         keyboardController?.hide()
         search = ""
     }
-
-
 
     BottomSheetScaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -271,35 +267,11 @@ fun ExpandingBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSo
 
 }
 
-
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun EmojiSheet(search: String, searchFocused: Boolean, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>) {
-    val emojiResults = remember { mutableStateListOf<CategoryUnicodes>() }
-
-    if (!searchFocused) {
-        EmojiCategoryBar {
-            emojiResults.clear()
-            emojiResults.addAll(it)
-        }
-    }
-
-    emojiResults.clear()
-
-    filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
-
-    EmojiView(emojiResults) {
-        coroutineScope.launch {
-            sheetSwipeableState.animateTo("none")
-        }
-        // TODO: return emoji result here using "it"
-    }
-}
-
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun GiphySheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userId: Int, userViewModel: UserViewModel, keyboardController: SoftwareKeyboardController?) {
+    // TODO: change API key
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
 
     GiphyView(search) {
@@ -357,6 +329,27 @@ fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
     )
 }
 
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun EmojiSheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>) {
+    val emojiResults = remember { mutableStateListOf<CategoryUnicodes>() }
+    EmojiCategoryBar {
+        emojiResults.clear()
+        emojiResults.addAll(it)
+    }
+
+    emojiResults.clear()
+
+    filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
+
+    EmojiView(emojiResults) {
+        coroutineScope.launch {
+            sheetSwipeableState.animateTo("none")
+        }
+        // TODO: return emoji result here using "it"
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EmojiView(results: List<CategoryUnicodes>, toggleSheet: (String) -> Unit) {
@@ -386,17 +379,32 @@ fun EmojiView(results: List<CategoryUnicodes>, toggleSheet: (String) -> Unit) {
 
 @Composable
 fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
-    Row(modifier = Modifier
-        .fillMaxWidth()
-        .coloredShadow(
-            color = Color(0xFF000000),
-            alpha = 0.03f,
-            offsetX = 3.dp,
-            offsetY = 8.dp
-        )
-        .background(Color.White), horizontalArrangement = Arrangement.Center) {
-        var selectedCategories = remember { mutableStateListOf<Boolean>(false, false, false, false, false, false, false, false) }
-        EmojiCategoryButton(R.drawable.ic_emotion_line, "SmileysPeopleCategory", selectedCategories[0]) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .coloredShadow(
+                color = Color(0xFF000000),
+                alpha = 0.03f,
+                offsetX = 3.dp,
+                offsetY = 8.dp
+            )
+            .background(Color.White), horizontalArrangement = Arrangement.Center
+    ) {
+        val isKeyboardOpen by keyboardAsState()
+        var buttonEnabled by remember { mutableStateOf(true) }
+
+        var selectedCategories = remember {
+            mutableStateListOf(false, false, false, false, false, false, false, false)
+        }
+
+        buttonEnabled = if (isKeyboardOpen == Keyboard.Opened) {
+            selectedCategories.fill(false)
+            false
+        } else {
+            true
+        }
+
+        EmojiCategoryButton(R.drawable.ic_emotion_line, "SmileysPeopleCategory", buttonEnabled, selectedCategories[0]) {
             if (selectedCategories[0]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -406,7 +414,7 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
                 changeEmoji(SmileysPeopleCategoryUnicodes.values().asList())
             }
         }
-        EmojiCategoryButton(R.drawable.ic_bear_smile_line, "AnimalsNatureCategory", selectedCategories[1]) {
+        EmojiCategoryButton(R.drawable.ic_bear_smile_line, "AnimalsNatureCategory",buttonEnabled, selectedCategories[1]) {
             if (selectedCategories[1]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -416,7 +424,7 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
                 changeEmoji(AnimalsNatureCategoryUnicodes.values().asList())
             }
         }
-        EmojiCategoryButton(R.drawable.ic_cake_3_line, "FoodDrinkCategory", selectedCategories[2]) {
+        EmojiCategoryButton(R.drawable.ic_cake_3_line, "FoodDrinkCategory",buttonEnabled, selectedCategories[2]) {
             if (selectedCategories[2]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -426,7 +434,7 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
                 changeEmoji(FoodDrinkCategoryUnicodes.values().asList())
             }
         }
-        EmojiCategoryButton(R.drawable.ic_football_line, "ActivityCategory", selectedCategories[3]) {
+        EmojiCategoryButton(R.drawable.ic_football_line, "ActivityCategory",buttonEnabled, selectedCategories[3]) {
             if (selectedCategories[3]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -436,7 +444,7 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
                 changeEmoji(ActivityCategoryUnicodes.values().asList())
             }
         }
-        EmojiCategoryButton(R.drawable.ic_road_map_line, "TravelPlacesCategory", selectedCategories[4]) {
+        EmojiCategoryButton(R.drawable.ic_road_map_line, "TravelPlacesCategory",buttonEnabled, selectedCategories[4]) {
             if (selectedCategories[4]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -446,7 +454,7 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
                 changeEmoji(TravelPlacesCategoryUnicodes.values().asList())
             }
         }
-        EmojiCategoryButton(R.drawable.ic_lightbulb_line, "ObjectsCategoryUnicodes", selectedCategories[5]) {
+        EmojiCategoryButton(R.drawable.ic_lightbulb_line, "ObjectsCategoryUnicodes",buttonEnabled, selectedCategories[5]) {
             if (selectedCategories[5]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -456,7 +464,7 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
                 changeEmoji(ObjectsCategoryUnicodes.values().asList())
             }
         }
-        EmojiCategoryButton(R.drawable.ic_hashtag, "SymbolsCategoryUnicodes", selectedCategories[6]) {
+        EmojiCategoryButton(R.drawable.ic_hashtag, "SymbolsCategoryUnicodes",buttonEnabled, selectedCategories[6]) {
             if (selectedCategories[6]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -466,7 +474,7 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
                 changeEmoji(SymbolsCategoryUnicodes.values().asList())
             }
         }
-        EmojiCategoryButton(R.drawable.ic_flag_line, "FlagsCategoryUnicodes", selectedCategories[7]) {
+        EmojiCategoryButton(R.drawable.ic_flag_line, "FlagsCategoryUnicodes",buttonEnabled, selectedCategories[7]) {
             if (selectedCategories[7]) {
                 selectedCategories.fill(false)
                 changeEmoji(AllEmojiUnicodes.values().asList())
@@ -481,9 +489,9 @@ fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
 }
 
 @Composable
-fun EmojiCategoryButton(imageId: Int, contentDescription: String, isSelected: Boolean, onClick: () -> Unit) {
+fun EmojiCategoryButton(imageId: Int, contentDescription: String, isEnabled: Boolean, isSelected: Boolean, onClick: () -> Unit) {
     var tintColor = if (isSelected) Color.DarkGray else Color.LightGray
-    IconButton(onClick = { onClick() }) {
+    IconButton(enabled = isEnabled, onClick = { onClick() }) {
         Image(painter = painterResource(id = imageId), contentDescription = contentDescription, colorFilter = ColorFilter.tint(tintColor))
     }
 }
@@ -594,6 +602,7 @@ enum class Keyboard {
     Opened, Closed
 }
 
+
 @Composable
 fun keyboardAsState(): State<Keyboard> {
     val keyboardState = remember { mutableStateOf(Keyboard.Closed) }
@@ -605,7 +614,7 @@ fun keyboardAsState(): State<Keyboard> {
             val screenHeight = view.rootView.height
             val keypadHeight = screenHeight - rect.bottom
             keyboardState.value = if (keypadHeight > screenHeight * 0.15) {
-                com.ottogo.weekly.ui.chat.Keyboard.Opened
+                Keyboard.Opened
             } else {
                 Keyboard.Closed
             }
