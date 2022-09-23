@@ -677,13 +677,11 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
                 var setListener: TimePicker.OnTimeChangedListener = TimePicker.OnTimeChangedListener { _, hour, minute ->
                     val calendar = Calendar.getInstance()
                     calendar.time = selectedDate
-                    calendar[Calendar.HOUR] = hour
+                    calendar[Calendar.HOUR_OF_DAY] = hour
                     calendar[Calendar.MINUTE] = minute
                     selectedDate = calendar.time
-
-                    // TODO: AM/PM not immediately changing time
-                    Log.d("status", selectedDate.toString())
                 }
+
                 var timePicker = TimePicker(context, null, R.style.SpinnerTimePicker)
 
                 var linearLayout = LinearLayout(context)

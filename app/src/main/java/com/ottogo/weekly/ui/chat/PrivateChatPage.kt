@@ -182,6 +182,8 @@ fun Context.getActivity(): AppCompatActivity? = when (this) {
     else -> null
 }
 
+
+// TODO: Separate into Emoji and Giphy Sheets
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
