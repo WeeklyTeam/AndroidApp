@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class ActivityCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     JACK_O_LANTERN("🎃"),

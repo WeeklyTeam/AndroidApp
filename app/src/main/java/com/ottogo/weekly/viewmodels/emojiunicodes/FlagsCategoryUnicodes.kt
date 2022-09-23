@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class FlagsCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     CHEQUERED_FLAG("🏁"),

@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 interface CategoryUnicodes {
     val name: String

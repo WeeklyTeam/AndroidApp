@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class SmileysPeopleCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     SLIGHTLY_SMILING_FACE("🙂"),

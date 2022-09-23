@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class SymbolsCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     TWELVE_OCLOCK("🕛"),

@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class TravelPlacesCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     GLOBE_SHOWING_AFRICA_AND_EUROPE("🌍"),

@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class AnimalsNatureCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     MONKEY_FACE("🐵"),

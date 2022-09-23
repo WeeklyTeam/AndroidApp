@@ -1,4 +1,4 @@
-package com.ottogo.weekly.viewmodels
+package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class FoodDrinkCategoryUnicodes(override val unicode: String) : CategoryUnicodes {
     GRAPES("🍇"),

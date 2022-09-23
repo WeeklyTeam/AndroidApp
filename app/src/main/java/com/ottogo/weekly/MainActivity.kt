@@ -719,11 +719,6 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
     }
 }
 
-@Composable
-fun timePicker() {
-    //AndroidView(factory = )
-}
-
 //https://stackoverflow.com/questions/22178349/android-how-to-filter-emoji-emoticons-from-a-string
 //https://stackoverflow.com/questions/64181930/request-focus-on-textfield-in-jetpack-compose
 @OptIn(ExperimentalComposeUiApi::class)
