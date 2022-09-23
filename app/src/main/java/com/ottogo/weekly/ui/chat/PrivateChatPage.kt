@@ -3,6 +3,7 @@ package com.ottogo.weekly.ui.chat
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Rect
+import android.inputmethodservice.Keyboard
 import android.os.Build
 import android.util.Log
 import android.view.View
@@ -75,13 +76,18 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
     val coroutineScope = rememberCoroutineScope()
 
-    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId, false) {
-        PrivateChatPageContent(navController, userViewModel, userId, webSocket) {
-            coroutineScope.launch {
-                sheetSwipeableState.animateTo("half")
+    ExpandingBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId,
+        sheetContent = { search, coroutineScope, sheetSwipeableState, webSocket, userId, userViewModel, keyboardController ->
+            GiphySheet(search, coroutineScope, sheetSwipeableState, webSocket, userId, userViewModel, keyboardController)
+        },
+        mainContent = {
+            PrivateChatPageContent(navController, userViewModel, userId, webSocket) {
+                coroutineScope.launch {
+                    sheetSwipeableState.animateTo("half")
+                }
             }
         }
-    }
+    )
 
 }
 
@@ -183,10 +189,10 @@ fun Context.getActivity(): AppCompatActivity? = when (this) {
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, userId: Int, isGiphyView: Boolean = true, mainContent: @Composable () -> Unit) {
+fun ExpandingBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, userId: Int,
+                              sheetContent: @Composable (search: String, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userId: Int, userViewModel: UserViewModel, keyboardController: SoftwareKeyboardController?) -> Unit, mainContent: @Composable () -> Unit) {
 
-    Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
-    var giphySheetState = rememberBottomSheetScaffoldState(
+    var sheetState = rememberBottomSheetScaffoldState(
         bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
     )
 
@@ -214,7 +220,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
         search = ""
     }
 
-    val emojiResults = remember { mutableStateListOf<CategoryUnicodes>() }
+
 
     BottomSheetScaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -224,7 +230,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                 }
             })
         },
-        scaffoldState = giphySheetState,
+        scaffoldState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetPeekHeight = sheetSwipeableState.offset.value.dp,
         sheetContent = {
@@ -254,50 +260,102 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                     .onFocusChanged { searchFocused = it.isFocused }
                     .padding(start = 12.dp, end = 12.dp)) { search = it }
 
-            if (!searchFocused) {
-                EmojiCategoryBar {
-                    emojiResults.clear()
-                    emojiResults.addAll(it)
-                }
-            }
 
-            if (isGiphyView) {
-                GiphyView(search) {
-                    coroutineScope.launch {
-                        sheetSwipeableState.animateTo("none")
-                    }
-                    webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
-                    userViewModel.addPrivateMessage(
-                        message = ChatMessage(
-                            user_id = userViewModel.profile!!.user_id,
-                            recipient = userId,
-                            gif = it
-                        )
-                    )
-                    keyboardController?.hide()
-                }
-            } else {
+            sheetContent(search, coroutineScope, sheetSwipeableState, webSocket, userId, userViewModel, keyboardController)
 
-
-                emojiResults.clear()
-
-                filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
-
-                EmojiView(emojiResults) {
-                coroutineScope.launch {
-                    sheetSwipeableState.animateTo("none")
-                }
-                    // TODO: return emoji result here using "it"
-                }
-            }
-
-        },
+            },
         sheetGesturesEnabled = false) {
 
         mainContent()
     }
+
 }
 
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun EmojiSheet(search: String, searchFocused: Boolean, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>) {
+    val emojiResults = remember { mutableStateListOf<CategoryUnicodes>() }
+
+    if (!searchFocused) {
+        EmojiCategoryBar {
+            emojiResults.clear()
+            emojiResults.addAll(it)
+        }
+    }
+
+    emojiResults.clear()
+
+    filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
+
+    EmojiView(emojiResults) {
+        coroutineScope.launch {
+            sheetSwipeableState.animateTo("none")
+        }
+        // TODO: return emoji result here using "it"
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
+@RequiresApi(Build.VERSION_CODES.N)
+@Composable
+fun GiphySheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userId: Int, userViewModel: UserViewModel, keyboardController: SoftwareKeyboardController?) {
+    Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
+
+    GiphyView(search) {
+        coroutineScope.launch {
+            sheetSwipeableState.animateTo("none")
+        }
+        webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
+        userViewModel.addPrivateMessage(
+            message = ChatMessage(
+                user_id = userViewModel.profile!!.user_id,
+                recipient = userId,
+                gif = it
+            )
+        )
+        keyboardController?.hide()
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
+
+    AndroidView(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 12.dp, end = 12.dp, top = 12.dp),
+        factory = { context ->
+            var gifSearch = ""
+            val gridView = GiphyGridView(context)
+
+            if (gifSearch == "") {
+                gridView.content = GPHContent.trendingGifs
+            } else {
+                gridView.content = GPHContent.searchQuery(gifSearch)
+            }
+
+            gridView.callback = object : GPHGridCallback {
+                override fun contentDidUpdate(resultCount: Int) { }
+                override fun didSelectMedia(media: Media) {
+                    media.images.original?.gifUrl?.let {
+                        toggleSheet.invoke(it)
+                    }
+                }
+            }
+
+            gridView.apply { }
+        },
+        update = {
+            if (gifSearch == "") {
+                it.content = GPHContent.trendingGifs
+            } else {
+                it.content = GPHContent.searchQuery(gifSearch)
+            }
+        }
+    )
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -323,6 +381,8 @@ fun EmojiView(results: List<CategoryUnicodes>, toggleSheet: (String) -> Unit) {
     })
 
 }
+
+
 
 @Composable
 fun EmojiCategoryBar(changeEmoji: (List<CategoryUnicodes>) -> Unit) {
@@ -439,45 +499,6 @@ fun filterEmojis(emojisList: List<CategoryUnicodes>, emojiSearch: String, onEmoj
     onEmojiFound(foundEmojis)
 }
 
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
-    
-        AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 12.dp, end = 12.dp, top = 12.dp),
-            factory = { context ->
-                var gifSearch = ""
-                val gridView = GiphyGridView(context)
-
-                if (gifSearch == "") {
-                    gridView.content = GPHContent.trendingGifs
-                } else {
-                    gridView.content = GPHContent.searchQuery(gifSearch)
-                }
-
-                gridView.callback = object : GPHGridCallback {
-                    override fun contentDidUpdate(resultCount: Int) { }
-                    override fun didSelectMedia(media: Media) {
-                        media.images.original?.gifUrl?.let {
-                            toggleSheet.invoke(it)
-                        }
-                    }
-                }
-
-                gridView.apply { }
-            },
-            update = {
-                if (gifSearch == "") {
-                    it.content = GPHContent.trendingGifs
-                } else {
-                    it.content = GPHContent.searchQuery(gifSearch)
-                }
-            }
-        )
-}
-
 @Composable
 fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, modifier: Modifier = Modifier){
     val lazyListState = rememberLazyListState()
@@ -584,7 +605,7 @@ fun keyboardAsState(): State<Keyboard> {
             val screenHeight = view.rootView.height
             val keypadHeight = screenHeight - rect.bottom
             keyboardState.value = if (keypadHeight > screenHeight * 0.15) {
-                Keyboard.Opened
+                com.ottogo.weekly.ui.chat.Keyboard.Opened
             } else {
                 Keyboard.Closed
             }
