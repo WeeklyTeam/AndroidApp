@@ -331,7 +331,7 @@ fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun EmojiSheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>) {
-    val emojiResults = remember { mutableStateListOf<CategoryUnicodes>() }
+    val emojiResults = remember { mutableStateMapOf<String, List<CategoryUnicodes>>() }
 
     val groupedEmojis = mapOf(
     "Smileys and People" to SmileysPeopleCategoryUnicodes.values().asList(),
@@ -344,28 +344,22 @@ fun EmojiSheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableSta
     "Flags" to FlagsCategoryUnicodes.values().asList()
     )
 
-    // When app starts, all emojis are displayed
-    // Create a sticky header for each category
-    // Sticky header jumps to spot
-    // Place all emojis in a list using a tuple (category, unicode stuff)
-    // Group by category
-    // If the user searches, don't use category display, just display results
-    // If search is empty, place back grouped emojis
-
-
-    //emojiResults.clear()
-    //filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
+    emojiResults.clear()
+    filterEmojis(AllEmojiUnicodes.values().asList(), search) {
+        emojiResults["${it.size} results for $search"] = it
+    }
 
     val listState = rememberLazyListState()
 
     EmojiCategoryBar {
+        emojiResults.clear()
         coroutineScope.launch {
             // "it" (index to scroll to) is for each item in the Column (ex. 0 - sticky header, 1 - emoji items, 2 - spacer item... etc.)
             listState.scrollToItem(it)
         }
     }
 
-    EmojiView(groupedEmojis, listState) { emoji ->
+    EmojiView(if (search == "") groupedEmojis else emojiResults, listState) { emoji ->
         coroutineScope.launch {
             sheetSwipeableState.animateTo("none")
         }
@@ -373,6 +367,17 @@ fun EmojiSheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableSta
         // TODO: return emoji result here using "emoji"
         Log.d("emoji", emoji)
     }
+}
+
+fun filterEmojis(emojisList: List<CategoryUnicodes>, emojiSearch: String, onEmojiFound: (List<CategoryUnicodes>) -> Unit) {
+    var foundEmojis: List<CategoryUnicodes> = emptyList()
+    for (emoji in emojisList) {
+        var emojiName = emoji.name.lowercase()
+        if (emojiName.contains(emojiSearch.lowercase())) {
+            foundEmojis += emoji
+        }
+    }
+    onEmojiFound(foundEmojis)
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -393,9 +398,10 @@ fun EmojiView(results: Map<String, List<CategoryUnicodes>>, listState: LazyListS
 
                 var index = 0
                 for (row in 0 until emojis.size/5 + 1) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         for (column in 0 until 5) {
-                            AndroidView(factory = { context ->
+                            // TODO: padding values are fixed - make dynamic for different screens
+                            AndroidView(modifier = Modifier.padding(start = 10.dp, end = 10.dp), factory = { context ->
 
                                 EmojiTextView(context).apply {
                                     id = index
@@ -408,7 +414,10 @@ fun EmojiView(results: Map<String, List<CategoryUnicodes>>, listState: LazyListS
                                     }
                                 }
 
-                            }, update = { index += 1 })
+                            }, update = {
+                                it.text = if (index < emojis.size) emojis[index].unicode  else ""
+                                index += 1
+                            })
                         }
                     }
                 }
@@ -420,7 +429,6 @@ fun EmojiView(results: Map<String, List<CategoryUnicodes>>, listState: LazyListS
             }
         }
     }
-
 }
 
 @Composable
@@ -494,17 +502,6 @@ fun EmojiCategoryButton(imageId: Int, contentDescription: String, isEnabled: Boo
     IconButton(enabled = isEnabled, onClick = { onClick() }) {
         Image(painter = painterResource(id = imageId), contentDescription = contentDescription, colorFilter = ColorFilter.tint(tintColor))
     }
-}
-
-fun filterEmojis(emojisList: List<CategoryUnicodes>, emojiSearch: String, onEmojiFound: (List<CategoryUnicodes>) -> Unit) {
-    var foundEmojis: List<CategoryUnicodes> = emptyList()
-    for (emoji in emojisList) {
-        var emojiName = emoji.name.lowercase()
-        if (emojiName.contains(emojiSearch.lowercase())) {
-            foundEmojis += emoji
-        }
-    }
-    onEmojiFound(foundEmojis)
 }
 
 @Composable
