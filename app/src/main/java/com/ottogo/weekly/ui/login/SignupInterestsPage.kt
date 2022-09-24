@@ -216,7 +216,6 @@ fun ActivityList(activityCategoryIndex: Int, activityCategoriesViewModel: Activi
         Spacer(modifier = Modifier.height(16.dp))
 
 
-
         val numRows = if (activityCategory.activities.size % 2 == 0) {
             activityCategory.activities.size / 2
         } else {

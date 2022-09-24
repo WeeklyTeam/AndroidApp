@@ -1,6 +1,8 @@
 package com.ottogo.weekly.viewmodels.emojiunicodes
 
 enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
+
+    // Smileys and People (index 0)
     SLIGHTLY_SMILING_FACE("🙂"),
     SMILING_FACE_1("😀"),
     SMILING_FACE_WITH_BIG_EYES("😃"),
@@ -537,6 +539,8 @@ enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
     LIPSTICK("💄"),
     RING("💍"),
     GEMSTONE("💎"),
+
+    // Animals and Nature (index 536)
     MONKEY_FACE("🐵"),
     MONKEY("🐒"),
     GORILLA("🦍"),
@@ -725,6 +729,8 @@ enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
     FIRE("🔥"),
     DROPLET("💧"),
     WATER_WAVE("🌊"),
+
+    // Food and Drinks
     GRAPES("🍇"),
     MELON("🍈"),
     WATER_MELON("🍉"),
@@ -856,6 +862,8 @@ enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
     KITCHEN_KNIFE("🔪"),
     JAR("🧋"),
     AMPHORA("🏺"),
+
+    // Activity
     JACK_O_LANTERN("🎃"),
     CHRISTMAS_TREE("🎄"),
     FIREWORKS("🎆"),
@@ -949,6 +957,8 @@ enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
     GOLD_MEDAL___FIRST_POSITION("🥇"),
     SILVER_MEDAL___SECOND_POSITION("🥈"),
     BRONZE_MEDAL___THIRD_POSITION("🥉"),
+
+    // Travel and Places
     GLOBE_SHOWING_AFRICA_AND_EUROPE("🌍"),
     GLOBE_SHOWING_AMERICAS("🌎"),
     GLOBE_SHOWING_ASIA_AND_AUSTRALIA("🌏"),
@@ -1047,6 +1057,8 @@ enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
     SCOOTER("🛵"),
     MANUAL_WHEELCHAIR("🦽"),
     MOTORIZED_WHEELCHAIR("🦼"),
+
+    // Objects
     HOURGLASS_DONE("⌛"),
     HOURGLASS_STARTING("⏳"),
     WATCH("⌚"),
@@ -1234,6 +1246,8 @@ enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
     MOLE("🗿"),
     PLACARD("🪧"),
     ID_CARD("🪪"),
+
+    // Symbols
     TWELVE_OCLOCK("🕛"),
     TWELVETHIRTY("🕧"),
     ONE_OCLOCK("🕐"),
@@ -1491,6 +1505,8 @@ enum class AllEmojiUnicodes(override val unicode: String) : CategoryUnicodes {
     RADIO_BUTTON("🔘"),
     WHITE_SQUARE_BUTTON("🔳"),
     BLACK_SQUARE_BUTTON("🔲"),
+
+    // Flags
     CHEQUERED_FLAG("🏁"),
     TRIANGULAR_FLAG("🚩"),
     CROSSED_FLAG("🎌"),
