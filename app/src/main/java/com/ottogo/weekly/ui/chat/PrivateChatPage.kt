@@ -7,18 +7,15 @@ import android.os.Build
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -55,7 +52,6 @@ import com.giphy.sdk.ui.views.GiphyGridView
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.ui.components.TitleBar
-import com.ottogo.weekly.ui.login.coloredShadow
 import com.ottogo.weekly.ui.theme.*
 import com.ottogo.weekly.viewmodels.*
 import com.ottogo.weekly.viewmodels.emojiunicodes.*
@@ -350,15 +346,23 @@ fun EmojiSheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableSta
     }
 
     val listState = rememberLazyListState()
+    var listStateItemIndex by remember { mutableStateOf(0) }
 
-    EmojiCategoryBar {
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .collect {
+                listStateItemIndex = listState.firstVisibleItemIndex
+            }
+    }
+
+    EmojiCategoryBar(listStateItemIndex) {
         emojiResults.clear()
         coroutineScope.launch {
             // "it" (index to scroll to) is for each item in the Column (ex. 0 - sticky header, 1 - emoji items, 2 - spacer item... etc.)
             listState.scrollToItem(it)
         }
     }
-
+    
     EmojiView(if (search == "") groupedEmojis else emojiResults, listState) { emoji ->
         coroutineScope.launch {
             sheetSwipeableState.animateTo("none")
@@ -400,6 +404,7 @@ fun EmojiView(results: Map<String, List<CategoryUnicodes>>, listState: LazyListS
                 for (row in 0 until emojis.size/5 + 1) {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         for (column in 0 until 5) {
+
                             // TODO: padding values are fixed - make dynamic for different screens
                             AndroidView(modifier = Modifier.padding(start = 10.dp, end = 10.dp), factory = { context ->
 
@@ -421,7 +426,6 @@ fun EmojiView(results: Map<String, List<CategoryUnicodes>>, listState: LazyListS
                         }
                     }
                 }
-
             }
             
             item {
@@ -432,64 +436,85 @@ fun EmojiView(results: Map<String, List<CategoryUnicodes>>, listState: LazyListS
 }
 
 @Composable
-fun EmojiCategoryBar(changeEmoji: (Int) -> Unit) {
+fun EmojiCategoryBar(listStateItemIndex: Int, changeEmoji: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White), horizontalArrangement = Arrangement.Center
     ) {
         val isKeyboardOpen by keyboardAsState()
-        var buttonEnabled by remember { mutableStateOf(true) }
+        var allButtonsEnabled by remember { mutableStateOf(true) }
 
+        // Keeps track of which icons are selected
         var selectedCategories = remember {
             mutableStateListOf(false, false, false, false, false, false, false, false)
         }
 
-        buttonEnabled = if (isKeyboardOpen == Keyboard.Opened) {
+        when(listStateItemIndex) {
+            in 0..2 -> {
+                selectedCategories.fill(false)
+                selectedCategories[0] = true
+            }
+            in 3..5 -> {
+                selectedCategories.fill(false)
+                selectedCategories[1] = true
+            }
+            in 6..8 -> {
+                selectedCategories.fill(false)
+                selectedCategories[2] = true
+            }
+            in 9..11 -> {
+                selectedCategories.fill(false)
+                selectedCategories[3] = true
+            }
+            in 12..14 -> {
+                selectedCategories.fill(false)
+                selectedCategories[4] = true
+            }
+            in 15..17 -> {
+                selectedCategories.fill(false)
+                selectedCategories[5] = true
+            }
+            in 18..20 -> {
+                selectedCategories.fill(false)
+                selectedCategories[6] = true
+            }
+            in 21..23 -> {
+                selectedCategories.fill(false)
+                selectedCategories[7] = true
+            }
+        }
+
+        allButtonsEnabled = if (isKeyboardOpen == Keyboard.Opened) {
             selectedCategories.fill(false)
             false
         } else {
             true
         }
 
-        EmojiCategoryButton(R.drawable.ic_emotion_line, "SmileysPeopleCategory", buttonEnabled, selectedCategories[0]) {
-            selectedCategories.fill(false)
-            selectedCategories[0] = true
+        // Icons jump to category when clicked
+        EmojiCategoryButton(R.drawable.ic_emotion_line, "SmileysPeopleCategory", allButtonsEnabled, selectedCategories[0]) {
             changeEmoji(0)
         }
-        EmojiCategoryButton(R.drawable.ic_bear_smile_line, "AnimalsNatureCategory",buttonEnabled, selectedCategories[1]) {
-            selectedCategories.fill(false)
-            selectedCategories[1] = true
+        EmojiCategoryButton(R.drawable.ic_bear_smile_line, "AnimalsNatureCategory",allButtonsEnabled, selectedCategories[1]) {
             changeEmoji(3)
         }
-        EmojiCategoryButton(R.drawable.ic_cake_3_line, "FoodDrinkCategory",buttonEnabled, selectedCategories[2]) {
-            selectedCategories.fill(false)
-            selectedCategories[2] = true
+        EmojiCategoryButton(R.drawable.ic_cake_3_line, "FoodDrinkCategory",allButtonsEnabled, selectedCategories[2]) {
             changeEmoji(6)
         }
-        EmojiCategoryButton(R.drawable.ic_football_line, "ActivityCategory",buttonEnabled, selectedCategories[3]) {
-            selectedCategories.fill(false)
-            selectedCategories[3] = true
+        EmojiCategoryButton(R.drawable.ic_football_line, "ActivityCategory",allButtonsEnabled, selectedCategories[3]) {
             changeEmoji(9)
         }
-        EmojiCategoryButton(R.drawable.ic_road_map_line, "TravelPlacesCategory",buttonEnabled, selectedCategories[4]) {
-            selectedCategories.fill(false)
-            selectedCategories[4] = true
+        EmojiCategoryButton(R.drawable.ic_road_map_line, "TravelPlacesCategory",allButtonsEnabled, selectedCategories[4]) {
             changeEmoji(12)
         }
-        EmojiCategoryButton(R.drawable.ic_lightbulb_line, "ObjectsCategoryUnicodes",buttonEnabled, selectedCategories[5]) {
-            selectedCategories.fill(false)
-            selectedCategories[5] = true
+        EmojiCategoryButton(R.drawable.ic_lightbulb_line, "ObjectsCategoryUnicodes",allButtonsEnabled, selectedCategories[5]) {
             changeEmoji(15)
         }
-        EmojiCategoryButton(R.drawable.ic_hashtag, "SymbolsCategoryUnicodes",buttonEnabled, selectedCategories[6]) {
-            selectedCategories.fill(false)
-            selectedCategories[6] = true
+        EmojiCategoryButton(R.drawable.ic_hashtag, "SymbolsCategoryUnicodes",allButtonsEnabled, selectedCategories[6]) {
             changeEmoji(18)
         }
-        EmojiCategoryButton(R.drawable.ic_flag_line, "FlagsCategoryUnicodes",buttonEnabled, selectedCategories[7]) {
-            selectedCategories.fill(false)
-            selectedCategories[7] = true
+        EmojiCategoryButton(R.drawable.ic_flag_line, "FlagsCategoryUnicodes",allButtonsEnabled, selectedCategories[7]) {
             changeEmoji(21)
         }
 
