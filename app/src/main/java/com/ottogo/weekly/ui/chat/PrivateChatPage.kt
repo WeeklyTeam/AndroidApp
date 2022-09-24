@@ -404,7 +404,7 @@ fun EmojiView(results: Map<String, List<CategoryUnicodes>>, listState: LazyListS
                 for (row in 0 until emojis.size/5 + 1) {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         for (column in 0 until 5) {
-
+                            
                             // TODO: padding values are fixed - make dynamic for different screens
                             AndroidView(modifier = Modifier.padding(start = 10.dp, end = 10.dp), factory = { context ->
 
