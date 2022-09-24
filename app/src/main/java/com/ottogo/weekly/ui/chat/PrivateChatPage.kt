@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -63,6 +64,7 @@ import com.ottogo.weekly.viewmodels.emojiunicodes.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.java_websocket.client.WebSocketClient
+import kotlin.reflect.KProperty
 
 
 @RequiresApi(Build.VERSION_CODES.N)
@@ -333,14 +335,17 @@ fun GiphyView(gifSearch: String, toggleSheet: (String) -> Unit) {
 @Composable
 fun EmojiSheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableState: SwipeableState<String>) {
     val emojiResults = remember { mutableStateListOf<CategoryUnicodes>() }
-    EmojiCategoryBar {
+
+    if (search == "") {
+        EmojiCategoryBar {
+            emojiResults.clear()
+            emojiResults.addAll(it)
+            Log.d("emoji", "changed emoji")
+        }
+    } else {
         emojiResults.clear()
-        emojiResults.addAll(it)
+        filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
     }
-
-    emojiResults.clear()
-
-    filterEmojis(AllEmojiUnicodes.values().asList(), search) { emojiResults.addAll(it) }
 
     EmojiView(emojiResults) {
         coroutineScope.launch {
@@ -355,10 +360,12 @@ fun EmojiSheet(search: String, coroutineScope: CoroutineScope, sheetSwipeableSta
 fun EmojiView(results: List<CategoryUnicodes>, toggleSheet: (String) -> Unit) {
 
     // TODO: Fix vertical grid not recomposing (only recomposes on scroll)
+
     LazyVerticalGrid(columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(5), horizontalArrangement = Arrangement.Center, modifier = Modifier
         .fillMaxWidth()
         .padding(start = 12.dp, end = 12.dp, bottom = 12.dp), content = {
-        items(results.size) { index ->
+        items(count = results.size, key = { results.size }) { index ->
+
             AndroidView(factory = { context ->
                 EmojiTextView(context).apply {
                     setTextColor(Black.toArgb())
@@ -370,6 +377,7 @@ fun EmojiView(results: List<CategoryUnicodes>, toggleSheet: (String) -> Unit) {
                     }
                 }
             })
+
         }
     })
 
