@@ -1,11 +1,17 @@
 package com.ottogo.weekly.ui.chat
 
+import android.Manifest
 import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.util.Log
 import android.util.TypedValue
 import android.view.ViewTreeObserver
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.Orientation
@@ -29,13 +35,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.InputMode.Companion.Keyboard
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
@@ -45,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import coil.ImageLoader
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import coil.decode.GifDecoder
@@ -60,18 +70,32 @@ import com.giphy.sdk.ui.pagination.GPHContent
 import com.giphy.sdk.ui.utils.videoUrl
 import com.giphy.sdk.ui.views.GPHGridCallback
 import com.giphy.sdk.ui.views.GiphyGridView
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.rememberPermissionState
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.ottogo.weekly.R
+import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.api.models.Profile
+import com.ottogo.weekly.ui.account.toSquare
 import com.ottogo.weekly.ui.calendar.DateFunctions.addDay
 import com.ottogo.weekly.ui.calendar.DateFunctions.isSameDay
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.TitleBar
+import com.ottogo.weekly.ui.login.getFile
 import com.ottogo.weekly.ui.theme.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.java_websocket.client.WebSocketClient
+import retrofit2.HttpException
+import java.io.File
 import java.text.SimpleDateFormat
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -82,7 +106,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
     var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
     val coroutineScope = rememberCoroutineScope()
 
-    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId) {
+    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId = userId) {
         PrivateChatPageContent(navController, userViewModel, userId, webSocket, toggleSwipeState =  {
             coroutineScope.launch {
                 sheetSwipeableState.animateTo("half")
@@ -93,6 +117,7 @@ fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, 
 }
 
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun PrivateChatPageContent(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?, toggleSwipeState: () -> Unit, openSheet: (profile: Profile?) -> Unit) {
 
@@ -107,6 +132,16 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
 //        focusRequester.requestFocus()
 //        onDispose { }
 //    }
+    var context = LocalContext.current
+
+    val configuration = LocalConfiguration.current
+
+    val screenWidth = configuration.screenWidthDp.dp
+
+    val size: Dp = (screenWidth * context.resources.displayMetrics.density*3/5)
+    val scope = rememberCoroutineScope()
+
+
 
     LaunchedEffect(key1 = userId, block = {
         if ((webSocket as WebSocketClient).isClosed) {
@@ -120,6 +155,24 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
 
 
     })
+
+    var imageUri: Uri? by remember { mutableStateOf(null) }
+    var file: File? by remember { mutableStateOf(null) }
+    var bitmap: Bitmap? by remember { mutableStateOf(null) }
+    val storagePermissionStatus = rememberPermissionState(
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    )
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = {
+                uri: Uri? -> imageUri = uri
+            if (imageUri != null) {
+                file = getFile(imageUri = imageUri!!, context)
+                bitmap = BitmapFactory.decodeFile(file?.path)
+            }
+        }
+    )
 
     Column() {
 
@@ -135,31 +188,47 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
 //        Text(userViewModel.friends[userId]?.messages.toString())
 
 
+
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap!!.asImageBitmap(),
+                contentDescription = "Profile Photo",
+                contentScale = ContentScale.FillHeight,
+                modifier = Modifier
+                    .height(128.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .padding(top = 12.dp, start = 16.dp, end = 16.dp)
+
+            )
+        }
+
             Row(modifier = Modifier.padding(top = 12.dp, bottom = 16.dp, start = 16.dp, end = 16.dp), verticalAlignment = Alignment.Bottom) {
-                IconButton(onClick = {
-                    webSocket?.send("{\"recipient\": $userId, \"message\": \"$message\"}")
-                    userViewModel.addPrivateMessage(
-                        message = ChatMessage(
-                            user_id = userViewModel.profile!!.user_id,
-                            message = message,
-                            recipient = userId,
-                            seen = true
-                        )
-                    )
-                    message = ""
-
-                }, Modifier.clip(CircleShape)) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_image_2_line),
-                        contentDescription = "image",
-                        tint = MaterialTheme.colors.onBackground,
-                        modifier = Modifier
-                            .background(MaterialTheme.colors.background)
-                            .padding(10.dp)
-                            .size(28.dp)
-                    )
-
-                }
+//                IconButton(onClick = {
+//
+//                    when (storagePermissionStatus.status) {
+//                        // If the camera permission is granted, then show screen with the feature enabled
+//                        PermissionStatus.Granted -> {
+//                            galleryLauncher.launch("image/")
+//                        }
+//                        is PermissionStatus.Denied -> {
+//                            storagePermissionStatus.launchPermissionRequest()
+//
+//                        }
+//                    }
+//
+//
+//                }, Modifier.clip(CircleShape)) {
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.ic_image_2_line),
+//                        contentDescription = "image",
+//                        tint = MaterialTheme.colors.onBackground,
+//                        modifier = Modifier
+//                            .background(MaterialTheme.colors.background)
+//                            .padding(10.dp)
+//                            .size(28.dp)
+//                    )
+//
+//                }
 
 
 
@@ -212,6 +281,91 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
                         message = ""
                     }),
                 )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+
+                IconButton(onClick = {
+                    scope.launch {
+                        if (file != null){
+                            try {
+                                var image: MultipartBody.Part? = null
+
+                                val reqFile = file!!.asRequestBody("image/*".toMediaTypeOrNull())
+                                image = MultipartBody.Part.createFormData(
+                                    "chat_image",
+                                    file?.name, reqFile
+                                )
+
+                                val chatMessage = friend?.relationship_id?.let {
+                                    WeeklyApi.retrofitService.uploadChatImage(
+                                        mapOf("Authorization" to "token ${userViewModel.token}"),
+                                        it,
+                                        userId,
+                                        message,
+                                        image
+                                    )
+                                }
+                                Log.d("pcerror", chatMessage.toString())
+
+
+                                webSocket?.send("{\"recipient\": $userId, \"image\": \"${chatMessage!!.image}\"" + if (message.isNullOrEmpty()) {""} else {", \"message\": \"$message\"\n"} +"}")
+                                Log.d("pcerror", "2")
+
+                                userViewModel.addPrivateMessage(
+                                    message = ChatMessage(
+                                        user_id = userViewModel.profile!!.user_id,
+                                        message = if (message.isEmpty()){null}else {message},
+                                        image = chatMessage?.image,
+                                        recipient = userId,
+                                        seen = true
+                                    )
+                                )
+
+                            } catch (e: Exception) {
+                                Log.d("pcerror", e.toString())
+                                if (e is HttpException) {
+                                    Log.d("pcerror", e.response().toString())
+
+                                    Log.d("pcerror", e.message())
+
+
+                                    if (e.code() >= 400) {
+                                        "Issue Sending Image.\n Please Try again."
+                                    }
+                                }
+                            }
+
+                        } else {
+                            Log.d("msggg", message)
+                            webSocket?.send("{\"recipient\": $userId, \"message\": \"$message\"}")
+                            userViewModel.addPrivateMessage(
+                                message = ChatMessage(
+                                    user_id = userViewModel.profile!!.user_id,
+                                    message = message,
+                                    recipient = userId,
+                                    seen = true
+                                )
+                            )
+                        }
+
+                        message = ""
+
+                    }
+
+
+
+                }, Modifier.clip(CircleShape)) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_send_plane_fill),
+                        contentDescription = "send",
+                        tint = MaterialTheme.colors.onPrimary,
+                        modifier = Modifier
+                            .background(MaterialTheme.colors.primary)
+                            .padding(12.dp)
+                            .size(24.dp)
+                    )
+
+                }
 
 
 
@@ -279,7 +433,9 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
             }
 
             item {
-
+                Log.d("MSG", nextMessage?.timestamp.toString())
+                Log.d("MSG", messages[index].timestamp.toString())
+                Log.d("MSG", previousMessage?.timestamp.toString())
 
 
 
@@ -311,7 +467,25 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
                                         messageAlignment
                                     )
                                     .padding(vertical = 2.dp, horizontal = 16.dp)
-                                    .width(screenWidth*3/5)
+                                    .width(screenWidth * 3 / 5)
+                                    .clip(RoundedCornerShape(3.dp))
+                            )
+                        }
+
+                        messages[index].image?.let {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(it)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = stringResource(R.string.content_profile_icon),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .align(
+                                        messageAlignment
+                                    )
+                                    .padding(vertical = 2.dp, horizontal = 16.dp)
+                                    .width(screenWidth * 3 / 5)
                                     .clip(RoundedCornerShape(3.dp))
                             )
                         }
@@ -331,7 +505,7 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
                                         messageAlignment
                                     )
                                     .padding(vertical = 2.dp, horizontal = 16.dp)
-                                    .widthIn(min = 40.dp, max = screenWidth*3/5)
+                                    .widthIn(min = 40.dp, max = screenWidth * 3 / 5)
                                     .background(
                                         if (messages[index].user_id == currentUserId) {
                                             MaterialTheme.colors.primary
@@ -348,10 +522,18 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
 
                     }
 
-                if (!isSameDay(previousMessage?.timestamp, messages[index].timestamp)){
-                    Text(SimpleDateFormat("MMMM d").format(messages[index].timestamp),color = ExtendedTheme.colors.Black60, style = MaterialTheme.typography.body2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(16.dp))
-                }
 
+                if (!isSameDay(nextMessage?.timestamp, messages[index].timestamp)) {
+                    Text(
+                        SimpleDateFormat("MMMM d").format(messages[index].timestamp),
+                        color = ExtendedTheme.colors.Black60,
+                        style = MaterialTheme.typography.body2,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    )
+                }
                 }
             }
         }
@@ -368,7 +550,7 @@ fun LazyListState.OnBottomReached(
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, userId: Int, mainContent: @Composable () -> Unit) {
+fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, groupId: Int? = null, userId: Int? = null, mainContent: @Composable () -> Unit) {
 
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
     var giphySheetState = rememberBottomSheetScaffoldState(
@@ -423,7 +605,11 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                     reverseDirection = true
                 )
             ) { Box(modifier = Modifier
-                .clip(RoundedCornerShape(24.dp)).width(48.dp).height(4.dp).align(Alignment.Center).background(color = Color.Gray)) }
+                .clip(RoundedCornerShape(24.dp))
+                .width(48.dp)
+                .height(4.dp)
+                .align(Alignment.Center)
+                .background(color = Color.Gray)) }
 
 
             SearchBar(searchText = gifSearch,
@@ -437,14 +623,29 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
                 coroutineScope.launch {
                     sheetSwipeableState.animateTo("none")
                 }
-                webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
-                userViewModel.addPrivateMessage(
-                    message = ChatMessage(
-                        user_id = userViewModel.profile!!.user_id,
-                        recipient = userId,
-                        gif = it
+                var message =
+                if (userId != null){
+                    webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
+
+                    userViewModel.addPrivateMessage(
+                        message = ChatMessage(
+                            user_id = userViewModel.profile!!.user_id,
+                            recipient = userId,
+                            gif = it
+                        )
                     )
-                )
+                } else if (groupId != null){
+                    webSocket?.send("{\"group\": $groupId, \"gif\": \"$it\"}")
+                    userViewModel.addGroupMessage(
+                        message = ChatMessage(
+                            user_id = userViewModel.profile!!.user_id,
+                            group = groupId,
+                            gif = it
+                        )
+                    )
+
+                }else {}
+
                 keyboardController?.hide()
             }
         },
@@ -524,29 +725,4 @@ val Number.toPx get() = TypedValue.applyDimension(
 //}
 
 
-//---------------------------------REDACTED CHAT SEND BUTTON-------------------------------------------
 
-//IconButton(onClick = {
-//    webSocket?.send("{\"recipient\": $userId, \"message\": \"$message\"}")
-//    userViewModel.addPrivateMessage(
-//        message = ChatMessage(
-//            user_id = userViewModel.profile!!.user_id,
-//            message = message,
-//            recipient = userId,
-//            seen = true
-//        )
-//    )
-//    message = ""
-//
-//}, Modifier.clip(CircleShape)) {
-//    Icon(
-//        painter = painterResource(id = R.drawable.ic_send_plane_fill),
-//        contentDescription = "send",
-//        tint = MaterialTheme.colors.onPrimary,
-//        modifier = Modifier
-//            .background(MaterialTheme.colors.primary)
-//            .padding(12.dp)
-//            .size(24.dp)
-//    )
-//
-//}

@@ -5,6 +5,7 @@ import java.util.*
 
 data class Plot(
     @Json(name = "starttime") val starttime: Date?,
+    @Json(name = "endtime") val endtime: Date?,
     @Json(name = "name") val name: String,
     @Json(name = "id") val id: Int,
     @Json(name = "emoji") val emoji: String,
@@ -16,5 +17,7 @@ data class Plot(
     @Json(name = "invited") val invited: List<Profile>,
     @Json(name = "going") val going: List<Profile>,
     @Json(name = "not_going") val not_going: List<Profile>,
+    @Json(name = "is_plot") val is_plot: Boolean = true,
+
 
     )

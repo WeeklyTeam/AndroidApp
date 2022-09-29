@@ -24,7 +24,6 @@ import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.Availability
 import com.ottogo.weekly.api.models.Plot
-import com.ottogo.weekly.ui.calendar.availability.beginningOfDay
 import com.ottogo.weekly.ui.calendar.ui.components.AvailabilityText
 import com.ottogo.weekly.ui.calendar.ui.components.PlotItem
 import com.ottogo.weekly.ui.components.CustomButton

@@ -1,11 +1,15 @@
 package com.ottogo.weekly.ui.account
 
 import android.Manifest
+import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
+import android.webkit.MimeTypeMap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -23,13 +27,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
-import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.components.*
 import com.ottogo.weekly.ui.login.getFile
@@ -40,10 +42,10 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
+import java.io.OutputStream
 import kotlin.math.min
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -75,8 +77,33 @@ fun EditProfilePage(navController: NavController, userViewModel: UserViewModel) 
                     compressFormat = Bitmap.CompressFormat.PNG
                 }
 
-                file = bitmap?.let { bitmapToFile(bitmap = it, fileNameToSave = tempFile?.name ?: "weekly/androidProfilePicture.jpeg", compressFormat = compressFormat) }
-                Log.d("Bitmap", file.toString())
+                //file = bitmap?.let { bitmapToFile(bitmap = it, fileNameToSave = tempFile?.name ?: "weekly/androidProfilePicture.jpeg", compressFormat = compressFormat) }
+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, tempFile?.nameWithoutExtension)
+                    put(MediaStore.MediaColumns.MIME_TYPE, MimeTypeMap.getSingleton().getMimeTypeFromExtension(tempFile?.extension))
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.Video.Media.IS_PENDING, 1)
+                }
+                //use application context to get contentResolver
+                val contentResolver = context.contentResolver
+
+                var fos: OutputStream? = null
+
+                contentResolver.also { resolver ->
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        imageUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                    }
+                    fos = imageUri?.let { resolver.openOutputStream(it) }
+                }
+
+                fos?.use { bitmap?.compress(Bitmap.CompressFormat.PNG, 100, it) }
+
+                contentValues.clear()
+                contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
+                contentResolver.update(imageUri!!, contentValues, null, null)
+
+                file = getFile(imageUri = imageUri!!, context)
             }
         }
     )
@@ -216,27 +243,27 @@ fun Bitmap.toSquare(): Bitmap?{
 }
 
 
-fun bitmapToFile(bitmap: Bitmap, fileNameToSave: String, compressFormat: Bitmap.CompressFormat): File? { // File name like "image.png"
-    //create a file to write bitmap data
-    var file: File? = null
-    return try {
-        file = File(Environment.getExternalStorageDirectory().toString() + File.separator + fileNameToSave)
-        file.createNewFile()
-
-        //Convert bitmap to byte array
-        val bos = ByteArrayOutputStream()
-        bitmap.compress(compressFormat, 100, bos) // YOU can also save it in JPEG
-        val bitmapdata = bos.toByteArray()
-
-        //write the bytes in file
-        val fos = FileOutputStream(file)
-        fos.write(bitmapdata)
-        fos.flush()
-        fos.close()
-        Log.d("FILE", file.toString())
-        file
-    } catch (e: Exception) {
-        e.printStackTrace()
-        file // it will return null
-    }
-}
+//fun bitmapToFile(bitmap: Bitmap, fileNameToSave: String, compressFormat: Bitmap.CompressFormat): File? { // File name like "image.png"
+//    //create a file to write bitmap data
+//    var file: File? = null
+//    return try {
+//        file = File(Environment.getExternalStorageDirectory().toString() + File.separator + fileNameToSave)
+//        file.createNewFile()
+//
+//        //Convert bitmap to byte array
+//        val bos = ByteArrayOutputStream()
+//        bitmap.compress(compressFormat, 100, bos) // YOU can also save it in JPEG
+//        val bitmapdata = bos.toByteArray()
+//
+//        //write the bytes in file
+//        val fos = FileOutputStream(file)
+//        fos.write(bitmapdata)
+//        fos.flush()
+//        fos.close()
+//        Log.d("FILE", file.toString())
+//        file
+//    } catch (e: Exception) {
+//        e.printStackTrace()
+//        file // it will return null
+//    }
+//}

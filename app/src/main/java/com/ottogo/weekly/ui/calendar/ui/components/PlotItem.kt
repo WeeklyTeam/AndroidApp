@@ -36,7 +36,7 @@ fun PlotItem(plot: Plot, userViewModel: UserViewModel, onClick: () -> Unit) {
         ""
     }
     val time = if (plot.starttime != null){
-        SimpleDateFormat("h:mm a").format(plot.starttime)
+        SimpleDateFormat("h:mma").format(plot.starttime)
 
     } else {
         "Date undecided"

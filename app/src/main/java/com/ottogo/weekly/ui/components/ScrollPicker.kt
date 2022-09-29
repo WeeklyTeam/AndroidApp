@@ -69,12 +69,12 @@ fun SingleScrollPicker(list: List<String>, selectItem: (Int) -> Unit, modifier: 
         mutableList.addAll(list)
     }
     val layoutInfo: LazyListSnapperLayoutInfo = rememberLazyListSnapperLayoutInfo(lazyListState)
-//    val contentPadding = PaddingValues(vertical = 62.dp)
+    val secondContentPadding = PaddingValues(vertical = 38.dp)
 
 
     LaunchedEffect(lazyListState.isScrollInProgress) {
         if (!lazyListState.isScrollInProgress) {
-            layoutInfo.currentItem?.let { selectItem(it.index) }
+            layoutInfo.currentItem?.let { selectItem(it.index%list.size) }
         }
     }
 
@@ -83,11 +83,10 @@ fun SingleScrollPicker(list: List<String>, selectItem: (Int) -> Unit, modifier: 
         horizontalAlignment = Alignment.CenterHorizontally,
         state = lazyListState,
         flingBehavior = rememberSnapperFlingBehavior(
-            lazyListState = lazyListState,
-            snapOffsetForItem = SnapOffsets.Center,
-//            endContentPadding = contentPadding.calculateBottomPadding(),
+            lazyListState,
+            endContentPadding = secondContentPadding.calculateTopPadding()
         ),
-//        contentPadding = contentPadding,
+        contentPadding = secondContentPadding,
     ) {
 
 

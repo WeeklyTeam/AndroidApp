@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.contentColorFor
@@ -79,7 +81,7 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
 
     systemUiController.setSystemBarsColor(color = Color.White)
 
-    Column(modifier = Modifier.systemBarsPadding()) {
+    Column(modifier = Modifier.systemBarsPadding().verticalScroll(rememberScrollState())) {
 
         LoginTitle(navController = navController, title = "Login")
 
@@ -126,7 +128,7 @@ fun LoginPage(navController: NavController, userViewModel: UserViewModel) {
 
                         val responseMap = WeeklyApi.retrofitService.login(
                                 mapOf(
-                                    "username" to usernameValue.lowercase(),
+                                    "username" to usernameValue.trim().lowercase(),
                                     "password" to passwordValue
                                 )
                             )

@@ -3,8 +3,18 @@
 
     <style name="Theme.Weekly" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@color/purple_500</item>
+        <item name="android:datePickerDialogTheme">@style/datepicker</item>
 
     </style>
 
+    <style name="datepicker" parent="@android:style/Widget.DeviceDefault.DatePicker">
+        <item name="android:datePickerMode">spinner</item>
 
+    </style>
+
+    <style name="DatePickerSpinnerStyle" parent="@android:style/Widget.DeviceDefault.DatePicker">
+        <item name="colorControlNormal">@color/purple_200</item>
+        <item name="android:textColorPrimary">@color/purple_700</item>
+        <item name="android:datePickerMode">spinner</item>
+    </style>
 </resources>

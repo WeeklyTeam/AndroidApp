@@ -96,6 +96,10 @@ fun AccountPage(navController: NavController, userViewModel: UserViewModel) {
             navController.navigate("contactsPage")
         }
 
+        AccountOption(R.drawable.ic_calendar_check_line, "Sync") {
+            navController.navigate("calendarSyncPage")
+        }
+
         AccountOption(R.drawable.ic_edit_2_line, "Profile") {
             navController.navigate("editProfilePage")
         }

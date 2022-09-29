@@ -13,7 +13,7 @@ data class ModifiedPlot(
     )
 
 data class StatusesAndAdventures(
-    @Json(name = "statuses") val statuses: Any,
-    @Json(name = "adventures") val adventures: Any
+    @Json(name = "statuses") val statuses: List<ModifiedPlot>,
+    @Json(name = "adventures") val adventures: List<ModifiedPlot>
 
     )

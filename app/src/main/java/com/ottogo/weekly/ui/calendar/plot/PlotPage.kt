@@ -2,15 +2,19 @@ package com.ottogo.weekly.ui.calendar.plot
 
 
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import com.ottogo.weekly.ui.theme.Black80
 import com.ottogo.weekly.ui.theme.LightGray
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -50,26 +54,45 @@ fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewM
                     .verticalScroll(rememberScrollState())
                     .fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(modifier = Modifier.padding(bottom = 16.dp))
-                PlotInfo(plot = plot)
+                PlotInfo(navController = navController, plot = plot)
                 Spacer(modifier = Modifier.padding(bottom = 24.dp))
-                if (plot.group_id != null) {
-                    CustomButton(
-                        buttonText = "Chat",
-                        modifier = Modifier.width(125.dp),
-                        onClick = {navController.navigate("groupChatPage/${plot.group_id}")},
-                    )
-                    Spacer(Modifier.height(16.dp))
-                } else if (plot.relationship_id != null){
-                    CustomButton(
-                        buttonText = "Chat",
-                        modifier = Modifier.width(125.dp),
-                        onClick = {
-                            val chat = userViewModel.friends.filterValues { it.relationship_id == plot.relationship_id }.keys.first()
-                            Log.d("friends", chat.toString())
-                            navController.navigate("privateChatPage/${chat}")},
-                    )
-                    Spacer(Modifier.height(16.dp))
+                Row() {
+                    if (plot.group_id != null) {
+                        CustomButton(
+                            buttonText = "Chat",
+                            modifier = Modifier.width(125.dp),
+                            onClick = {navController.navigate("groupChatPage/${plot.group_id}")},
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    } else if (plot.relationship_id != null){
+                        CustomButton(
+                            buttonText = "Chat",
+                            modifier = Modifier.width(125.dp),
+                            onClick = {
+                                val chat = userViewModel.friends.filterValues { it.relationship_id == plot.relationship_id }.keys.first()
+                                Log.d("friends", chat.toString())
+                                navController.navigate("privateChatPage/${chat}")},
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    IconButton(onClick = {
+                        navController.navigate("addPlotMembersPage/${plotId}")
+                    }, Modifier.clip(CircleShape)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_user_add_line),
+                            contentDescription = "invite",
+                            tint = MaterialTheme.colors.onBackground,
+                            modifier = Modifier
+                                .background(MaterialTheme.colors.background)
+                                .padding(10.dp)
+                                .size(28.dp)
+                        )
+
+                    }
                 }
+
                 if (plot.going.count() > 0) {
                     PlotMemberList(title = "Going", members = plot.going, openSheet = openSheet)
                 }
@@ -88,7 +111,9 @@ fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewM
                     Text(text = "Can't make it?",
                         style = MaterialTheme.typography.body2,
                         color = ExtendedTheme.colors.Black60,
-                        modifier = Modifier.padding(start = 32.dp).fillMaxWidth(), textAlign = TextAlign.Start)
+                        modifier = Modifier
+                            .padding(start = 32.dp)
+                            .fillMaxWidth(), textAlign = TextAlign.Start)
                     Spacer(modifier = Modifier.height(12.dp))
                     CustomButton(buttonText = "Rain Check",
                         modifier = Modifier.padding(horizontal = 16.dp),
@@ -109,22 +134,24 @@ fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewM
 
 
 @Composable
-fun PlotInfo(plot: Plot) {
+fun PlotInfo(navController: NavController, plot: Plot) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        EmojiCircle(emoji = plot.emoji, Modifier.size(72.dp))
+        EmojiCircle(emoji = plot.emoji, Modifier.size(72.dp), onClick = {navController.navigate("plotEditPage/${plot.id}")})
         Spacer(modifier = Modifier.padding(bottom = 16.dp))
-        Text(text = plot.name, style = MaterialTheme.typography.h1)
+        Text(text = plot.name, style = MaterialTheme.typography.h1, modifier = Modifier.clickable{navController.navigate("plotEditPage/${plot.id}")})
         Spacer(modifier = Modifier.padding(bottom = 8.dp))
-        Text(text = if (plot.starttime != null) {SimpleDateFormat("EEEE, MMM d").format(plot.starttime) + " at " + SimpleDateFormat("h:mm a").format(plot.starttime)} else { "Date undecided" }, style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
+        Text(text = if (plot.starttime != null) {SimpleDateFormat("EEEE, MMM d").format(plot.starttime) + " at " + SimpleDateFormat("h:mm a").format(plot.starttime)} else { "Date undecided" }, style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60, modifier = Modifier.clickable{navController.navigate("plotEditPage/${plot.id}")})
 
         if (!plot.description.isNullOrEmpty()){
             Spacer(Modifier.height(24.dp))
             Text(text = plot.description,
                 style = MaterialTheme.typography.body2,
-                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(), textAlign = TextAlign.Start)
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth(), textAlign = TextAlign.Start)
         }
     }
 }

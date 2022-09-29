@@ -1,8 +1,8 @@
 package com.ottogo.weekly.ui.account
 
 import android.annotation.SuppressLint
-import android.content.ContentResolver
-import android.content.Context
+import android.content.*
+import android.graphics.Paint
 import android.os.Build
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,25 +16,30 @@ import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.runBlocking
 import android.provider.ContactsContract
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
+import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.chat.CancelButton
 import com.ottogo.weekly.ui.chat.SearchBar
@@ -43,6 +48,7 @@ import com.ottogo.weekly.ui.theme.Purple
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.lang.Exception
 import kotlin.reflect.jvm.internal.impl.descriptors.Visibilities
 
 data class ContactsModel(val phone: String, val name: String)
@@ -248,8 +254,8 @@ fun ContactsScreen(navController: NavController, contacts: List<ContactsModel>, 
     Log.d("contacts", "recomposing2")
 
 
-
-
+    val context = LocalContext.current
+    val invitationMessage = (userViewModel.profile?.name ?: "Someone") + " wants to hang out with you on Weekly https://www.theweeklyapp.com/app/"
 
     Column {
 
@@ -274,6 +280,108 @@ fun ContactsScreen(navController: NavController, contacts: List<ContactsModel>, 
         Column(modifier = Modifier
             .verticalScroll(rememberScrollState())
             .padding(vertical = 16.dp)) {
+
+            Text("Invite via", style = MaterialTheme.typography.h4, modifier = Modifier.padding(horizontal = 16.dp))
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                Spacer(modifier = Modifier.width(4.dp))
+
+
+                InviteItem(resource = R.drawable.ic_link, contentDescription = "Copy", tint = ExtendedTheme.colors.Black60, color = ExtendedTheme.colors.LightGray) {
+                    val clipboardManager =
+                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clipData = ClipData.newPlainText("text",  invitationMessage)
+                    clipboardManager.setPrimaryClip(clipData)
+
+                    val toast = Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT)
+                    toast.show()
+
+                }
+
+                InviteItem(resource = R.drawable.ic_ghost_logo__for_light_backgrounds_, contentDescription = "Snapchat", tint = Color.Unspecified, color = Color(red = 255, blue = 0, green = 252)) {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, invitationMessage)
+                        type = "text/plain"
+                    }
+                    sendIntent.`package` = "com.snapchat.android"
+
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    try {
+                        context.startActivity(sendIntent)
+                    } catch (e: Exception){
+                        val toast = Toast.makeText(context, "Snapchat not found", Toast.LENGTH_SHORT)
+                        toast.show()
+                    }
+
+                }
+
+                InviteItem(resource = R.drawable.ic_instagram_glyph_white, contentDescription = "Instagram", tint = Color.Unspecified, color = Color(red = 255, blue = 105, green = 0)) {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, invitationMessage)
+                        type = "text/plain"
+                    }
+                    sendIntent.`package` = "com.instagram.android"
+                    try {
+                        context.startActivity(sendIntent)
+                    } catch (e: Exception){
+                        val toast = Toast.makeText(context, "Instagram not found", Toast.LENGTH_SHORT)
+                        toast.show()
+                    }
+
+                }
+
+                InviteItem(resource = R.drawable.ic_discord, contentDescription = "Discord", tint = Color.Unspecified, color = Color(red = 88, blue = 242, green = 101)) {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, invitationMessage)
+                        type = "text/plain"
+                    }
+                    sendIntent.`package` = "com.discord"
+                    try {
+                        context.startActivity(sendIntent)
+                    } catch (e: Exception){
+                        val toast = Toast.makeText(context, "Discord not found", Toast.LENGTH_SHORT)
+                        toast.show()
+                    }
+
+                }
+
+//                InviteItem(resource = R.drawable.ic_discord, contentDescription = "WhatsApp", tint = Color.Unspecified, color = Color( 89, 206, 114)) {
+//                    val sendIntent: Intent = Intent().apply {
+//                        action = Intent.ACTION_SEND
+//                        putExtra(Intent.EXTRA_TEXT, invitationMessage)
+//                        type = "text/plain"
+//                    }
+//
+//                    val shareIntent = Intent.createChooser(sendIntent, null)
+//                    context.startActivity(shareIntent)
+//
+//                }
+
+                InviteItem(resource = R.drawable.ic_share_forward_fill, contentDescription = "Share", tint = MaterialTheme.colors.onPrimary, color = MaterialTheme.colors.primary) {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, invitationMessage)
+                        type = "text/plain"
+                    }
+
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+
+                }
+
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+
+
+
 
             Text("On the app", style = MaterialTheme.typography.h4, modifier = Modifier.padding(horizontal = 16.dp))
 
@@ -309,6 +417,27 @@ fun ContactsScreen(navController: NavController, contacts: List<ContactsModel>, 
 }
 
 @Composable
+fun InviteItem(resource: Int, contentDescription: String, tint: Color, color: Color, onClick: () -> Unit){
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(80.dp)) {
+        Icon(
+            painter = painterResource(id = resource),
+            contentDescription = contentDescription,
+            tint = tint,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable {
+                    onClick()
+                }
+                .background(color)
+                .padding(12.dp)
+                .size(32.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = contentDescription, style = MaterialTheme.typography.body2)
+    }
+}
+
+@Composable
 fun ContactItem(contact: ContactsModel, userViewModel: UserViewModel){
     var invited by remember {
         mutableStateOf(false)
@@ -317,12 +446,11 @@ fun ContactItem(contact: ContactsModel, userViewModel: UserViewModel){
     Row() {
         ProfilePicture(url = null, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) )
 
-        Column() {
-            Text(text = contact.name, modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.body2)
-            Text(text = contact.phone, modifier = Modifier.padding(top = 2.dp), style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
+        Column(Modifier.weight(1f)) {
+            Text(text = contact.name, modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.body2, overflow = TextOverflow.Ellipsis, maxLines = 1)
+            Text(text = contact.phone, modifier = Modifier.padding(top = 2.dp), style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
 
-        Spacer(modifier = Modifier.weight(1F))
 
         if (!invited) {
             CustomSmallButton(buttonText = "Invite", onClick = {
@@ -349,23 +477,26 @@ fun ContactProfileItem(profile: Profile, userViewModel: UserViewModel){
     Row() {
         ProfilePicture(url = profile.profile_picture, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) )
 
-        Column() {
-            Text(text = profile.name, modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.body2)
-            Text(text = profile.username, modifier = Modifier.padding(top = 2.dp), style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
+        Column(Modifier.weight(1f)) {
+            Text(text = profile.name, modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.body2, overflow = TextOverflow.Ellipsis, maxLines = 1)
+            Text(text = profile.username, modifier = Modifier.padding(top = 2.dp), style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60, overflow = TextOverflow.Ellipsis, maxLines = 1)
         }
 
-        Spacer(modifier = Modifier.weight(1F))
 
         if (profile.friend == true) {
 //            CustomSmallButton(buttonText = "Added", onClick = {
 //
 //            }, backgroundColor = MaterialTheme.colors.background,  )
-            Text("Added", color = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, modifier = Modifier.width(125.dp).padding(horizontal = 16.dp, vertical = 8.dp))
+            Text("Added", color = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, modifier = Modifier
+                .width(125.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp))
         } else if (profile.urequested == true) {
 //            CustomSmallButton(buttonText = "Requested", textColor = ExtendedTheme.colors.Black60, backgroundColor = ExtendedTheme.colors.LightGray, onClick = {
 //
 //            })
-            Text("Requested", color = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, modifier = Modifier.width(125.dp).padding(horizontal = 16.dp, vertical = 8.dp))
+            Text("Requested", color = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, modifier = Modifier
+                .width(125.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp))
 
         } else if (profile.requesting == true) {
             CustomSmallButton(buttonText = "Add", onClick = {

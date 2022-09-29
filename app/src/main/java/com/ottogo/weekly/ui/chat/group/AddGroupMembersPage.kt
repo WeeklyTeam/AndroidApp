@@ -1,18 +1,13 @@
 package com.ottogo.weekly.ui.chat.group
 
-import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -22,14 +17,8 @@ import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.TitleBar
-import com.ottogo.weekly.ui.login.getFile
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.viewmodels.UserViewModel
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.File
 
 @Composable
 fun AddGroupMembersPage(navController: NavController, groupId: Int, userViewModel: UserViewModel) {
@@ -37,6 +26,7 @@ fun AddGroupMembersPage(navController: NavController, groupId: Int, userViewMode
     val selectedIds = remember {
         mutableStateListOf<Int>()
     }
+    var message: String? by remember{ mutableStateOf(null) }
 
     Column {
         TitleBar(navController = navController, title = "Add")
@@ -63,11 +53,16 @@ fun AddGroupMembersPage(navController: NavController, groupId: Int, userViewMode
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+
         Divider(thickness = 1.dp, color = ExtendedTheme.colors.LightGray)
-        // TODO: Implement the button functionality
+
+        if (message != null){
+            Text(message!!, style = MaterialTheme.typography.h4, color = ExtendedTheme.colors.Green, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+        }
+
         CustomButton(buttonText = "Done", onClick = {
 
-            WeeklyApi.retrofitService.editGroup(
+            WeeklyApi.retrofitService.patchGroup(
                 mapOf("Authorization" to "token ${userViewModel.token}"),
                 groupId,
                 mapOf("member" to selectedIds.toList())
@@ -75,7 +70,7 @@ fun AddGroupMembersPage(navController: NavController, groupId: Int, userViewMode
 
             userViewModel.inviteToGroup(groupId, selectedIds)
 
-            navController.popBackStack("groupPage/{group_id}", inclusive = false)
+            message = "Invites sent"
         }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16  .dp, top = 12.dp))
     }
 }

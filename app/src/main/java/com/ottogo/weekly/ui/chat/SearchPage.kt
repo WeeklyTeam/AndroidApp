@@ -46,56 +46,11 @@ import kotlin.reflect.jvm.internal.impl.load.java.structure.JavaModifierListOwne
 
 class SearchPageViewModel : ViewModel() {
 
-    val userIdLiveData: LiveData<Int>
-        get() = userId
 
-    val nameLiveData: LiveData<String>
-        get() = name
-
-    val userNameLiveData: LiveData<String>
-        get() = userName
-
-    val profilePictureLiveData: LiveData<String>
-        get() = profilePicture
-
-    val searchResultsLiveData: MutableLiveData<MutableList<Profile>>
+    val searchResultsLiveData: MutableLiveData<MutableList<Profile>?>
         get() = searchResults
 
-    val urequestedLiveData: LiveData<Boolean>
-        get() = urequested
-
-    val requestingLiveData: LiveData<Boolean>
-        get() = requesting
-
-    val friendLiveData: LiveData<Boolean>
-        get() = friend
-
-    val blockedLiveData: LiveData<Boolean>
-        get() = blocked
-
-    val profileIndexLiveData: LiveData<Int>
-        get() = profileIndex
-
-
-    val userId = MutableLiveData<Int>()
-
-    val name = MutableLiveData<String>()
-
-    val userName = MutableLiveData<String>()
-
-    val profilePicture = MutableLiveData<String>()
-
-    val urequested = MutableLiveData<Boolean>()
-
-    val requesting = MutableLiveData<Boolean>()
-
-    val friend = MutableLiveData<Boolean>()
-
-    val blocked = MutableLiveData<Boolean>()
-
-    val profileIndex = MutableLiveData<Int>()
-
-    val searchResults = MutableLiveData<MutableList<Profile>>()
+    val searchResults = MutableLiveData<MutableList<Profile>?>()
 
     fun addSearchItems(items: List<Profile>) {
         searchResults.value = items.toMutableList()
@@ -112,7 +67,7 @@ class SearchPageViewModel : ViewModel() {
     }
 
     fun clearSearch() {
-        searchResults.value = emptyList<Profile>().toMutableList()
+        searchResults.value = null
     }
 
 }
@@ -172,31 +127,49 @@ fun SearchResults(searchText: String, model: SearchPageViewModel = viewModel(), 
     val searchResults by model.searchResultsLiveData.observeAsState(emptyList())
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    // api call for search results
+
+    LaunchedEffect(key1 = searchText) {
+        if (searchText.isNotBlank() || searchText.isNotEmpty()) {
+
+            model.clearSearch()
+
+            var searchApiList = WeeklyApi.retrofitService.search(
+                mapOf("Authorization" to "token ${userViewModel.token}"),
+                searchText
+            )
+            model.addSearchItems(searchApiList.results)
+        }
+    }
 
     Column(modifier = Modifier
         .fillMaxSize()
-        .verticalScroll(rememberScrollState())) {
+        .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
 
-        // api call for search results
-        if (searchText.isNotBlank() || searchText.isNotEmpty()) {
-            LaunchedEffect(key1 = searchText) {
-                var searchApiList = WeeklyApi.retrofitService.search(
-                    mapOf("Authorization" to "token ${userViewModel.token}"),
-                    searchText
-                )
-                model.addSearchItems(searchApiList.results)
+
+
+
+        if ((searchResults != null && searchText.isNotEmpty()) || searchText.isEmpty()) {
+            // display search results
+            searchResults?.forEachIndexed { profileIndex, searchResult ->
+                SearchResultsItem(
+                    searchResult.user_id,
+                    searchResult.name,
+                    searchResult.username,
+                    searchResult.profile_picture,
+                    modifier = Modifier.clickable {
+                        keyboardController?.hide()
+                        openSheet(searchResult)
+                    })
             }
-        }
-        else {
-            model.clearSearch()
-        }
+        } else {
+            Spacer(Modifier.weight(1F))
 
-        // display search results
-        searchResults.forEachIndexed { profileIndex, searchResult ->
-            SearchResultsItem(searchResult.user_id, searchResult.name, searchResult.username, searchResult.profile_picture, modifier = Modifier.clickable{
-                keyboardController?.hide()
-                openSheet(searchResult)
-            })
+            CircularProgressIndicator()
+
+            Spacer(Modifier.weight(1F))
         }
     }
 }

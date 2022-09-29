@@ -1,8 +1,12 @@
 package com.ottogo.weekly.ui.login
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.insets.systemBarsPadding
@@ -30,11 +34,13 @@ import java.io.IOException
 *
 * */
 @Composable
-fun SignupVerifyPage(navController: NavController, token: String) {
+fun SignupVerifyPage(navController: NavController, token: String, username: String) {
     var code by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+
     var error: String? by remember {mutableStateOf(value = null)}
 
-    Column(modifier = Modifier.systemBarsPadding()) {
+    Column(modifier = Modifier.systemBarsPadding().verticalScroll(rememberScrollState())) {
         LoginTitle(navController = navController, title = "Verify")
 
         Column(
@@ -47,7 +53,8 @@ fun SignupVerifyPage(navController: NavController, token: String) {
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            CustomTextField(helper = "Code", hint = "", input = code, onChange = { code = it }, isNumberInput = true)
+            CustomTextField(helper = "Code", hint = "", input = code, onChange = { code = it }, isNumberInput = true, keyboardActions = KeyboardActions(onDone = {focusManager.clearFocus()}),
+                done = true)
             Spacer(modifier = Modifier.height(32.dp))
             CustomButton(buttonText = "Next") {
                 runBlocking {
@@ -56,7 +63,7 @@ fun SignupVerifyPage(navController: NavController, token: String) {
                             mapOf("Authorization" to "token $token"),
                             mapOf("code" to code.toInt())
                         )
-                        navController.navigate("SignupProfilePage/$token")
+                        navController.navigate("SignupProfilePage/$token/$username")
                     } catch (e: Exception) {
                         when (e) {
                             is HttpException -> {

@@ -25,7 +25,7 @@ fun FriendItem(profile: Profile, imgSize : Int, modifier: Modifier = Modifier) {
     ) {
         ProfilePicture(url = profile.profile_picture, size = imgSize)
         Spacer(modifier = Modifier.padding(bottom = 8.dp))
-        Text(text = profile.name, style = MaterialTheme.typography.body2, maxLines = 1)
+        Text(text = profile.name.substringBefore(" "), style = MaterialTheme.typography.body2, maxLines = 1)
         Spacer(modifier = Modifier.padding(bottom = 2.dp))
         Text(text = profile.username, style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60, maxLines = 1)
     }

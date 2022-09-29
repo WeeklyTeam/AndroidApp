@@ -30,6 +30,8 @@ import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.Group
 import com.ottogo.weekly.api.models.Profile
+import com.ottogo.weekly.ui.calendar.DateFunctions.isSameDay
+import com.ottogo.weekly.ui.calendar.DateFunctions.isSameYear
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.GroupPicture
 import com.ottogo.weekly.ui.components.ProfilePicture
@@ -57,6 +59,17 @@ fun ChatPage(navController: NavController, userViewModel: UserViewModel, openShe
                 Spacer(Modifier.height(96.dp))
             }
 
+        } else if (userViewModel.profile == null) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Spacer(Modifier.weight(1F))
+
+                CircularProgressIndicator()
+
+                Spacer(Modifier.weight(1F))
+            }
         } else {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -66,14 +79,14 @@ fun ChatPage(navController: NavController, userViewModel: UserViewModel, openShe
                 Text(text = "This app is way more fun\nwith friends", style = MaterialTheme.typography.h2, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 32.dp))
 
                 CustomButton(buttonText = "Check contacts", onClick = {navController.navigate("contactsPage")}, modifier = Modifier.padding(horizontal = 32.dp, vertical = 32.dp))
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Or tap ", style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
                     Icon(painter = painterResource(id = R.drawable.ic_search_line), contentDescription = "search", tint = ExtendedTheme.colors.Black60, modifier = Modifier.size(15.dp))
                     Text(" to search", style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
 
                 }
-                
+
                 Spacer(modifier = Modifier.height(64.dp))
 
                 FriendRequests(requests = userViewModel.requests, openSheet)
@@ -114,7 +127,7 @@ fun FriendRequests(requests: List<Profile>, openSheet: (profile: Profile) -> Uni
 }
 
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun chatTabRow(userViewModel: UserViewModel, navController: NavController, openSheet: (profile: Profile) -> Unit){
     val pagerState = rememberPagerState()
@@ -132,18 +145,36 @@ fun chatTabRow(userViewModel: UserViewModel, navController: NavController, openS
 
         userViewModel.chats.forEach { it ->
             when (it) {
-                is Profile ->
-                    ChatListItem(name = it.name, description = it.messages.firstOrNull()?.message
-                        ?: "Say Hi!", profilePicture = it.profile_picture, modifier = Modifier.clickable{
-                        navController.navigate("privateChatPage/${it.user_id}")
-                    }, timestamp = it.messages.firstOrNull()?.timestamp, notSeen = it.messages.firstOrNull()?.seen == false && it.messages.firstOrNull()?.user_id != userViewModel.profile?.user_id, onImageClick = {openSheet(it)})
-                is Group ->
+                is Profile -> {
+                    var description = "Say Hi!"
+                    val firstMessage = it.messages.firstOrNull()
+                    if (firstMessage?.message != null){
+                        description = message
+                    } else if (firstMessage?.gif != null) {
+                        description = "[GIF]"
+                    }
+                    else if (firstMessage?.image != null) {
+                        description = "[image]"
+
+                    }
+                    ChatListItem(name = it.name,
+                        description = description,
+                        profilePicture = it.profile_picture,
+                        modifier = Modifier.combinedClickable(
+                            onClick = { navController.navigate("privateChatPage/${it.user_id}") },
+                            onLongClick = { openSheet(it) },
+                        ),
+                        timestamp = it.messages.firstOrNull()?.timestamp,
+                        notSeen = it.messages.firstOrNull()?.seen == false && it.messages.firstOrNull()?.user_id != userViewModel.profile?.user_id,
+                        onImageClick = { openSheet(it) })
+                }is Group ->
                     if (!it.is_invited) {
                         GroupChatListItem(group = it,
                             onImageClick = { navController.navigate("groupPage/${it.id}") },
-                            modifier = Modifier.clickable {
-                                navController.navigate("groupChatPage/${it.id}")
-                            })
+                            modifier = Modifier.combinedClickable(
+                                onClick = { navController.navigate("groupChatPage/${it.id}") },
+                                onLongClick = { navController.navigate("groupPage/${it.id}") },
+                            ))
                     } else {
                         GroupChatInviteListItem(
                             navController = navController,
@@ -212,30 +243,20 @@ fun ChatListItem(
 
 
     if (timestamp != null){
-        val diff: Long = Date().time - timestamp.time
-        val seconds = diff / 1000
-        val minutes = seconds / 60
-        val hours = minutes / 60
-        val days = hours / 24
-        val months = days / 30
-        val years = days / 12
+        val yesterday = Calendar.getInstance()
+        yesterday.add(Calendar.DAY_OF_YEAR, -1)
 
-        Log.d("Timestampp", SimpleDateFormat("yyyy").format(timestamp))
-        Log.d("Timestampp", SimpleDateFormat("MMM dd").format(timestamp))
 
-        if (years > 0) {
-            Log.d("timestamp", "years")
-            dateText = SimpleDateFormat("yyyy").format(timestamp)
-        } else if (days > 1) {
-            dateText = SimpleDateFormat("MMM dd").format(timestamp)
-            Log.d("Timestampp", SimpleDateFormat("MMM D").format(timestamp))
-
-        } else if (days > 0) {
-            dateText = "Yesterday"
-        } else {
+        if (isSameDay(timestamp, Date())) {
             dateText = SimpleDateFormat("h:mm a").format(timestamp)
-            Log.d("timestamp", dateText)
-            Log.d("timestamp", "hey")
+
+        } else if (isSameDay(timestamp, yesterday.time)) {
+            dateText = "Yesterday"
+
+        } else if (isSameYear(timestamp, Date())) {
+            dateText = SimpleDateFormat("MMM d").format(timestamp)
+        } else {
+            dateText = SimpleDateFormat("YYYY").format(timestamp)
 
         }
     }
@@ -244,7 +265,7 @@ fun ChatListItem(
     Row(
         modifier
             .fillMaxWidth()
-            .height(intrinsicSize = IntrinsicSize.Min), horizontalArrangement = Arrangement.SpaceBetween){
+            .height(intrinsicSize = IntrinsicSize.Min), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top){
         Row() {
             ProfilePicture(
                 profilePicture,
@@ -256,14 +277,14 @@ fun ChatListItem(
                     }
             )
 
-            Column() {
+            Column(Modifier.width(intrinsicSize = IntrinsicSize.Max)) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = name, style = MaterialTheme.typography.body1, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = description, style = MaterialTheme.typography.body2, color = Black40, maxLines = 1
+                    text = description, style = MaterialTheme.typography.body2, color = Black40, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -273,6 +294,8 @@ fun ChatListItem(
             Modifier
                 .fillMaxHeight()
                 .padding(horizontal = 16.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.SpaceBetween) {
+            Spacer(Modifier.height(8.dp))
+
             Text(
                 text = dateText, style = MaterialTheme.typography.body2, color = Black60, maxLines = 1
             )
@@ -303,30 +326,20 @@ fun GroupChatListItem(
 
 
     if (timestamp != null){
-        val diff: Long = Date().time - timestamp.time
-        val seconds = diff / 1000
-        val minutes = seconds / 60
-        val hours = minutes / 60
-        val days = hours / 24
-        val months = days / 30
-        val years = days / 12
+        val yesterday = Calendar.getInstance()
+        yesterday.add(Calendar.DAY_OF_YEAR, -1)
 
-        Log.d("Timestampp", SimpleDateFormat("yyyy").format(timestamp))
-        Log.d("Timestampp", SimpleDateFormat("MMM dd").format(timestamp))
 
-        if (years > 0) {
-            Log.d("timestamp", "years")
-            dateText = SimpleDateFormat("yyyy").format(timestamp)
-        } else if (days > 1) {
-            dateText = SimpleDateFormat("MMM dd").format(timestamp)
-            Log.d("Timestampp", SimpleDateFormat("MMM D").format(timestamp))
-
-        } else if (days > 0) {
-            dateText = "Yesterday"
-        } else {
+        if (isSameDay(timestamp, Date())) {
             dateText = SimpleDateFormat("h:mm a").format(timestamp)
-            Log.d("timestamp", dateText)
-            Log.d("timestamp", "hey")
+
+        } else if (isSameDay(timestamp, yesterday.time)) {
+            dateText = "Yesterday"
+
+        } else if (isSameYear(timestamp, Date())) {
+            dateText = SimpleDateFormat("MMM d").format(timestamp)
+        } else {
+            dateText = SimpleDateFormat("YYYY").format(timestamp)
 
         }
     }
@@ -339,21 +352,20 @@ fun GroupChatListItem(
             GroupPicture(
                 group,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ,
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 onImageClick = onImageClick
 
             )
 
-            Column() {
+            Column(Modifier.width(intrinsicSize = IntrinsicSize.Max)) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = group.name, style = MaterialTheme.typography.body1, maxLines = 1
+                    text = group.name, style = MaterialTheme.typography.body1, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = group.messages.firstOrNull()?.message
-                        ?: "Say Hi!", style = MaterialTheme.typography.body2, color = Black40, maxLines = 1
+                        ?: "Say Hi!", style = MaterialTheme.typography.body2, color = Black40, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -362,22 +374,25 @@ fun GroupChatListItem(
             Modifier
                 .fillMaxHeight()
                 .padding(horizontal = 16.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.SpaceBetween) {
+
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = dateText, style = MaterialTheme.typography.body2, color = Black60, maxLines = 1
             )
-
             if (group.messages.firstOrNull()?.seen == false) {
                 Surface(
                     modifier = Modifier.size(8.dp),
                     color = MaterialTheme.colors.primary,
                     shape = CircleShape
                 ) {}
-            }
 
+            }
             Spacer(Modifier.height(8.dp))
+
         }
 
     }
+
 }
 
 @Composable

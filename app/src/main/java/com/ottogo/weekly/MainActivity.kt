@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -56,7 +57,6 @@ import com.ottogo.weekly.ui.calendar.*
 import com.ottogo.weekly.ui.calendar.DateFunctions.addMonth
 import com.ottogo.weekly.ui.calendar.DateFunctions.initialMonth
 import com.ottogo.weekly.ui.calendar.availability.AddAvailabilityPage
-import com.ottogo.weekly.ui.calendar.availability.AvailabilityPage
 import com.ottogo.weekly.ui.calendar.plot.PlotEditPage
 import com.ottogo.weekly.ui.calendar.plot.PlotPage
 import com.ottogo.weekly.ui.calendar.ui.components.CalendarComponent
@@ -87,6 +87,8 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.onesignal.OneSignal
+import com.ottogo.weekly.ui.bottomModals.EmojiSheet
+import com.ottogo.weekly.ui.calendar.plot.AddPlotMembersPage
 import com.ottogo.weekly.ui.calendar.plot.NewPlotsPage
 
 const val ONESIGNAL_APP_ID = "2262537a-7d61-4fac-b35d-5c8f27a9f578"
@@ -107,15 +109,18 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
 
-
         super.onCreate(savedInstanceState)
+
+        createNotificationChannels()
 
         OneSignal.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE, OneSignal.LOG_LEVEL.NONE)
 
         // OneSignal Initialization
         OneSignal.initWithContext(this)
         OneSignal.setAppId(ONESIGNAL_APP_ID)
-
+        val notificationManager = getSystemService(
+            NotificationManager::class.java
+        )
 
         val appUpdateManager = AppUpdateManagerFactory.create(this)
 
@@ -144,6 +149,8 @@ class MainActivity : ComponentActivity() {
         userViewModel.getToken(context = applicationContext)
 
 
+
+
         setContent {
 
                 WeeklyTheme {
@@ -157,12 +164,13 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxSize(),
                                     color = MaterialTheme.colors.background
                                 ) {
-                                    LoginNavigation(userViewModel = userViewModel)
+                                    LoginNavigation(userViewModel = userViewModel, notificationManager = notificationManager)
 
                                 }
                             }
                         } else {
                             webSocketCreate()
+
                             WindowCompat.setDecorFitsSystemWindows(window, true)
 
                             Surface(
@@ -185,27 +193,69 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
+    override fun onDestroy() {
+        //Connor
+        //By using android lifcycle you can set the users version to update once they stop using the app, put it to sleep
+        //aka set the shared preferences verision value to the current version so we can use this later
+        super.onDestroy()
+    }
 
     override fun onResume() {
         super.onResume()
 
         if (!userViewModel.token.isNullOrBlank()) {
-            webSocket?.reconnect()
-            runBlocking {
-                userViewModel.clear()
-                userViewModel.getMain()
-            }
+
+            webSocket!!.reconnect()
+
+
+            userViewModel.getMain()
+
 
 
 
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun createNotificationChannels(){
+        val name = "Reminders"
+        val description = "Plan reminder notifications"
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(
+            "WeeklyPlotReminders", name, importance
+        )
+        channel.description = description
+        val notificationManager = getSystemService(
+            NotificationManager::class.java
+        )
+
+        notificationManager.createNotificationChannel(channel)
+
+        val name3 = "Announcements"
+        val description3 = "Updates and new features"
+        val importance3 = NotificationManager.IMPORTANCE_HIGH
+        val channel3 = NotificationChannel(
+            "WeeklyAnnouncements", name, importance
+        )
+        channel.description = description3
+
+        notificationManager.createNotificationChannel(channel3)
+
+        val name2 = "Friends"
+        val description2 = "RSVPS, friend requests, invites, etc..."
+        val importance2 = NotificationManager.IMPORTANCE_HIGH
+        val channel2 = NotificationChannel(
+            "WeeklyFriendNotifications", name, importance
+        )
+        channel.description = description2
+
+        notificationManager.createNotificationChannel(channel2)
+    }
+
     fun webSocketCreate(){
         val headers = mapOf("authorization" to "token ${userViewModel.token}")
 
-        val uri: URI? = URI("wss://plotsme.herokuapp.com/chat/")
+        val uri: URI? = URI("wss://www.theweeklyapp.com/chat/")
 
         webSocket = object : WebSocketClient(uri, headers) {
             override fun onOpen(handshakedata: ServerHandshake?) {
@@ -265,10 +315,14 @@ class MainActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun LoginNavigation(userViewModel: UserViewModel){
+fun LoginNavigation(userViewModel: UserViewModel, notificationManager: NotificationManager){
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "landingPage") {
-
+        composable("signupNotificationPage/{token}/{username}") { backStackEntry -> SignupNotificationPage(navController,
+            backStackEntry.arguments?.getString("token")!!,
+            backStackEntry.arguments?.getString("username")!!,
+            userViewModel
+        ) }
         composable("landingPage") { LandingPage(navController) }
         composable( "loginPage") { LoginPage(navController, userViewModel) }
         composable("signupPage/{dob}") { backStackEntry -> SignupPage(navController,
@@ -278,12 +332,16 @@ fun LoginNavigation(userViewModel: UserViewModel){
             backStackEntry.arguments?.getString("token")!!,
             userViewModel
         ) }
-        composable("signupProfilePage/{token}") { backStackEntry -> SignupProfilePage(navController,
-            backStackEntry.arguments?.getString("token")!!
+        composable("signupProfilePage/{token}/{username}") { backStackEntry -> SignupProfilePage(navController,
+            backStackEntry.arguments?.getString("token")!!,
+            backStackEntry.arguments?.getString("username")!!,
+            notificationManager,
+            userViewModel
         ) }
         composable("signupBirthdayPage") { SignupBirthdayPage(navController) }
-        composable("signupVerifyPage/{token}") { backStackEntry -> SignupVerifyPage(navController,
-            backStackEntry.arguments?.getString("token")!!
+        composable("signupVerifyPage/{token}/{username}") { backStackEntry -> SignupVerifyPage(navController,
+            backStackEntry.arguments?.getString("token")!!,
+            backStackEntry.arguments?.getString("username")!!
         ) }
         composable("webviewPage/{title}?url={url}",
             arguments = listOf(navArgument("userId") { defaultValue = "" })
@@ -316,12 +374,29 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
     val keyboardController = LocalSoftwareKeyboardController.current
 
 
-    val closeSheet = {
+    val closeSheet: () -> Unit  = {
         //focusManager.clearFocus()
         keyboardController?.hide()
-
-        bottomSheetViewModel.bottomSheetType = null
+        bottomSheetViewModel.clear()
         scope.launch { modalBottomSheetState.hide() }
+    }
+
+    LaunchedEffect(key1 = userViewModel.token, block = {
+        userViewModel.clear()
+        Log.d("load", "load")
+        userViewModel.getMain()
+
+
+    })
+
+    val openEmoji: () -> Unit = {
+        scope.launch {
+
+                bottomSheetViewModel.bottomSheetType = BottomSheetType.Emoji
+                modalBottomSheetState.show()
+
+
+            }
     }
 
     val openSheet: (profile: Profile?) -> Unit = { it
@@ -334,6 +409,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
 
                 }
             }
+
             else {
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
                 modalBottomSheetState.show()
@@ -391,7 +467,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         ) {
         NavHost(navController = navController, startDestination = "homePage") {
 
-            composable("homePage") { HomePage(navController, userViewModel, openSheet)
+            composable("homePage") { HomePage(navController, userViewModel, openSheet, openEmoji, closeSheet, bottomSheetViewModel)
             }
             composable("searchPage") { SearchPage(navController, userViewModel, openSheet) }
             composable("settingsPage") { SettingsPage(userViewModel, navController) }
@@ -401,7 +477,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("contactsPage") { ContactsPage(navController, userViewModel) }
             composable("editProfilePage") { EditProfilePage(navController, userViewModel) }
             composable("createGroupPage") { CreateGroupPage(navController) }
-            composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel) }
+            composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel, openEmoji, closeSheet, bottomSheetViewModel) }
             composable("newPlotsPage") { NewPlotsPage(navController, userViewModel) }
 
             composable("chatSearchPage") { ChatSearchPage(navController, userViewModel) }
@@ -432,13 +508,12 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                     navController,
                     userViewModel,
                     backStackEntry.arguments?.getString("group_id")!!.toInt(),
-                    webSocket
+                    webSocket,
+                    openSheet
                 )
             }
             composable("accountPage") { AccountPage(navController, userViewModel) }
-            composable("createCalendarPage") { CreateCalendarPage(navController, userViewModel) }
             composable("plotDatePage") { PlotDatePage(navController) }
-            composable("availabilityPage") { AvailabilityPage(navController, userViewModel) }
             composable("inviteGroupPage/{groupName}") { backStackEntry ->
                 InviteGroupPage(
                     navController,
@@ -459,7 +534,15 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                 PlotEditPage(
                     navController,
                     backStackEntry.arguments?.getString("plot_id")!!.toInt(),
-                    userViewModel
+                    userViewModel,
+                    openEmoji, closeSheet, bottomSheetViewModel
+                )
+            }
+            composable("addPlotMembersPage/{plot_id}") { backStackEntry ->
+                AddPlotMembersPage(
+                    navController,
+                    backStackEntry.arguments?.getString("plot_id")!!.toInt(),
+                    userViewModel,
                 )
             }
             composable("privateChatPage/{userId}") { backStackEntry ->
@@ -492,14 +575,18 @@ class BottomSheetViewModel: ViewModel() {
     var plotEmoji by mutableStateOf<String?>(null)
     var plotDate by mutableStateOf<Date?>(null)
 
-
-
-
+    fun clear(){
+        bottomSheetType = null
+        profile = null
+        plotEmoji = null
+        plotName = null
+        plotDate = null
+    }
 
 }
 
 enum class BottomSheetType() {
-    Planning1, Planning2, Planning3, Profile
+    Planning1, Planning2, Planning3, Profile, Emoji
 }
 
 @Composable
@@ -514,6 +601,7 @@ fun SheetLayout(
         BottomSheetType.Planning2 -> Screen2(closeSheet, bottomSheetViewModel)
         BottomSheetType.Planning3 -> Screen3(closeSheet, bottomSheetViewModel, userViewModel)
         BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetViewModel = bottomSheetViewModel)
+        BottomSheetType.Emoji -> EmojiSheet(bottomSheetViewModel = bottomSheetViewModel)
         else ->
             Spacer(Modifier.height(1.dp))
     }
@@ -533,6 +621,8 @@ fun Screen3(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, 
         mutableStateListOf<Int>()
         mutableStateListOf<Int>()
     }
+
+    val context = LocalContext.current
 
 
     Column {
@@ -608,7 +698,7 @@ fun Screen3(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, 
                     selectedProfileIds.count() == 1 -> {
                         body["relationship"] = userViewModel.friends[selectedProfileIds[0]]?.relationship_id
                     }
-                    else -> {
+                    selectedProfileIds.count() > 1 -> {
                         body["invited"] = selectedProfileIds
                     }
                 }
@@ -616,7 +706,9 @@ fun Screen3(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, 
                     mapOf("Authorization" to "token ${userViewModel.token}"),
                     body
                 )
-                userViewModel.addPlot(plot)
+
+                userViewModel.addPlot(plot, context)
+                closeSheet()
             } catch (exception: Exception){
                 Log.d("createplanexception", exception.toString())
                 closeSheet()
@@ -723,10 +815,10 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 @Composable
 fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
     var title by remember{
-        mutableStateOf("")
+        mutableStateOf(bottomSheetViewModel.plotName ?: "")
     }
     var emoji by remember{
-        mutableStateOf("")
+        mutableStateOf(bottomSheetViewModel.plotEmoji ?: "\uD83C\uDF0A")
     }
 
     val focusManager = LocalFocusManager.current
@@ -734,7 +826,9 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 
     LaunchedEffect(key1 = bottomSheetViewModel.bottomSheetType == BottomSheetType.Planning1){
         focusRequester.requestFocus()
+        bottomSheetViewModel.plotName = ""
     }
+
 
     LaunchedEffect(key1 = title){
         if(title.contains("[^A-Za-z0-9 ]".toRegex())){
@@ -746,10 +840,11 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 
 
     Column(modifier = Modifier.padding(24.dp)) {
-        if (emoji.isNotEmpty()){
-            EmojiCircle(emoji = emoji)
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+        EmojiCircle(emoji = emoji, onClick = {
+            bottomSheetViewModel.bottomSheetType = BottomSheetType.Emoji
+        })
+        Spacer(modifier = Modifier.height(24.dp))
+
         
         CustomTextField(
             helper = "Title (add an emoji)",
@@ -770,12 +865,12 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 }
 
 @Composable
-fun HomePage(navController: NavController, userViewModel: UserViewModel, openSheet: (profile: Profile?) -> Unit){
+fun HomePage(navController: NavController, userViewModel: UserViewModel, openSheet: (profile: Profile?) -> Unit, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel){
     var bottomBarSelection by rememberSaveable{ mutableStateOf(0) }
 
     Box(modifier = Modifier.fillMaxSize()){
         when(bottomBarSelection){
-           0 -> CalendarPage(navController = navController, userViewModel = userViewModel)
+           0 -> CalendarPage(navController = navController, userViewModel = userViewModel, openEmoji, closeSheet, bottomSheetViewModel)
            1 -> ChatPage(navController = navController, userViewModel = userViewModel, openSheet = openSheet)
            2 -> AccountPage(navController = navController, userViewModel = userViewModel)
         }

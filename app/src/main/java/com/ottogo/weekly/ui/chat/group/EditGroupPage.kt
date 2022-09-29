@@ -1,9 +1,14 @@
 package com.ottogo.weekly.ui.chat.group
 
 import android.Manifest
+import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -32,6 +37,7 @@ import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
+import com.ottogo.weekly.ui.account.toSquare
 import com.ottogo.weekly.ui.components.*
 import com.ottogo.weekly.ui.login.getFile
 import com.ottogo.weekly.ui.theme.ExtendedTheme
@@ -42,6 +48,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.io.File
+import java.io.OutputStream
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -63,8 +70,50 @@ fun EditGroupPage(navController: NavController, groupId: Int, userViewModel: Use
         onResult = {
                 uri: Uri? -> imageUri = uri
             if (imageUri != null) {
+                val tempFile = getFile(imageUri = imageUri!!, context)
+                bitmap = BitmapFactory.decodeFile(tempFile?.path).toSquare()
+                    ?.let { Bitmap.createScaledBitmap(it, 400, 400, false) }
+                var fileName = tempFile?.nameWithoutExtension
+                var compressFormat = Bitmap.CompressFormat.JPEG
+                if (tempFile?.extension == "jpg") {
+                    fileName += ".jpeg"
+                } else if (tempFile?.extension == "png") {
+                    compressFormat = Bitmap.CompressFormat.PNG
+                }
+
+                //file = bitmap?.let { bitmapToFile(bitmap = it, fileNameToSave = tempFile?.name ?: "weekly/androidProfilePicture.jpeg", compressFormat = compressFormat) }
+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, tempFile?.nameWithoutExtension)
+                    put(
+                        MediaStore.MediaColumns.MIME_TYPE,
+                        MimeTypeMap.getSingleton().getMimeTypeFromExtension(tempFile?.extension)
+                    )
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.Video.Media.IS_PENDING, 1)
+                }
+                //use application context to get contentResolver
+                val contentResolver = context.contentResolver
+
+                var fos: OutputStream? = null
+
+                contentResolver.also { resolver ->
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        imageUri = resolver.insert(
+                            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            contentValues
+                        )
+                    }
+                    fos = imageUri?.let { resolver.openOutputStream(it) }
+                }
+
+                fos?.use { bitmap?.compress(Bitmap.CompressFormat.PNG, 100, it) }
+
+                contentValues.clear()
+                contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
+                contentResolver.update(imageUri!!, contentValues, null, null)
+
                 file = getFile(imageUri = imageUri!!, context)
-                bitmap = BitmapFactory.decodeFile(file?.path)
             }
         }
     )

@@ -42,7 +42,7 @@ fun CustomButton(
             buttonloading = buttonText
         }
 
-        buttonloading = "loading"
+        buttonloading = "loading..."
 
     }, elevation = null, shape = RoundedCornerShape(24.dp),
         border = BorderStroke(3.dp, outlineColor), colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor),

@@ -2,7 +2,9 @@ package com.ottogo.weekly.ui.login
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -10,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -52,7 +55,7 @@ fun SignupPage(navController: NavController, dob: String) {
     val focusManager = LocalFocusManager.current
 
 
-    Column(modifier = Modifier.systemBarsPadding()){
+    Column(modifier = Modifier.systemBarsPadding().verticalScroll(rememberScrollState())){
         LoginTitle(navController = navController, title = "Sign Up")
 
         Column(modifier = Modifier
@@ -106,7 +109,7 @@ fun SignupPage(navController: NavController, dob: String) {
                         val response = WeeklyApi.retrofitService.signup(
                             mapOf(
                                 "phone" to phoneNumber,
-                                "username" to username,
+                                "username" to username.trim().lowercase(),
                                 "password" to password,
                                 "dob" to dob,
 
@@ -117,7 +120,7 @@ fun SignupPage(navController: NavController, dob: String) {
 //                                "Authorization" to "token ${response["token"]}"
 //                            )
 //                        )
-                        navController.navigate("signupVerifyPage/${response["token"]}")
+                        navController.navigate("signupVerifyPage/${response["token"]}/${response["username"]}")
                     } catch (e: Exception) {
 
                         when (e) {

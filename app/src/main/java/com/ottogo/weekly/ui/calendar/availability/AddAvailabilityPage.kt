@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.components.CustomButton
@@ -33,7 +34,7 @@ import java.util.*
 
 @SuppressLint("SimpleDateFormat")
 @Composable
-fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewModel) {
+fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewModel, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
     val context = LocalContext.current
 
     var title by remember { mutableStateOf("") }
@@ -123,10 +124,16 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
 
     LaunchedEffect(key1 = title){
         if(title.contains("[^A-Za-z0-9 ]".toRegex())){
-            emoji = title.replace("[A-Za-z0-9 ]".toRegex(), "")
+            emoji = title.replace("[A-Za-z0-9 ]".toRegex(), "\uD83D\uDC40")
         }
     }
 
+    LaunchedEffect(key1 = bottomSheetViewModel.plotEmoji, block = {
+        if (!bottomSheetViewModel.plotEmoji.isNullOrEmpty()){
+            emoji = bottomSheetViewModel.plotEmoji ?: ""
+            closeSheet()
+        }
+    })
     val localFocusManager = LocalFocusManager.current
 
         Column() {
@@ -144,7 +151,7 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
 
             Spacer(modifier = Modifier.height(24.dp))
             
-            EmojiCircle(emoji = emoji, modifier = Modifier.padding(horizontal = 16.dp))
+            EmojiCircle(emoji = emoji, modifier = Modifier.padding(horizontal = 16.dp), onClick = {openEmoji()})
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -220,7 +227,7 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
                                 mapOf(
                                     "starttime" to starttime,
                                     "endtime" to endtime,
-                                    "name" to title,
+                                    "name" to title.replace("[^A-Za-z0-9 ]".toRegex(), ""),
                                     "emoji" to emoji,
                                     )
                             )

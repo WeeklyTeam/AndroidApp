@@ -18,7 +18,7 @@ import java.lang.reflect.Modifier
 import java.util.*
 
 
-private val BASE_URL = "https://plotsme.herokuapp.com"
+private val BASE_URL = "https://www.theweeklyapp.com"
 
 data class Activity(@Json(name="id")val id: Int, @Json(name="activity")val activity: String, @Json(name = "liked") val liked: Boolean = false)
 data class ActivityCategory(@Json(name="title")val title: String, @Json(name="activities")val activities: List<Activity>)
@@ -35,13 +35,6 @@ private val retrofit = Retrofit.Builder()
     .build()
 
 interface WeeklyApiService {
-    @JvmSuppressWildcards
-    @POST("api/calendar/")
-    suspend fun createCalendar(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any?>): FriendCalendar
-
-    @DELETE("api/calendar/{id}/")
-    suspend fun leaveCalendar(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
-
 
     @GET("api/main")
     suspend fun main(@HeaderMap header: Map<String, String>): Main
@@ -113,12 +106,34 @@ interface WeeklyApiService {
 
     @JvmSuppressWildcards
     @PATCH("api/group/{id}/")
-    suspend fun editGroup(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Map<String, Any>)
+    suspend fun patchGroup(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Map<String, Any>)
 
     @GET("api/group/{id}/leave/")
     suspend fun leaveGroup(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
     @GET("api/group/{id}/accept/")
     suspend fun acceptGroupInvite(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
+    @Multipart
+    @JvmSuppressWildcards
+    @POST("api/group/message/")
+    suspend fun uploadGroupImage(
+        @HeaderMap headers: Map<String, String>,
+        @Part("group") group: Int,
+        @Part("user_id") user_id: Int,
+        @Part("message") message: String?,
+        @Part image: MultipartBody.Part? = null
+    ): ChatMessage
+
+    @Multipart
+    @JvmSuppressWildcards
+    @POST("api/chat/message/")
+    suspend fun uploadChatImage(
+        @HeaderMap headers: Map<String, String>,
+        @Part("private") private: Int,
+        @Part("user_id") user_id: Int,
+        @Part("message") message: String?,
+        @Part image: MultipartBody.Part? = null
+    ): ChatMessage
 
     @JvmSuppressWildcards
     @POST("api/plot/")
@@ -128,16 +143,16 @@ interface WeeklyApiService {
     ): Plot
 
     @JvmSuppressWildcards
-    @GET("api/plot")
+    @GET("api/plot/")
     suspend fun getStatusesAndAdventures(
         @HeaderMap headers: Map<String, String>,
         @Query("date", encoded = true) date: String,
         @Query("time", encoded = true) time: String,
-    ): Response
+    ): StatusesAndAdventures
 
     @JvmSuppressWildcards
     @PATCH("api/plot/{id}/")
-    suspend fun editPlot(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Map<String, Any>)
+    suspend fun patchPlot(@HeaderMap header: Map<String, String>, @Path("id") id: Int, @Body body: Map<String, Any>)
 
     @DELETE("api/plot/{id}/")
     suspend fun deletePlot(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
@@ -160,16 +175,6 @@ interface WeeklyApiService {
 
     @GET("api/profile/invite/{phoneNumber}/")
     suspend fun inviteContact(@HeaderMap header: Map<String, String>, @Path("phoneNumber") phoneNumber: String)
-
-    @JvmSuppressWildcards
-    @POST("api/availability/")
-    suspend fun addAvailability(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>): Availability
-
-    @GET("api/availability/")
-    suspend fun getAvailabilities(@HeaderMap header: Map<String, String>, @Query("user") user_ids: String): List<Availability>
-
-    @DELETE("api/availability/{id}/")
-    suspend fun removeAvailability(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
 
     @DELETE("api/account/delete/")
     suspend fun deleteAccount(@HeaderMap header: Map<String, String>)

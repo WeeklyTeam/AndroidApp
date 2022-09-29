@@ -3,6 +3,9 @@ package com.ottogo.weekly.ui.calendar
 import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,20 +26,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.Availability
+import com.ottogo.weekly.api.models.ModifiedPlot
 import com.ottogo.weekly.api.models.Plot
 import com.ottogo.weekly.api.models.Status
-import com.ottogo.weekly.ui.calendar.DateFunctions.addDay
-import com.ottogo.weekly.ui.calendar.DateFunctions.addMonth
-import com.ottogo.weekly.ui.calendar.DateFunctions.isSameDay
-import com.ottogo.weekly.ui.calendar.availability.beginningOfDay
-import com.ottogo.weekly.ui.calendar.availability.beginningOfWeek
+import com.ottogo.weekly.ui.calendar.DateFunctions.*
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.calendar.ui.components.PlotCalendarItem
 import com.ottogo.weekly.ui.components.CustomButton
@@ -44,6 +46,7 @@ import com.ottogo.weekly.ui.components.CustomTextField
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.ScrollPicker
 import com.ottogo.weekly.ui.theme.Black
+import com.ottogo.weekly.ui.theme.Black40
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.nunitoFamily
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -57,7 +60,7 @@ import kotlin.random.Random.Default.nextInt
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
+fun CalendarPage(navController: NavController, userViewModel: UserViewModel, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
 
     var displayWeek by rememberSaveable{
         mutableStateOf(beginningOfWeek())
@@ -83,9 +86,17 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
         Status(emoji = "\uD83E\uDD73", title = "Out"),
         Status(emoji = "\uD83C\uDFEB", title = "Class"),
         Status(emoji = "${foodEmojis[nextInt(foodEmojis.size)]}", title = "Hungry"),
-        Status(emoji = "\uD83C\uDF79", title = "Parched"),
+        Status(emoji = "\uD83E\uDDCB", title = "Parched"),
         Status(emoji = "\uD83E\uDD71", title = "Bored"),
         Status(emoji = "+", title = "Custom"))
+
+    val friendStatuses = remember{
+        mutableStateListOf<ModifiedPlot>()
+    }
+    val friendAdventures = remember{
+        mutableStateListOf<ModifiedPlot>()
+    }
+
 
     var showStatusDuration: Boolean by remember {
         mutableStateOf(false)
@@ -99,30 +110,42 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
         mutableStateOf("")
     }
     var statusEmoji by remember{
-        mutableStateOf("")
+        mutableStateOf("✨")
     }
 
     var statusMinutes by remember { mutableStateOf(0) }
     var statusHours by remember { mutableStateOf(0) }
 
+    LaunchedEffect(key1 = bottomSheetViewModel.plotEmoji, block = {
+        if (!bottomSheetViewModel.plotEmoji.isNullOrEmpty()){
+            statusEmoji = bottomSheetViewModel.plotEmoji ?: ""
+            closeSheet()
+            showCustomStatus = true
+        }
+    })
+
     LaunchedEffect(key1 = selectedDate, block = {
 
+            friendStatuses.clear()
+            friendAdventures.clear()
+                try {
+                    val selectedCalendar = Calendar.getInstance()
+                    selectedCalendar.time = selectedDate
+                    val currentCalendar = Calendar.getInstance()
+                    val SA = WeeklyApi.retrofitService.getStatusesAndAdventures(
+                        mapOf("Authorization" to "token ${userViewModel.token}"),
+                        "${selectedCalendar.get(Calendar.YEAR)}-${selectedCalendar.get(Calendar.MONTH)}-${selectedCalendar.get(Calendar.DAY_OF_MONTH)}",
+                        "${currentCalendar.get(Calendar.HOUR_OF_DAY)}%3A${currentCalendar.get(Calendar.MINUTE)}%3A${currentCalendar.get(Calendar.SECOND)}%"
+                    )
+                    friendStatuses.addAll(SA.statuses)
+                    friendAdventures.addAll(SA.adventures)
 
-//                try {
-//
-//                    val SA = WeeklyApi.retrofitService.getStatusesAndAdventures(
-//                        mapOf("Authorization" to "token ${userViewModel.token}"),
-//                        "2022-09-17",
-//                        "23%3A50%3A00"
-//                    )
-//                    Log.d("S+A", SA.body.toString())
-//
-//
-//
-//                } catch (e: HttpException) {
-//                    Log.d("S+A", e.toString())
-//
-//                }
+
+
+                } catch (e: HttpException) {
+                    Log.d("S+A", e.toString())
+
+                }
 
 
     })
@@ -130,8 +153,9 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
     if(showStatusDuration){
         Dialog(
             onDismissRequest = {
+
                 showStatusDuration = false
-                status = ""
+                status = "✨"
                 statusEmoji = ""
             },
             content = {
@@ -169,10 +193,13 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
                             userViewModel.addPlot(
                                 WeeklyApi.retrofitService.createPlot(
                                     mapOf("Authorization" to "token ${userViewModel.token}"),
-                                    mapOf("emoji" to statusEmoji, "name" to status, "starttime" to Date(), "endtime" to endtime.time)
+                                    mapOf("emoji" to statusEmoji, "name" to status.replace("[^A-Za-z0-9 ]".toRegex(), ""), "starttime" to Date(), "endtime" to endtime.time, "is_plot" to false)
                                 )
                             )
+                            showCustomStatus = false
                             showStatusDuration = false
+                            status = "✨"
+                            statusEmoji = ""
                         }
 
 
@@ -192,7 +219,6 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
     val focusRequester = remember { FocusRequester() }
 
     if(showCustomStatus){
-        statusEmoji = "\uD83D\uDE46"
         Dialog(
             onDismissRequest = {
                 showCustomStatus = false
@@ -203,7 +229,10 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
                     .clip(RoundedCornerShape(24.dp))
                     .background(MaterialTheme.colors.background)
                     .padding(24.dp)) {
-                    EmojiCircle(emoji = statusEmoji)
+                    EmojiCircle(emoji = statusEmoji, onClick = {
+                        showCustomStatus = false
+                        openEmoji()
+                    })
                     Spacer(modifier = Modifier.height(24.dp))
 
 
@@ -238,17 +267,39 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
         )
     }
 
+    var calendarSwipeOffset by remember { mutableStateOf(0f) }
+
+
     Column() {
 
         
-        CalendarTitleBar2(navController = navController, date = displayWeek, selectedDate = selectedDate, nextMonth = { displayWeek = it }, previousMonth = { displayWeek = it }, userViewModel = userViewModel)
+        CalendarTitleBar2(navController = navController, date = displayWeek, selectedDate = selectedDate, resetDate = {
+            selectedDate = beginningOfDay(Date())
+            displayWeek = beginningOfWeek()
+        }, nextMonth = { displayWeek = it }, previousMonth = { displayWeek = it }, userViewModel = userViewModel)
 
         Column(Modifier.verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.Start) {
 
 
             WeeklyCalendarComponent(displayWeek,
                 modifier = Modifier
-                    .padding(start = 8.dp, end = 8.dp, top = 12.dp),
+                    .padding(start = 8.dp, end = 8.dp, top = 12.dp)
+                    .draggable(
+                        orientation = Orientation.Horizontal,
+                        state = rememberDraggableState { delta ->
+                            if (calendarSwipeOffset > 250) {
+                                displayWeek = addDay(displayWeek, -7)
+                                calendarSwipeOffset = 0f
+
+                            } else if (calendarSwipeOffset < -250) {
+                                displayWeek = addDay(displayWeek, 7)
+                                calendarSwipeOffset = 0f
+                            } else {
+                                calendarSwipeOffset += delta
+
+                            }
+                        }
+                    ),
                 selectedDate = selectedDate,
                 selectDate = { selectedDate = it },
                 plots = userViewModel.plots.filter {
@@ -259,6 +310,12 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
                         }
                 }, availability = listOf()
             )
+
+
+            //Connor
+            //Here you can add an if statement that checks if the user is new to the current version
+            //by checking if the shared preferences saved version is equal to the current version
+            //if it isn't, create a display that navigates users to the calendarsyncpage when tapped
 
             if (userViewModel.plots.firstOrNull { !it.is_going } != null) {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -301,16 +358,21 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
 
             if (userViewModel.plots.firstOrNull { isSameDay(it.starttime ?: Date(), selectedDate) && it.starttime != null } != null)
                 Spacer(Modifier.height(24.dp))
-                userViewModel.plots.filter { isSameDay(it.starttime ?: Date(), selectedDate) && it.starttime != null }.forEach{
-                    PlotCalendarItem(plot = it, userViewModel = userViewModel) {
+                val plots = userViewModel.plots.filter { isSameDay(it.starttime ?: Date(), selectedDate) && it.starttime != null && it.is_going }
+                plots.forEachIndexed{ index, it ->
+                    PlotCalendarItem(plot = it, navController = navController, userViewModel = userViewModel) {
                         navController.navigate("plotPage/${it.id}")
                     }
 
-                    Spacer(modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .background(ExtendedTheme.colors.LightGray)
-                        .height(64.dp)
-                        .width(1.dp))
+                    if (index != plots.lastIndex) {
+                        Spacer(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .background(ExtendedTheme.colors.LightGray)
+                                .height(64.dp)
+                                .width(1.dp)
+                        )
+                    }
 
                 }
 
@@ -394,68 +456,16 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
                 Text(text = "Friends", style = MaterialTheme.typography.h4, textAlign = TextAlign.Center, modifier = Modifier
                     .padding(horizontal = 16.dp))
 
+                Row(modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(8.dp)) {
 
-            } else {
-                val busyToday = userViewModel.availability.firstOrNull {
-                    it.starttime == selectedDate && it.endtime == addDay(
-                        selectedDate!!,
-                        1
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
-                    .clickable {
-                        runBlocking {
-                            if (busyToday == null) {
-                                userViewModel.addAvailability(
-                                    WeeklyApi.retrofitService.addAvailability(
-                                        mapOf("Authorization" to "token ${userViewModel.token}"),
-                                        mapOf(
-                                            "busy" to true,
-                                            "starttime" to selectedDate!!,
-                                            "endtime" to addDay(selectedDate!!, 1),
-                                            "title" to "",
-                                        )
-                                    )
-                                )
-                            } else {
-                                WeeklyApi.retrofitService.removeAvailability(
-                                    mapOf("Authorization" to "token ${userViewModel.token}"),
-                                    busyToday.id
-                                )
-                                userViewModel.removeAvailability(busyToday)
-                            }
-                        }
+                    for (status in friendStatuses){
+                        StatusItem(status = status, userViewModel = userViewModel, modifier = Modifier.clickable { navController.navigate("privateChatPage/${status.user_id}") })
                     }
-                    .padding(16.dp)
-                ) {
-
-
-                    Icon(
-                        painter = painterResource(
-                            id =
-                            if (busyToday != null) {
-                                R.drawable.ic_checkbox_circle_fill
-                            } else {
-                                R.drawable.ic_checkbox_blank_circle_line
-                            }
-                        ), contentDescription = "Checkbox",
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .height(24.dp)
-                            .width(24.dp),
-                        tint =
-                        if (busyToday != null) {
-                            MaterialTheme.colors.primary
-                        } else {
-                            ExtendedTheme.colors.Black60
-                        }
-                    )
-
-
-                    Text(text = "Busy today", style = MaterialTheme.typography.body1)
-
-
                 }
+
+
             }
 
 
@@ -466,7 +476,13 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
 
             Text(text = "Other adventures", style = MaterialTheme.typography.h4, textAlign = TextAlign.Center, modifier = Modifier
                 .padding(horizontal = 16.dp))
+            Spacer(Modifier.height(8.dp))
 
+            for(adventure in friendAdventures){
+                AdventureItem(adventure, userViewModel, Modifier.clickable { navController.navigate("privateChatPage/${adventure.user_id}") })
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
 
                 
@@ -484,6 +500,55 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel) {
     }
 }
 
+@Composable
+fun AdventureItem(adventure: ModifiedPlot, userViewModel: UserViewModel, modifier: Modifier = Modifier){
+    // Grammar rules for adventures
+    // if the adventures first word is ending in -ing then write name is going _____
+    // i.e. john is going bowling, angela is going rockclimbing at joshua tree
+    // else the adventureText is equal to name is going to ____
+    // i.e. barbara is going to starbucks, emilio is going to park
+
+    val adventureText = if (adventure.name.substringBefore(" ").endsWith("ing")) {
+        userViewModel.friends[adventure.user_id]?.name?.substringBefore(" ") + " is going " + adventure.name + " " + adventure.emoji
+    } else {
+        userViewModel.friends[adventure.user_id]?.name?.substringBefore(" ") + " is going to " + adventure.name + " " + adventure.emoji
+    }
+
+    Row(modifier = modifier) {
+        ProfilePicture(url = userViewModel.friends[adventure.user_id]?.profile_picture, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        Column(Modifier.weight(1f)) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = adventureText, style = MaterialTheme.typography.body1, maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "Tap to chat!", style = MaterialTheme.typography.body2, color = Black40, maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+
+    }
+}
+
+@Composable
+fun StatusItem(status: ModifiedPlot, userViewModel: UserViewModel, modifier: Modifier = Modifier){
+    Column(modifier = modifier.padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(contentAlignment = Alignment.BottomEnd){
+            ProfilePicture(url = userViewModel.friends[status.user_id]?.profile_picture, modifier = Modifier.padding(8.dp))
+            Text(text = status.emoji)
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = userViewModel.friends[status.user_id]?.name?.substringBefore(" ") ?: "", style = MaterialTheme.typography.body2, maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = status.name, style = MaterialTheme.typography.body2, color = Black40, maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+
+
+    }
+}
 
 @Composable
 fun WeeklyCalendarComponent(week: Date, shortened: Boolean = false, modifier: Modifier = Modifier, selectedDate: Date, selectDate: (Date) -> Unit, plots: List<Plot> = listOf(), availability: List<Availability> = listOf()){
@@ -510,7 +575,7 @@ fun WeeklyCalendarComponent(week: Date, shortened: Boolean = false, modifier: Mo
                     val date = addDay(week, i)
                     calendar.time = date
                     val busy = availability.firstOrNull{ isSameDay(it.starttime, date)  } != null
-                    val plotToday = plots.firstOrNull{ isSameDay(it.starttime, date) } != null
+                    val plotToday = plots.firstOrNull{ isSameDay(it.starttime, date) && it.is_plot } != null
 
 
                     CalendarBox(value = calendar.get(Calendar.DATE).toString(), date = date, isSelected = selectedDate == date, modifier = Modifier
@@ -533,7 +598,7 @@ fun WeeklyCalendarComponent(week: Date, shortened: Boolean = false, modifier: Mo
 
 @SuppressLint("SimpleDateFormat")
 @Composable
-fun CalendarTitleBar2(navController: NavController, date: Date, selectedDate: Date, nextMonth: (Date) -> Unit, previousMonth: (Date) -> Unit, userViewModel: UserViewModel){
+fun CalendarTitleBar2(navController: NavController, date: Date, selectedDate: Date, resetDate: () -> Unit, nextMonth: (Date) -> Unit, previousMonth: (Date) -> Unit, userViewModel: UserViewModel){
 
     Row(
         Modifier
@@ -584,16 +649,16 @@ fun CalendarTitleBar2(navController: NavController, date: Date, selectedDate: Da
         Spacer(modifier = Modifier.weight(1F))
 
 
+        if (!isSameDay(Date(), selectedDate)) {
+            IconButton(onClick = { resetDate() }, modifier = Modifier.size(58.dp)) {
+                Icon(
+                    modifier = Modifier.size(26.dp),
+                    painter = painterResource(id = R.drawable.ic_calendar_event_line),
+                    contentDescription = null,
+                )
+            }
 
-//        IconButton(onClick = { navController.navigate("availabilityPage") }, modifier = Modifier.size(58.dp)) {
-//            Icon(
-//                modifier = Modifier.size(26.dp),
-//                painter = painterResource(id = R.drawable.ic_calendar_check_line),
-//                contentDescription = "availability",
-//            )
-//        }
-
-
+        }
     }
 }
 

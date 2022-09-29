@@ -44,7 +44,7 @@ fun GroupPage(navController: NavController, groupId: Int, userViewModel: UserVie
         if (group != null) {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Spacer(modifier = Modifier.padding(bottom = 16.dp))
-                GroupInfo(group)
+                GroupInfo(navController, group)
                 Spacer(modifier = Modifier.padding(bottom = 24.dp))
                 AddMember(navController, groupId)
                 Spacer(modifier = Modifier.padding(bottom = 16.dp))
@@ -108,15 +108,17 @@ fun AddMember(navController: NavController, groupId: Int) {
 
 
 @Composable
-fun GroupInfo(group: Group?) {
+fun GroupInfo(navController: NavController, group: Group?) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (group != null) {
-            GroupPicture(group = group, size = 72)
+            GroupPicture(group = group, size = 72, onImageClick = {
+                navController.navigate("editGroupPage/${group.id}")
+            })
             Spacer(modifier = Modifier.padding(bottom = 16.dp))
-            Text(text = group.name, style = MaterialTheme.typography.h1)
+            Text(text = group.name, style = MaterialTheme.typography.h1, modifier = Modifier.clickable { navController.navigate("editGroupPage/${group.id}") })
         }
     }
 }

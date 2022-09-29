@@ -5,22 +5,17 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import android.widget.Button
 import android.widget.DatePicker
-import android.widget.EditText
 import android.widget.TimePicker
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -32,10 +27,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R
-import com.ottogo.weekly.api.models.Plot
 import com.ottogo.weekly.api.WeeklyApi
-import com.ottogo.weekly.api.WeeklyApiService
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.CustomTextField
@@ -45,8 +39,6 @@ import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.LightGray
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import retrofit2.http.Body
 import java.text.SimpleDateFormat
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -130,16 +122,16 @@ class PlotEditPageViewModel : ViewModel() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PlotEditPage(navController: NavController, plotId: Int, userViewModel: UserViewModel) {
+fun PlotEditPage(navController: NavController, plotId: Int, userViewModel: UserViewModel, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
 
-    PlotEditPageContent(navController, plotId = plotId, userViewModel = userViewModel)
+    PlotEditPageContent(navController, plotId = plotId, userViewModel = userViewModel, openEmoji, closeSheet, bottomSheetViewModel)
 
 }
 
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PlotEditPageContent(navController: NavController, plotId: Int, userViewModel: UserViewModel) {
+fun PlotEditPageContent(navController: NavController, plotId: Int, userViewModel: UserViewModel, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
 
     val viewModel: PlotEditPageViewModel = viewModel()
     var emoji by remember { mutableStateOf(userViewModel.plots.firstOrNull { it.id == plotId }?.emoji) }
@@ -155,6 +147,12 @@ fun PlotEditPageContent(navController: NavController, plotId: Int, userViewModel
         mutableStateOf(false)
     }
 
+    LaunchedEffect(key1 = bottomSheetViewModel.plotEmoji, block = {
+        if (!bottomSheetViewModel.plotEmoji.isNullOrEmpty()){
+            emoji = bottomSheetViewModel.plotEmoji ?: ""
+            closeSheet()
+        }
+    })
     LaunchedEffect(key1 = titleInput, block =
     {
         if(titleInput.contains("[^A-Za-z0-9 ]".toRegex())){
@@ -205,7 +203,7 @@ fun PlotEditPageContent(navController: NavController, plotId: Int, userViewModel
 
 
             if (!emoji.isNullOrEmpty()){
-                EmojiCircle(emoji = emoji!!, Modifier.size(72.dp))
+                EmojiCircle(emoji = emoji!!, Modifier.size(72.dp), onClick = {openEmoji()})
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -239,13 +237,13 @@ fun PlotEditPageContent(navController: NavController, plotId: Int, userViewModel
                         Log.d("status", "Name: $titleInput")
                         Log.d("status", "Details: $detailsInput")
                         val body: MutableMap<String, Any> = mutableMapOf()
-                        body["name"] = titleInput
+                        body["name"] = titleInput.replace("[^A-Za-z0-9 ]".toRegex(), "")
                         body["description"] = detailsInput
                         body["starttime"] = starttime
                         body["emoji"] = emoji ?: ""
 
 
-                        WeeklyApi.retrofitService.editPlot(
+                        WeeklyApi.retrofitService.patchPlot(
                             mapOf("Authorization" to "token ${userViewModel.token}"), plotId,
                             body
                         )
