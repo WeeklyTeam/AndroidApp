@@ -60,7 +60,7 @@ fun CalendarProviderApiService() { // Test Composable
 }
 
 @RequiresApi(Build.VERSION_CODES.N)
-fun getCalendarProviderEvents(context: Context): HashMap<String, MutableList<CalendarEvent>> {
+fun getCalendarProviderEvents(context: Context): MutableMap<String, MutableList<CalendarEvent>> {
 
     val callbackId = 42;
     checkPermission(callbackId, context,  Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
@@ -84,7 +84,7 @@ fun getCalendarProviderEvents(context: Context): HashMap<String, MutableList<Cal
 
     // Use the cursor to step through the returned records
     val maxRecurring = 3
-    var events = hashMapOf<String, MutableList<CalendarEvent>>() // Stores first 3 instances of each event
+    var events = mutableMapOf<String, MutableList<CalendarEvent>>() // Stores first 3 instances of each event
     if (cur != null) {
         while (cur.moveToNext()) {
             try {
@@ -93,6 +93,7 @@ fun getCalendarProviderEvents(context: Context): HashMap<String, MutableList<Cal
                 val dstart: String = cur.getString(PROJECTION_DSTART_INDEX)
 
 
+                Log.d("calendar", "$id $title ${getDate(dstart.toLong())}")
                 var calendarEvent = CalendarEvent(id, title, dstart.toLong())
                 if (events.contains(title)) {
                     if (events[title]!!.count() < maxRecurring) {
@@ -105,6 +106,7 @@ fun getCalendarProviderEvents(context: Context): HashMap<String, MutableList<Cal
             } catch (ex: Exception) {
                 Log.e("calendar", ex.toString())
             }
+
         }
     }
 
