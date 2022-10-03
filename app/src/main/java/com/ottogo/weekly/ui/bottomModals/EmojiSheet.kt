@@ -34,7 +34,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.emoji2.widget.EmojiTextView
 import com.ottogo.weekly.BottomSheetType
 import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R

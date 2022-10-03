@@ -87,6 +87,7 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.onesignal.OneSignal
+import com.ottogo.weekly.api.CalendarProviderApiService
 import com.ottogo.weekly.ui.bottomModals.EmojiSheet
 import com.ottogo.weekly.ui.calendar.plot.AddPlotMembersPage
 import com.ottogo.weekly.ui.calendar.plot.NewPlotsPage
@@ -465,8 +466,9 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         ) {
-        NavHost(navController = navController, startDestination = "homePage") {
+        NavHost(navController = navController, startDestination = "calendarProviderPage") {
 
+            composable("calendarProviderPage") { CalendarProviderApiService() }
             composable("homePage") { HomePage(navController, userViewModel, openSheet, openEmoji, closeSheet, bottomSheetViewModel)
             }
             composable("searchPage") { SearchPage(navController, userViewModel, openSheet) }
