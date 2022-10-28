@@ -54,12 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import coil.ImageLoader
-import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
+import coil.compose.*
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
+import coil.request.SuccessResult
 import coil.size.OriginalSize
 import coil.size.Precision
 import coil.size.Scale
@@ -392,6 +391,8 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
 
     val size: Dp = (screenWidth * context.resources.displayMetrics.density*3/5)
 
+
+
     LazyColumn(state = lazyListState, reverseLayout = true, modifier = modifier) {
         Log.d("recomp", "recomp2")
 
@@ -442,6 +443,7 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
 
                     Box(modifier = Modifier.fillMaxWidth()) {
 
+
                         messages[index].gif?.let {
                             val imageLoader = ImageLoader.Builder(context)
                                 .components {
@@ -452,24 +454,43 @@ fun ChatMessages (messages: List<ChatMessage>, userId: Int, currentUserId: Int, 
                                     }
                                 }
                                 .build()
+                            val painter = rememberAsyncImagePainter(
+                                ImageRequest.Builder(LocalContext.current).data(data = it)
+                                    .apply(block = fun ImageRequest.Builder.() {
+                                        size(size.value.toInt())
+                                        scale(Scale.FIT)
+                                        precision(Precision.EXACT)
+                                    }).build(), imageLoader = imageLoader
+                            )
+
                             Image(
-                                painter = rememberAsyncImagePainter(
-                                    ImageRequest.Builder(LocalContext.current).data(data = it)
-                                        .apply(block = fun ImageRequest.Builder.() {
-                                            size(size.value.toInt())
-                                            scale(Scale.FIT)
-                                            precision(Precision.EXACT)
-                                        }).build(), imageLoader = imageLoader
-                                ),
+                                painter = painter,
                                 contentDescription = null,
+                                contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .align(
                                         messageAlignment
                                     )
                                     .padding(vertical = 2.dp, horizontal = 16.dp)
                                     .width(screenWidth * 3 / 5)
+                                    .aspectRatio(1f)
                                     .clip(RoundedCornerShape(3.dp))
                             )
+
+                            if (painter.state !is AsyncImagePainter.State.Success) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(
+                                            messageAlignment
+                                        )
+                                        .padding(vertical = 2.dp, horizontal = 16.dp)
+                                        .width(screenWidth * 3 / 5)
+                                        .aspectRatio(1f)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(LightGray)
+
+                                )
+                            }
                         }
 
                         messages[index].image?.let {
