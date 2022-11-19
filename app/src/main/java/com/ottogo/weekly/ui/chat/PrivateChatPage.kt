@@ -9,12 +9,10 @@ import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.util.Log
 import android.util.TypedValue
-import android.view.ViewTreeObserver
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,19 +28,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.InputMode.Companion.Keyboard
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -58,27 +51,20 @@ import coil.compose.*
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
-import coil.request.SuccessResult
-import coil.size.OriginalSize
 import coil.size.Precision
 import coil.size.Scale
-import coil.size.Size
 import com.giphy.sdk.core.models.Media
 import com.giphy.sdk.ui.Giphy
 import com.giphy.sdk.ui.pagination.GPHContent
-import com.giphy.sdk.ui.utils.videoUrl
 import com.giphy.sdk.ui.views.GPHGridCallback
 import com.giphy.sdk.ui.views.GiphyGridView
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.api.models.Profile
-import com.ottogo.weekly.ui.account.toSquare
-import com.ottogo.weekly.ui.calendar.DateFunctions.addDay
 import com.ottogo.weekly.ui.calendar.DateFunctions.isSameDay
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.TitleBar
@@ -86,12 +72,9 @@ import com.ottogo.weekly.ui.login.getFile
 import com.ottogo.weekly.ui.theme.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.java_websocket.client.WebSocketClient
 import retrofit2.HttpException
 import java.io.File
@@ -102,13 +85,13 @@ import java.text.SimpleDateFormat
 fun PrivateChatPage(navController: NavController, userViewModel: UserViewModel, userId: Int, webSocket: WebSocketClient?, openSheet: (profile: Profile?) -> Unit) {
 
 
-    var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
+    var giphySheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
     val coroutineScope = rememberCoroutineScope()
 
-    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, userId = userId) {
+    GiphyBottomModalSheet(giphySheetState, webSocket, userViewModel, coroutineScope, userId = userId) {
         PrivateChatPageContent(navController, userViewModel, userId, webSocket, toggleSwipeState =  {
             coroutineScope.launch {
-                sheetSwipeableState.animateTo("half")
+                giphySheetState.show()
             }
         }, openSheet = openSheet)
     }
@@ -571,60 +554,35 @@ fun LazyListState.OnBottomReached(
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, groupId: Int? = null, userId: Int? = null, mainContent: @Composable () -> Unit) {
+fun GiphyBottomModalSheet(giphySheetState: ModalBottomSheetState, webSocket: WebSocketClient?, userViewModel: UserViewModel, coroutineScope: CoroutineScope, groupId: Int? = null, userId: Int? = null, mainContent: @Composable () -> Unit) {
 
     Giphy.configure(LocalContext.current, "OGYiQs1RQKTbdR0jAGA0RyqkWD5GEY0z")
-    var giphySheetState = rememberBottomSheetScaffoldState(
-        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
-    )
-
-   // val isKeyboardOpen by keyboardAsState()
-
-    var fullyExpandedHeight = LocalConfiguration.current.screenHeightDp - 10
-    var halfExpandedHeight = fullyExpandedHeight / 2
-    val anchors = if (true) {
-        mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", fullyExpandedHeight.toFloat() to "full")
-    } else {
-        mapOf(0f to "none", halfExpandedHeight.toFloat() to "half", (halfExpandedHeight + 1).toFloat() to "full")
-    }
-
 
     var gifSearch by remember {  mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
 
 
-    // Hides keyboard and resets gif search if user closes bottom sheet with search bar focused
-    val focusRequester = remember { FocusRequester() }
-    var searchFocused by remember { mutableStateOf(false) }
-    if (sheetSwipeableState.currentValue == "none" && searchFocused) {
+    if (!giphySheetState.isVisible) {
         keyboardController?.hide()
         gifSearch = ""
     }
 
 
-    BottomSheetScaffold(
+    ModalBottomSheetLayout(
         modifier = Modifier.pointerInput(Unit) {
             detectTapGestures(onTap = {
                 coroutineScope.launch {
-                    sheetSwipeableState.animateTo("none")
+                    giphySheetState.hide()
                 }
             })
         },
-        scaffoldState = giphySheetState,
+        sheetState = giphySheetState,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetPeekHeight = sheetSwipeableState.offset.value.dp,
         sheetContent = {
 
             Box(modifier= Modifier
                 .fillMaxWidth()
                 .height(24.dp)
-                .swipeable(
-                    state = sheetSwipeableState,
-                    anchors = anchors,
-                    thresholds = { _, _ -> FractionalThreshold(0.5f) },
-                    orientation = Orientation.Vertical,
-                    reverseDirection = true
-                )
             ) { Box(modifier = Modifier
                 .clip(RoundedCornerShape(24.dp))
                 .width(48.dp)
@@ -636,15 +594,12 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
             SearchBar(searchText = gifSearch,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester)
-                    .onFocusChanged { searchFocused = it.isFocused }
                     .padding(start = 12.dp, end = 12.dp)) { gifSearch = it }
 
             GiphyView(gifSearch) {
                 coroutineScope.launch {
-                    sheetSwipeableState.animateTo("none")
+                    giphySheetState.hide()
                 }
-                var message =
                 if (userId != null){
                     webSocket?.send("{\"recipient\": $userId, \"gif\": \"$it\"}")
 
@@ -669,8 +624,7 @@ fun GiphyBottomModalSheet(sheetSwipeableState: SwipeableState<String>, webSocket
 
                 keyboardController?.hide()
             }
-        },
-        sheetGesturesEnabled = false) {
+        }) {
 
         mainContent()
     }
