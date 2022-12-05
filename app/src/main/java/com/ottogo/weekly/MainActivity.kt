@@ -4,6 +4,7 @@ package com.ottogo.weekly
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +37,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -87,9 +92,12 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.onesignal.OneSignal
+import com.ottogo.weekly.MainActivity.PreferencesKeys.VERSION_NAME
 import com.ottogo.weekly.ui.bottomModals.EmojiSheet
 import com.ottogo.weekly.ui.calendar.plot.AddPlotMembersPage
 import com.ottogo.weekly.ui.calendar.plot.NewPlotsPage
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 const val ONESIGNAL_APP_ID = "2262537a-7d61-4fac-b35d-5c8f27a9f578"
 
@@ -98,13 +106,27 @@ class MainActivity : ComponentActivity() {
     private val userViewModel: UserViewModel by viewModels()
     private var webSocket: WebSocketClient? = null
     val executorService: ExecutorService = Executors.newFixedThreadPool(4)
-
+    
+    private val Context.dataStore by preferencesDataStore (
+        name = "version_details"
+    )
+    private object PreferencesKeys {
+        val VERSION_NAME = stringPreferencesKey("version_name")
+    }
+    val versionName: Flow<String> = dataStore.data.map {
+        it[VERSION_NAME] ?: ""
+    }
 
     val ARG_ACCOUNT_TYPE = "ACCOUNT_TYPE"
     val ARG_AUTH_TYPE = "AUTH_TYPE"
     val ARG_ACCOUNT_NAME = "ACCOUNT_NAME"
     val ARG_IS_ADDING_NEW_ACCOUNT = "IS_ADDING_ACCOUNT"
 
+    suspend fun updateVersionName() {
+        dataStore.edit {preferences ->
+            preferences[PreferencesKeys.VERSION_NAME] = BuildConfig.VERSION_NAME
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -937,6 +959,7 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel, openShe
         )
     }
 
+        
     }
 }
 
