@@ -37,7 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,20 +44,31 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.systemBarsPadding
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
+import com.onesignal.OneSignal
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.account.*
+import com.ottogo.weekly.ui.bottomModals.EmojiSheet
 import com.ottogo.weekly.ui.bottomModals.ProfileBottomModalSheet
-import com.ottogo.weekly.ui.calendar.*
+import com.ottogo.weekly.ui.calendar.CalendarPage
 import com.ottogo.weekly.ui.calendar.DateFunctions.addMonth
 import com.ottogo.weekly.ui.calendar.DateFunctions.initialMonth
 import com.ottogo.weekly.ui.calendar.availability.AddAvailabilityPage
+import com.ottogo.weekly.ui.calendar.plot.AddPlotMembersPage
+import com.ottogo.weekly.ui.calendar.plot.NewPlotsPage
 import com.ottogo.weekly.ui.calendar.plot.PlotEditPage
 import com.ottogo.weekly.ui.calendar.plot.PlotPage
+import com.ottogo.weekly.ui.calendar.sync.AddPlotsPage
+import com.ottogo.weekly.ui.calendar.sync.CalendarSyncPage
+import com.ottogo.weekly.ui.calendar.sync.GoogleAuthentication
 import com.ottogo.weekly.ui.calendar.ui.components.CalendarComponent
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.chat.*
@@ -78,7 +88,6 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
@@ -86,10 +95,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import com.onesignal.OneSignal
-import com.ottogo.weekly.ui.bottomModals.EmojiSheet
-import com.ottogo.weekly.ui.calendar.plot.AddPlotMembersPage
-import com.ottogo.weekly.ui.calendar.plot.NewPlotsPage
+
 
 const val ONESIGNAL_APP_ID = "2262537a-7d61-4fac-b35d-5c8f27a9f578"
 
@@ -190,6 +196,14 @@ class MainActivity : ComponentActivity() {
 
 
             }
+        }
+        fun getGoogleLoginAuth(): GoogleSignInClient {
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .requestId()
+                .requestProfile()
+                .build()
+            return GoogleSignIn.getClient(this, gso)
         }
     }
 
@@ -479,7 +493,10 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("createGroupPage") { CreateGroupPage(navController) }
             composable("addAvailabilityPage") { AddAvailabilityPage(navController, userViewModel, openEmoji, closeSheet, bottomSheetViewModel) }
             composable("newPlotsPage") { NewPlotsPage(navController, userViewModel) }
-
+            composable("calendarSyncPage") { CalendarSyncPage(navController) }
+            composable("canvasWebviewPage") { CanvasWebviewPage(navController) }
+            composable("addPlotsPage") { AddPlotsPage(navController, userViewModel) }
+            composable("googleAuthentication") { GoogleAuthentication(navController) }
             composable("chatSearchPage") { ChatSearchPage(navController, userViewModel) }
             composable("groupPage/{group_id}") { backStackEntry ->
                 GroupPage(

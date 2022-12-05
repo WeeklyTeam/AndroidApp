@@ -1,6 +1,9 @@
 package com.ottogo.weekly.ui.calendar.sync
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavController
+import com.ottogo.weekly.viewmodels.UserViewModel
 
 // Justin
 // https://developers.google.com/calendar/api/v3/reference/events/get
@@ -13,5 +16,8 @@ import androidx.compose.runtime.Composable
 
 
 @Composable
-fun AddPlotsPage() {
+fun AddPlotsPage(navController: NavController, userViewModel: UserViewModel) {
+    Column() {
+
+    }
 }
