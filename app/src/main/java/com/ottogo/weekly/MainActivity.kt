@@ -113,6 +113,7 @@ class MainActivity : ComponentActivity() {
     private object PreferencesKeys {
         val VERSION_NAME = stringPreferencesKey("version_name")
     }
+    //Returns the version name stored in Preferences
     val versionName: Flow<String> = dataStore.data.map {
         it[VERSION_NAME] ?: ""
     }
@@ -122,6 +123,7 @@ class MainActivity : ComponentActivity() {
     val ARG_ACCOUNT_NAME = "ACCOUNT_NAME"
     val ARG_IS_ADDING_NEW_ACCOUNT = "IS_ADDING_ACCOUNT"
 
+    //Updates the version name stored in Preferences to the app's current version
     suspend fun updateVersionName() {
         dataStore.edit {preferences ->
             preferences[PreferencesKeys.VERSION_NAME] = BuildConfig.VERSION_NAME
