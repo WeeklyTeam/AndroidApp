@@ -212,7 +212,6 @@ class UserViewModel: ViewModel() {
     private lateinit var alarmIntent: PendingIntent
 
     fun addPlot(plot: Plot, context: Context? = null){
-        Log.d("alarmStatus", "User model received starttime: ${plot.starttime}")
 
         if (context != null && plot.starttime != null && plot.is_plot) {
             alarmMgr = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -235,8 +234,6 @@ class UserViewModel: ViewModel() {
             }
             twoHoursBefore.time = plot.starttime
             twoHoursBefore.add(Calendar.HOUR_OF_DAY, -2)
-
-            Log.d("alarmStatus", "Creating alarms with alarm manager")
 
             alarmMgr?.setExact(
                 AlarmManager.RTC_WAKEUP,

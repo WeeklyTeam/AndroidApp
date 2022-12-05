@@ -235,13 +235,13 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
                     // calendar.add(Calendar.HOUR_OF_DAY, +2)
                     // calendar.add(Calendar.SECOND, +5)
                     // Log.i("alarmStatus", "Calendar has time: ${calendar.time}")
+                    // var testStartTime: Date = calendar.time
 
-                    var testStartTime: Date = calendar.time
                     userViewModel.addPlot(
                             WeeklyApi.retrofitService.createPlot(
                                 mapOf("Authorization" to "token ${userViewModel.token}"),
                                 mapOf(
-                                    "starttime" to testStartTime,
+                                    "starttime" to starttime,
                                     "endtime" to endtime,
                                     "name" to title.replace("[^A-Za-z0-9 ]".toRegex(), ""),
                                     "emoji" to emoji,
