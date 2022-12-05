@@ -17,7 +17,7 @@ class AlarmReceiver: BroadcastReceiver() {
         val plotName = intent?.extras!!.getString("plot")
         val starttime = intent?.extras!!.getString("starttime")
         val calendar = Calendar.getInstance()
-        Log.d("starttime", starttime.toString())
+        Log.d("alarmStatus", "Alarm receiver created with starttime: ${starttime}")
         val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy")
         var title: String
         if (isSameDay(sdf.parse(starttime.toString()), Date())){

@@ -212,6 +212,7 @@ class UserViewModel: ViewModel() {
     private lateinit var alarmIntent: PendingIntent
 
     fun addPlot(plot: Plot, context: Context? = null){
+        Log.d("alarmStatus", "User model received starttime: ${plot.starttime}")
 
         if (context != null && plot.starttime != null && plot.is_plot) {
             alarmMgr = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -219,7 +220,7 @@ class UserViewModel: ViewModel() {
                 intent.putExtra("plot", plot.name + " " + plot.emoji)
                 val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy").format(plot.starttime)
                 intent.putExtra("starttime", sdf)
-                PendingIntent.getBroadcast(context, 0, intent, 0)
+                PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
             }
 
 
@@ -235,6 +236,7 @@ class UserViewModel: ViewModel() {
             twoHoursBefore.time = plot.starttime
             twoHoursBefore.add(Calendar.HOUR_OF_DAY, -2)
 
+            Log.d("alarmStatus", "Creating alarms with alarm manager")
 
             alarmMgr?.setExact(
                 AlarmManager.RTC_WAKEUP,
