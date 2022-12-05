@@ -266,7 +266,7 @@ fun ChatListItem(
         modifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top){
-        Row() {
+        Row(modifier = Modifier.weight(1f)) {
             ProfilePicture(
                 profilePicture,
                 modifier = Modifier
@@ -284,7 +284,7 @@ fun ChatListItem(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = description, style = MaterialTheme.typography.body2, color = Black40, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    text = description, modifier = Modifier.weight(1f), style = MaterialTheme.typography.body2, color = Black40, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -348,7 +348,7 @@ fun GroupChatListItem(
         modifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min), horizontalArrangement = Arrangement.SpaceBetween){
-        Row() {
+        Row(modifier = Modifier.weight(1f)) {
             GroupPicture(
                 group,
                 modifier = Modifier
