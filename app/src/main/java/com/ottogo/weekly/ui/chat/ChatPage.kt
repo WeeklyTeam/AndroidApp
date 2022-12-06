@@ -148,8 +148,9 @@ fun chatTabRow(userViewModel: UserViewModel, navController: NavController, openS
                 is Profile -> {
                     var description = "Say Hi!"
                     val firstMessage = it.messages.firstOrNull()
+                    Log.d("chatStatus", "${it.name}: $firstMessage")
                     if (firstMessage?.message != null){
-                        description = message
+                        description = firstMessage.message
                     } else if (firstMessage?.gif != null) {
                         description = "[GIF]"
                     }
