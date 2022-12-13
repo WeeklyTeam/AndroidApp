@@ -689,7 +689,6 @@ fun Screen3(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, 
                     "starttime" to bottomSheetViewModel.plotDate,
                     "name" to bottomSheetViewModel.plotName,
                     "emoji" to bottomSheetViewModel.plotEmoji,
-
                 )
                 when {
                     selectedGroupId != null -> {
