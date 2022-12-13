@@ -851,6 +851,7 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             input = title.replace("[^A-Za-z0-9 ]".toRegex(), ""),
             onChange = {
                 title = it
+                bottomSheetViewModel.plotName = title.replace("[^A-Za-z0-9 ]".toRegex(), "")
             },
             modifier = Modifier.focusRequester(focusRequester),
             keyboardActions = KeyboardActions(onNext = {
