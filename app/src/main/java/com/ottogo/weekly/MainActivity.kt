@@ -367,7 +367,6 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
     val modalBottomSheetState = rememberModalBottomSheetState(
         ModalBottomSheetValue.Hidden
     )
-    
 
     val scope = rememberCoroutineScope()
     //val focusManager = LocalFocusManager.current
@@ -411,10 +410,9 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             }
 
             else {
+                bottomSheetViewModel.clear()
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning1
                 modalBottomSheetState.show()
-
-
             }
         }
     }
@@ -689,7 +687,6 @@ fun Screen3(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, 
                     "starttime" to bottomSheetViewModel.plotDate,
                     "name" to bottomSheetViewModel.plotName,
                     "emoji" to bottomSheetViewModel.plotEmoji,
-
                 )
                 when {
                     selectedGroupId != null -> {
@@ -730,15 +727,17 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
     }
 
 
-    var displayMonth by rememberSaveable{
+    var displayMonth by rememberSaveable {
         mutableStateOf(initialMonth())
     }
+
+    Log.d("dateButtons", displayMonth.toString())
 
     Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 
         Row(verticalAlignment = Alignment.CenterVertically) {
 
-            IconButton(onClick = { displayMonth = addMonth(displayMonth, -1) }, modifier = Modifier.size(56.dp)) {
+            IconButton(onClick = { displayMonth = addMonth(displayMonth, -1); selectedDate = displayMonth }, modifier = Modifier.size(56.dp)) {
                 Icon(painter = painterResource(id = R.drawable.ic_arrow_left_s_line),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
@@ -746,10 +745,10 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             }
 
             Text(
-                SimpleDateFormat(if (displayCalendar) {"MMM yyyy"} else {"MMM dd"}).format(if (displayCalendar) {displayMonth} else {selectedDate}),
+                SimpleDateFormat(if (displayCalendar) {"MMM yyyy"} else {"MMM dd"}).format(displayMonth),
                 modifier = Modifier.weight(1F), style = MaterialTheme.typography.h2, textAlign = TextAlign.Center)
 
-            IconButton(onClick = { displayMonth = addMonth(displayMonth, 1) }, modifier = Modifier.size(56.dp)) {
+            IconButton(onClick = { displayMonth = addMonth(displayMonth, 1); selectedDate = displayMonth }, modifier = Modifier.size(56.dp)) {
                 Icon(painter = painterResource(id = R.drawable.ic_arrow_right_s_line),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
@@ -765,6 +764,9 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
                 .padding(16.dp), selectedDate = null, selectDate = {
                 displayCalendar = false
                 selectedDate = it
+                if (it != null) {
+                    displayMonth = it
+                }
             })
         }
         else {
@@ -852,6 +854,7 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             input = title.replace("[^A-Za-z0-9 ]".toRegex(), ""),
             onChange = {
                 title = it
+                bottomSheetViewModel.plotName = title.replace("[^A-Za-z0-9 ]".toRegex(), "")
             },
             modifier = Modifier.focusRequester(focusRequester),
             keyboardActions = KeyboardActions(onNext = {

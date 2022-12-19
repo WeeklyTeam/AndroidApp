@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import com.ottogo.weekly.BottomSheetType
 import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.WeeklyApi
@@ -117,7 +118,11 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel, ope
     var statusHours by remember { mutableStateOf(0) }
 
     LaunchedEffect(key1 = bottomSheetViewModel.plotEmoji, block = {
-        if (!bottomSheetViewModel.plotEmoji.isNullOrEmpty()){
+        // Only show the customStatus model when we don't have a bottom sheet already open/queued
+        if (!bottomSheetViewModel.plotEmoji.isNullOrEmpty()
+            && bottomSheetViewModel.bottomSheetType != BottomSheetType.Planning1
+            && bottomSheetViewModel.bottomSheetType != BottomSheetType.Planning2
+            && bottomSheetViewModel.bottomSheetType != BottomSheetType.Planning3){
             statusEmoji = bottomSheetViewModel.plotEmoji ?: ""
             closeSheet()
             showCustomStatus = true

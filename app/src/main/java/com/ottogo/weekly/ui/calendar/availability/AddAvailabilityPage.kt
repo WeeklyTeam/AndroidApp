@@ -3,6 +3,7 @@ package com.ottogo.weekly.ui.calendar.availability
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.util.Log
 import android.widget.DatePicker
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -219,8 +220,23 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
             Spacer(modifier = Modifier.height(36.dp))
 
             CustomButton(
+                buttonText = "LOL",
+                onClick = {
+                    Log.d("alarmStatus", "hello")
+                }
+            )
+
+            CustomButton(
                 buttonText = "Add",
                 onClick = {
+                    // Code for Testing the Notifications
+                    // Set starttime to 2 hours 5 seconds ahead
+                    // var calendar = Calendar.getInstance()
+                    // calendar.add(Calendar.HOUR_OF_DAY, +2)
+                    // calendar.add(Calendar.SECOND, +5)
+                    // Log.i("alarmStatus", "Calendar has time: ${calendar.time}")
+                    // var testStartTime: Date = calendar.time
+
                     userViewModel.addPlot(
                             WeeklyApi.retrofitService.createPlot(
                                 mapOf("Authorization" to "token ${userViewModel.token}"),
@@ -230,7 +246,8 @@ fun AddAvailabilityPage (navController: NavController, userViewModel: UserViewMo
                                     "name" to title.replace("[^A-Za-z0-9 ]".toRegex(), ""),
                                     "emoji" to emoji,
                                     )
-                            )
+                            ),
+                            context
                     )
                     created = true
 
