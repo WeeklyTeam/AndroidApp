@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
+import com.ottogo.weekly.BottomSheetType
 import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.WEEKLY_COMPLETE_PREF_KEY
@@ -143,6 +144,7 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel, ope
 //            showCustomStatus = true
 //        }
 //    })
+
 
     LaunchedEffect(key1 = selectedDate, block = {
 

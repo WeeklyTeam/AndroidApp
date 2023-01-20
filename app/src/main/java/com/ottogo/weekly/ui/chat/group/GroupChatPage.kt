@@ -16,8 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
@@ -40,7 +38,6 @@ import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import coil.size.Precision
 import coil.size.Scale
-import coil.size.Size
 import com.ottogo.weekly.viewmodels.UserViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
@@ -48,7 +45,6 @@ import com.ottogo.weekly.api.models.Group
 import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.calendar.DateFunctions.isSameDay
 import com.ottogo.weekly.ui.chat.GiphyBottomModalSheet
-import com.ottogo.weekly.ui.chat.PrivateChatPageContent
 import com.ottogo.weekly.ui.components.GroupPicture
 import com.ottogo.weekly.ui.components.ProfilePicture
 import com.ottogo.weekly.ui.components.TitleBar
@@ -63,13 +59,13 @@ import java.text.SimpleDateFormat
 fun GroupChatPage(navController: NavController, userViewModel: UserViewModel, groupId: Int, webSocket: WebSocketClient?, openSheet: (profile: Profile?) -> Unit) {
 
 
-    var sheetSwipeableState = rememberSwipeableState(initialValue = "none")
+    var giphySheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
     val coroutineScope = rememberCoroutineScope()
 
-    GiphyBottomModalSheet(sheetSwipeableState, webSocket, userViewModel, coroutineScope, groupId = groupId) {
+    GiphyBottomModalSheet(giphySheetState, webSocket, userViewModel, coroutineScope, groupId = groupId) {
         GroupChatPageContent(navController, userViewModel, groupId, webSocket, toggleSwipeState =  {
             coroutineScope.launch {
-                sheetSwipeableState.animateTo("half")
+                giphySheetState.show()
             }
         }, openSheet = openSheet)
     }
