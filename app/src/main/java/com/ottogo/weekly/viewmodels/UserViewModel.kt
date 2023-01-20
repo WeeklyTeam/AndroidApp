@@ -11,17 +11,21 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ottogo.weekly.WEEKLY_COMPLETE_PREF_KEY
 import com.ottogo.weekly.alarms.AlarmReceiver
 import com.ottogo.weekly.api.WeeklyApi
 import com.ottogo.weekly.api.models.*
+import com.ottogo.weekly.dataStore
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.N)
 class UserViewModel: ViewModel() {
+
 
     var token by mutableStateOf<String?>(null)
     var profile by mutableStateOf<Profile?>(null)
@@ -35,14 +39,12 @@ class UserViewModel: ViewModel() {
     val groups: Map<Int, Group>
         get() = _groups
     private val _calendars = mutableStateListOf<FriendCalendar>()
-    val calendars: List<FriendCalendar>
-        get() = _calendars
-    private val _availability = mutableStateListOf<Availability>()
-    val availability: List<Availability>
-        get() = _availability
     private val _plots = mutableStateListOf<Plot>()
     val plots: List<Plot>
         get() = _plots
+    private val _recommendations = mutableStateListOf<Plot>()
+    val recommendations: List<Plot>
+        get() = _recommendations
     private val _requests = mutableStateListOf<Profile>()
     val requests: List<Profile>
         get() = _requests
@@ -75,13 +77,6 @@ class UserViewModel: ViewModel() {
         _calendars.removeAt(index)
     }
 
-    fun addAvailability(availability: Availability){
-        _availability.add(availability)
-    }
-
-    fun removeAvailability(availability: Availability){
-        _availability.remove(availability)
-    }
 
     fun addCalendar(calendar: FriendCalendar){
         _calendars.add(calendar)
@@ -123,9 +118,8 @@ class UserViewModel: ViewModel() {
                 }
             }
 
-            _availability.addAll(data.availability)
+            _recommendations.addAll(data.recommendations)
             _requests.addAll(data.requests)
-            _calendars.addAll(data.calendars)
 
             _plots.addAll(data.plots)
         }
@@ -300,6 +294,12 @@ class UserViewModel: ViewModel() {
 
     }
 
+    suspend fun interestedPlotInvite(plot: Plot){
+        WeeklyApi.retrofitService.interestedPlotInvitation(mapOf("Authorization" to "token ${token}"), plot.id)
+        _recommendations.remove(plot)
+
+    }
+
     fun removePlot(plotId: Int){
         _plots.removeAll { it.id == plotId }
 
@@ -367,6 +367,18 @@ class UserViewModel: ViewModel() {
 
 
         }
+
+
+
+
+    }
+
+    suspend fun updateWeeklyCompletePref(context: Context){
+        context.dataStore.edit { settings ->
+            val currentCounterValue = settings[WEEKLY_COMPLETE_PREF_KEY] ?: 0
+            settings[WEEKLY_COMPLETE_PREF_KEY] = SimpleDateFormat("dd-MM-yyyy").format(Date())
+
+        }
     }
 
     fun setToken(username: String, token: String, context: Context){
@@ -389,8 +401,7 @@ class UserViewModel: ViewModel() {
             _friends.clear()
             _chats.clear()
             _groups.clear()
-            _calendars.clear()
-            _availability.clear()
+            _recommendations.clear()
             _plots.clear()
             _requests.clear()
             token = null
@@ -400,3 +411,5 @@ class UserViewModel: ViewModel() {
     }
 
 }
+
+

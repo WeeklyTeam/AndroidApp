@@ -78,7 +78,7 @@ fun ChatPage(navController: NavController, userViewModel: UserViewModel, openShe
 
                 Text(text = "This app is way more fun\nwith friends", style = MaterialTheme.typography.h2, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 32.dp))
 
-                CustomButton(buttonText = "Check contacts", onClick = {navController.navigate("contactsPage")}, modifier = Modifier.padding(horizontal = 32.dp, vertical = 32.dp))
+                CustomButton(buttonText = "Sync contacts", onClick = {navController.navigate("contactsPage")}, modifier = Modifier.padding(horizontal = 32.dp, vertical = 32.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Or tap ", style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60)
@@ -154,7 +154,7 @@ fun chatTabRow(userViewModel: UserViewModel, navController: NavController, openS
                         description = "[GIF]"
                     }
                     else if (firstMessage?.image != null) {
-                        description = "[image]"
+                        description = "[Image]"
 
                     }
                     ChatListItem(name = it.name,

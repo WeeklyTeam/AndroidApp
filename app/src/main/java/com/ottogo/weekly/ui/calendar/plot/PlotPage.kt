@@ -15,9 +15,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R
@@ -34,7 +39,9 @@ import java.text.SimpleDateFormat
 
 @Composable
 fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewModel, openSheet: (profile: Profile?) -> Unit) {
-    val plot = userViewModel.plots.firstOrNull { it.id == plotId }
+    val plot = if (userViewModel.plots.firstOrNull { it.id == plotId } != null) {userViewModel.plots.firstOrNull { it.id == plotId }} else {userViewModel.recommendations.firstOrNull { it.id == plotId }}
+
+
     print(userViewModel.plots.toString())
 
     Column () {
@@ -93,6 +100,28 @@ fun PlotPage(navController: NavController, plotId: Int, userViewModel: UserViewM
                     }
                 }
 
+                if (!plot.url.isNullOrEmpty()){
+                    Spacer(Modifier.height(24.dp))
+                    Text(text = plot.url.toString(),
+                        style = TextStyle(textDecoration = TextDecoration.Underline,
+                            fontWeight = FontWeight.Normal,
+                            fontSize = 14.sp,
+                            letterSpacing = 0.25.sp, color = Color(0xFF2D5BFF)
+                        ),
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .fillMaxWidth().clickable{ navController.navigate("webviewPage/Weekly?url=${plot.url}")}, textAlign = TextAlign.Start)
+                }
+
+                if (!plot.description.isNullOrEmpty()){
+                    Spacer(Modifier.height(24.dp))
+                    Text(text = plot.description,
+                        style = MaterialTheme.typography.body2,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .fillMaxWidth(), textAlign = TextAlign.Start)
+                }
+
                 if (plot.going.count() > 0) {
                     PlotMemberList(title = "Going", members = plot.going, openSheet = openSheet)
                 }
@@ -145,13 +174,8 @@ fun PlotInfo(navController: NavController, plot: Plot) {
         Spacer(modifier = Modifier.padding(bottom = 8.dp))
         Text(text = if (plot.starttime != null) {SimpleDateFormat("EEEE, MMM d").format(plot.starttime) + " at " + SimpleDateFormat("h:mm a").format(plot.starttime)} else { "Date undecided" }, style = MaterialTheme.typography.body2, color = ExtendedTheme.colors.Black60, modifier = Modifier.clickable{navController.navigate("plotEditPage/${plot.id}")})
 
-        if (!plot.description.isNullOrEmpty()){
-            Spacer(Modifier.height(24.dp))
-            Text(text = plot.description,
-                style = MaterialTheme.typography.body2,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth(), textAlign = TextAlign.Start)
-        }
+
+
+
     }
 }

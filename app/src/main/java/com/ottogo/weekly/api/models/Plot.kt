@@ -8,6 +8,7 @@ data class Plot(
     @Json(name = "endtime") val endtime: Date?,
     @Json(name = "name") val name: String,
     @Json(name = "id") val id: Int,
+    @Json(name = "url") val url: String? = null,
     @Json(name = "emoji") val emoji: String,
     @Json(name = "description") val description: String?,
     @Json(name = "group_id") val group_id: Int?,

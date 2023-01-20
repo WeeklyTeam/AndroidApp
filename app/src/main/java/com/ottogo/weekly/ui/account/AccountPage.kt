@@ -96,12 +96,20 @@ fun AccountPage(navController: NavController, userViewModel: UserViewModel) {
             navController.navigate("contactsPage")
         }
 
-        AccountOption(R.drawable.ic_calendar_check_line, "Sync") {
-            navController.navigate("calendarSyncPage")
-        }
+//        AccountOption(R.drawable.ic_calendar_check_line, "Sync") {
+//            navController.navigate("calendarSyncPage")
+//        }
 
         AccountOption(R.drawable.ic_edit_2_line, "Profile") {
             navController.navigate("editProfilePage")
+        }
+
+        AccountOption(R.drawable.ic_feedback_line, "Feedback") {
+            navController.navigate("feedbackPage")
+        }
+
+        AccountOption(R.drawable.ic_bug_line, "Found a bug") {
+            navController.navigate("reportBugPage")
         }
 
         AccountOption(R.drawable.ic_flag_line, "Report") {
