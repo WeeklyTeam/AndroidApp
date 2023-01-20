@@ -4,6 +4,7 @@ package com.ottogo.weekly
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +37,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -57,8 +62,6 @@ import com.ottogo.weekly.ui.calendar.*
 import com.ottogo.weekly.ui.calendar.DateFunctions.addMonth
 import com.ottogo.weekly.ui.calendar.DateFunctions.initialMonth
 import com.ottogo.weekly.ui.calendar.availability.AddAvailabilityPage
-import com.ottogo.weekly.ui.calendar.plot.PlotEditPage
-import com.ottogo.weekly.ui.calendar.plot.PlotPage
 import com.ottogo.weekly.ui.calendar.ui.components.CalendarComponent
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
 import com.ottogo.weekly.ui.chat.*
@@ -88,10 +91,19 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.onesignal.OneSignal
 import com.ottogo.weekly.ui.bottomModals.EmojiSheet
-import com.ottogo.weekly.ui.calendar.plot.AddPlotMembersPage
-import com.ottogo.weekly.ui.calendar.plot.NewPlotsPage
+import com.ottogo.weekly.ui.calendar.plot.*
+import com.ottogo.weekly.ui.calendar.weekly.WeeklyActivityPage
+import com.ottogo.weekly.ui.calendar.weekly.WeeklyAvailabilityPage
+import com.ottogo.weekly.ui.calendar.weekly.WeeklyCompletePage
+import com.ottogo.weekly.ui.calendar.weekly.WeeklyFailurePage
+import com.ottogo.weekly.ui.chat.SelectProfileItem
 
 const val ONESIGNAL_APP_ID = "2262537a-7d61-4fac-b35d-5c8f27a9f578"
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "weeklyCompletePref")
+
+val WEEKLY_COMPLETE_PREF_KEY = stringPreferencesKey("weekly_complete_date")
+
 
 class MainActivity : ComponentActivity() {
 
@@ -467,9 +479,26 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
 
             composable("homePage") { HomePage(navController, userViewModel, openSheet, openEmoji, closeSheet, bottomSheetViewModel)
             }
+            composable("weeklyAvailabilityPage") { WeeklyAvailabilityPage(navController)
+            }
+            composable("weeklyActivityPage/{availability}") { backStackEntry ->
+                WeeklyActivityPage(
+                    navController,
+                    backStackEntry.arguments?.getString("availability")!!,
+                    userViewModel
+                )
+            }
+            composable("recommendedPlotsPage") { RecommendedPlotsPage(navController, userViewModel)
+            }
+            composable("weeklyCompletePage") { WeeklyCompletePage(navController, userViewModel)
+            }
+            composable("weeklyFailurePage") { WeeklyFailurePage(navController, userViewModel)
+            }
             composable("searchPage") { SearchPage(navController, userViewModel, openSheet) }
             composable("settingsPage") { SettingsPage(userViewModel, navController) }
             composable("reportPage") { ReportPage(navController, userViewModel) }
+            composable("reportBugPage") { ReportBugPage(navController, userViewModel) }
+            composable("feedbackPage") { FeedbackPage(navController, userViewModel) }
             composable("activitiesPage") { ActivitiesPage(navController, userViewModel) }
             composable("addActivityPage") { AddActivityPage(navController, userViewModel) }
             composable("contactsPage") { ContactsPage(navController, userViewModel) }
@@ -816,11 +845,11 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
-    var title by remember{
+    var title by rememberSaveable{
         mutableStateOf(bottomSheetViewModel.plotName ?: "")
     }
-    var emoji by remember{
-        mutableStateOf(bottomSheetViewModel.plotEmoji ?: "\uD83C\uDF0A")
+    var emoji by rememberSaveable{
+        mutableStateOf(bottomSheetViewModel.plotEmoji ?: "\uD83C\uDF42")
     }
 
     val focusManager = LocalFocusManager.current
@@ -833,8 +862,8 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 
 
     LaunchedEffect(key1 = title){
-        if(title.contains("[^A-Za-z0-9 ]".toRegex())){
-            emoji = title.replace("[A-Za-z0-9 ]".toRegex(), "")
+        if(title.contains("[^A-Za-z0-9 .?!()\"]".toRegex())){
+            emoji = title.replace("[A-Za-z0-9 .?!()\"]".toRegex(), "")
         }
     }
 
@@ -851,7 +880,7 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
         CustomTextField(
             helper = "Title (add an emoji)",
             hint = "What are you doing?",
-            input = title.replace("[^A-Za-z0-9 ]".toRegex(), ""),
+            input = title.replace("[^A-Za-z0-9 .?!()\"]".toRegex(), ""),
             onChange = {
                 title = it
                 bottomSheetViewModel.plotName = title.replace("[^A-Za-z0-9 ]".toRegex(), "")
@@ -859,7 +888,7 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
             modifier = Modifier.focusRequester(focusRequester),
             keyboardActions = KeyboardActions(onNext = {
                 bottomSheetViewModel.plotEmoji = emoji
-                bottomSheetViewModel.plotName = title.replace("[^A-Za-z0-9 ]".toRegex(), "")
+                bottomSheetViewModel.plotName = title.replace("[^A-Za-z0-9 .?!()\"]".toRegex(), "")
                 focusManager.clearFocus()
                 bottomSheetViewModel.bottomSheetType = BottomSheetType.Planning2
             }),
@@ -871,9 +900,10 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 fun HomePage(navController: NavController, userViewModel: UserViewModel, openSheet: (profile: Profile?) -> Unit, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel){
     var bottomBarSelection by rememberSaveable{ mutableStateOf(0) }
 
+    val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize()){
         when(bottomBarSelection){
-           0 -> CalendarPage(navController = navController, userViewModel = userViewModel, openEmoji, closeSheet, bottomSheetViewModel)
+           0 -> CalendarPage(navController = navController, userViewModel = userViewModel, openEmoji, closeSheet, bottomSheetViewModel, weeklyViewModel = WeeklyViewModel(context))
            1 -> ChatPage(navController = navController, userViewModel = userViewModel, openSheet = openSheet)
            2 -> AccountPage(navController = navController, userViewModel = userViewModel)
         }

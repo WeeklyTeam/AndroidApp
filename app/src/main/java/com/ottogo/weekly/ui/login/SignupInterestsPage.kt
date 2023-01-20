@@ -227,7 +227,7 @@ fun ActivityList(activityCategoryIndex: Int, activityCategoriesViewModel: Activi
             val firstIndex = row * 2
             var secondIndex = firstIndex + 1
 
-            if (firstIndex == activityCategory.activities.size) {
+            if (secondIndex == activityCategory.activities.size) {
                 secondIndex = -1
             }
 

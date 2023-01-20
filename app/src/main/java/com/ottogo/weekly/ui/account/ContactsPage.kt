@@ -27,6 +27,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -35,12 +36,14 @@ import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.Profile
+import com.ottogo.weekly.ui.calendar.weekly.LottieLoader
 import com.ottogo.weekly.ui.chat.CancelButton
 import com.ottogo.weekly.ui.chat.SearchBar
 import com.ottogo.weekly.ui.components.ProfilePicture
@@ -175,7 +178,6 @@ fun ContactsPage(navController: NavController, userViewModel: UserViewModel) {
         android.Manifest.permission.READ_CONTACTS
     )
 
-Log.d("contacts", "recomposing")
     val context = LocalContext.current
 
     var contacts = remember{
@@ -184,6 +186,7 @@ Log.d("contacts", "recomposing")
     var profiles = remember{
         mutableStateListOf<Profile>()
     }
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     LaunchedEffect(key1 = contactPermissionState.status, block = {
         if (contactPermissionState.status == PermissionStatus.Granted) {
@@ -204,8 +207,25 @@ Log.d("contacts", "recomposing")
     })
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        TitleBar(navController = navController, title = "Contacts")
+        Row(verticalAlignment = Alignment.CenterVertically){
 
+            IconButton(onClick = {
+
+                    navController.popBackStack("homePage", inclusive = false)
+
+                                 }, modifier = Modifier.size(56.dp)) {
+                Icon(painter = painterResource(id = R.drawable.ic_arrow_left_s_line),
+                    contentDescription = "back",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Text(text = "Contacts",
+                style = MaterialTheme.typography.h2,
+            )
+
+            Spacer(modifier = Modifier.weight(1F))
+
+        }
         when (contactPermissionState.status) {
             // If the camera permission is granted, then show screen with the feature enabled
             is PermissionStatus.Granted -> {
@@ -228,13 +248,20 @@ Log.d("contacts", "recomposing")
             }
             is PermissionStatus.Denied -> {
 
-                Spacer(Modifier.weight(1F))
 
-                Text("Add access to contacts\nfor this feature", style = MaterialTheme.typography.h2, textAlign = TextAlign.Center, modifier = Modifier
+                LottieLoader(res = R.raw.friendhighfive, modifier = Modifier.height(screenHeight*1/2))
+
+                Text("This app is way more fun\nwith friends!", style = MaterialTheme.typography.h2, textAlign = TextAlign.Center, modifier = Modifier
                     .padding(horizontal = 32.dp)
                     .fillMaxWidth())
 
-                CustomButton(buttonText = "Allow", onClick = { contactPermissionState.launchPermissionRequest() }, modifier = Modifier.padding(horizontal = 32.dp, vertical = 32.dp))
+
+
+                CustomButton(buttonText = "Sync contacts", onClick = { contactPermissionState.launchPermissionRequest() }, modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp))
+
+                Text("Your contacts will be periodically synced and stored on our servers. Turn off this permission to stop syncing. We will not share this with anyone.", style = MaterialTheme.typography.body2, textAlign = TextAlign.Center, color = ExtendedTheme.colors.Black60, modifier = Modifier
+                    .padding(horizontal = 32.dp)
+                    .fillMaxWidth())
 
                 Spacer(Modifier.weight(1F))
 
@@ -255,7 +282,7 @@ fun ContactsScreen(navController: NavController, contacts: List<ContactsModel>, 
 
 
     val context = LocalContext.current
-    val invitationMessage = (userViewModel.profile?.name ?: "Someone") + " wants to hang out with you on Weekly https://www.theweeklyapp.com/app/"
+    val invitationMessage = (userViewModel.profile?.name ?: "Someone") + " has no friends on Weekly and needs your help \uD83D\uDE22 https://www.theweeklyapp.com/app/"
 
     Column {
 
@@ -289,8 +316,7 @@ fun ContactsScreen(navController: NavController, contacts: List<ContactsModel>, 
 
 
                 InviteItem(resource = R.drawable.ic_link, contentDescription = "Copy", tint = ExtendedTheme.colors.Black60, color = ExtendedTheme.colors.LightGray) {
-                    val clipboardManager =
-                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val clipData = ClipData.newPlainText("text",  invitationMessage)
                     clipboardManager.setPrimaryClip(clipData)
 

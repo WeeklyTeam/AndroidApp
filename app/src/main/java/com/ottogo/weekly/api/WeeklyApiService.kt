@@ -20,7 +20,7 @@ import java.util.*
 
 private val BASE_URL = "https://www.theweeklyapp.com"
 
-data class Activity(@Json(name="id")val id: Int, @Json(name="activity")val activity: String, @Json(name = "liked") val liked: Boolean = false)
+data class Activity(@Json(name="id")val id: Int, @Json(name="emojis")val emojis: String = "\uD83C\uDFD6", @Json(name="activity")val activity: String, @Json(name = "liked") val liked: Boolean = false)
 data class ActivityCategory(@Json(name="title")val title: String, @Json(name="activities")val activities: List<Activity>)
 
 private val moshi = Moshi.Builder()
@@ -36,7 +36,7 @@ private val retrofit = Retrofit.Builder()
 
 interface WeeklyApiService {
 
-    @GET("api/main")
+    @GET("api/main/?device=Android&version=2.2.1")
     suspend fun main(@HeaderMap header: Map<String, String>): Main
 
     @JvmSuppressWildcards
@@ -71,6 +71,8 @@ interface WeeklyApiService {
     suspend fun acceptPlotInvitation(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
     @GET("api/plot/{id}/notgoing/")
     suspend fun rejectPlotInvitation(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+    @GET("api/plot/{id}/interested/")
+    suspend fun interestedPlotInvitation(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
 
     @GET("api/profile/{id}/add/")
     suspend fun add(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
@@ -142,13 +144,17 @@ interface WeeklyApiService {
         @Body body: Map<String, Any?>,
     ): Plot
 
+
     @JvmSuppressWildcards
     @GET("api/plot/")
     suspend fun getStatusesAndAdventures(
         @HeaderMap headers: Map<String, String>,
         @Query("date", encoded = true) date: String,
         @Query("time", encoded = true) time: String,
-    ): StatusesAndAdventures
+        @Query("adventuretime", encoded = true) adventuretime: String,
+        ): StatusesAndAdventures
+
+
 
     @JvmSuppressWildcards
     @PATCH("api/plot/{id}/")
@@ -178,6 +184,13 @@ interface WeeklyApiService {
 
     @DELETE("api/account/delete/")
     suspend fun deleteAccount(@HeaderMap header: Map<String, String>)
+    
+    @GET("api/weekly/")
+    suspend fun getWeeklyActivities(@HeaderMap header: Map<String, String>): List<Activity>
+
+    @JvmSuppressWildcards
+    @POST("api/weekly/")
+    suspend fun postWeekly(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>)
 }
 
 object WeeklyApi {

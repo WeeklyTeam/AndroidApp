@@ -7,7 +7,6 @@ data class Main (
     @Json(name = "friends") var friends: List<Profile>,
     @Json(name = "requests") var requests: List<Profile>,
     @Json(name = "groups") var groups: List<Group>,
-    @Json(name = "calendars") var calendars: List<FriendCalendar>,
-    @Json(name = "availability") var availability: List<Availability>,
-    @Json(name = "plots") var plots: List<Plot>
-)
+    @Json(name = "plots") var plots: List<Plot>,
+    @Json(name = "recommendations") var recommendations: List<Plot>,
+    )
