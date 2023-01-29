@@ -116,4 +116,11 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics-ktx'
     implementation 'com.onesignal:OneSignal:[4.0.0, 4.99.99]'
 
+    implementation "androidx.datastore:datastore-preferences:1.0.0"
+    // optional - RxJava2 support
+    implementation("androidx.datastore:datastore-rxjava2:1.0.0")
+
+    // optional - RxJava3 support
+    implementation("androidx.datastore:datastore-rxjava3:1.0.0")
+
 }
