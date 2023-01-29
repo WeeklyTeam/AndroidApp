@@ -125,8 +125,10 @@ class MainActivity : ComponentActivity() {
 
     //Updates the version name stored in Preferences to the app's current version
     suspend fun updateVersionName() {
-        dataStore.edit {preferences ->
-            preferences[PreferencesKeys.VERSION_NAME] = BuildConfig.VERSION_NAME
+        if(!versionName.equals(BuildConfig.VERSION_NAME)) {
+            dataStore.edit { preferences ->
+                preferences[PreferencesKeys.VERSION_NAME] = BuildConfig.VERSION_NAME
+            }
         }
     }
 
@@ -960,7 +962,6 @@ fun HomePage(navController: NavController, userViewModel: UserViewModel, openShe
                 tint = MaterialTheme.colors.onPrimary
         )
     }
-
         
     }
 }
