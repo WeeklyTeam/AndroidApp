@@ -477,7 +477,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
         ) {
         NavHost(navController = navController, startDestination = "homePage") {
 
-            composable("homePage") { HomePage(navController, userViewModel, openSheet, openEmoji, closeSheet, bottomSheetViewModel)
+            composable("homePage") { HomePage(navController, userViewModel, openSheet, openEmoji, closeSheet, bottomSheetViewModel, webSocket)
             }
             composable("weeklyAvailabilityPage") { WeeklyAvailabilityPage(navController)
             }
@@ -897,13 +897,13 @@ fun Screen1(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
 }
 
 @Composable
-fun HomePage(navController: NavController, userViewModel: UserViewModel, openSheet: (profile: Profile?) -> Unit, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel){
+fun HomePage(navController: NavController, userViewModel: UserViewModel, openSheet: (profile: Profile?) -> Unit, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, webSocket: WebSocketClient?){
     var bottomBarSelection by rememberSaveable{ mutableStateOf(0) }
 
     val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize()){
         when(bottomBarSelection){
-           0 -> CalendarPage(navController = navController, userViewModel = userViewModel, openEmoji, closeSheet, bottomSheetViewModel, weeklyViewModel = WeeklyViewModel(context))
+           0 -> CalendarPage(navController = navController, userViewModel = userViewModel, openEmoji, closeSheet, bottomSheetViewModel, weeklyViewModel = WeeklyViewModel(context), webSocket = webSocket)
            1 -> ChatPage(navController = navController, userViewModel = userViewModel, openSheet = openSheet)
            2 -> AccountPage(navController = navController, userViewModel = userViewModel)
         }

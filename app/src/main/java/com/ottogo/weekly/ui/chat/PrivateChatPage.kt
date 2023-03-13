@@ -134,8 +134,6 @@ fun PrivateChatPageContent(navController: NavController, userViewModel: UserView
             webSocket?.send("{\"recipient\": $userId}")
             userViewModel.seenChatMessages(userId = userId)
         }
-
-
     })
 
     var imageUri: Uri? by remember { mutableStateOf(null) }

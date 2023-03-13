@@ -60,6 +60,7 @@ import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.nunitoFamily
 import com.ottogo.weekly.viewmodels.UserViewModel
 import kotlinx.coroutines.flow.map
+import org.java_websocket.client.WebSocketClient
 import retrofit2.HttpException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -78,7 +79,7 @@ class WeeklyViewModel(context: Context): ViewModel(){
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun CalendarPage(navController: NavController, userViewModel: UserViewModel, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, weeklyViewModel: WeeklyViewModel) {
+fun CalendarPage(navController: NavController, userViewModel: UserViewModel, openEmoji: () -> Unit, closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, weeklyViewModel: WeeklyViewModel, webSocket: WebSocketClient?) {
 
     var displayWeek by rememberSaveable{
         mutableStateOf(beginningOfWeek())
@@ -471,7 +472,7 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel, ope
                 Spacer(Modifier.height(24.dp))
                 val plots = userViewModel.plots.filter { isSameDay(it.starttime ?: Date(), selectedDate) && it.starttime != null && it.is_going }
                 plots.forEachIndexed{ index, it ->
-                    PlotCalendarItem(plot = it, navController = navController, userViewModel = userViewModel) {
+                    PlotCalendarItem(plot = it, navController = navController, userViewModel = userViewModel, webSocket = webSocket) {
                         navController.navigate("plotPage/${it.id}")
                     }
 
