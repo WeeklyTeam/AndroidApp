@@ -500,6 +500,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
             composable("reportBugPage") { ReportBugPage(navController, userViewModel) }
             composable("feedbackPage") { FeedbackPage(navController, userViewModel) }
             composable("activitiesPage") { ActivitiesPage(navController, userViewModel) }
+            composable("holidaysPage") { HolidaysPage(navController, userViewModel) }
             composable("addActivityPage") { AddActivityPage(navController, userViewModel) }
             composable("contactsPage") { ContactsPage(navController, userViewModel) }
             composable("editProfilePage") { EditProfilePage(navController, userViewModel) }

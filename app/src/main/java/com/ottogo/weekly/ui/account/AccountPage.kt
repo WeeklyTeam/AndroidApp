@@ -71,6 +71,12 @@ fun AccountPage(navController: NavController, userViewModel: UserViewModel) {
             navController.navigate("activitiesPage")
         }
 
+
+        AccountOption(R.drawable.ic_gift_line, "Holidays") {
+            navController.navigate("holidaysPage")
+        }
+
+
         AccountOption(R.drawable.ic_star_half_line, "Review") {
 
             val request = manager.requestReviewFlow()

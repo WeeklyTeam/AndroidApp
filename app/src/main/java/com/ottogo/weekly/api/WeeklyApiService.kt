@@ -23,6 +23,8 @@ private val BASE_URL = "https://www.theweeklyapp.com"
 data class Activity(@Json(name="id")val id: Int, @Json(name="emojis")val emojis: String = "\uD83C\uDFD6", @Json(name="activity")val activity: String, @Json(name = "liked") val liked: Boolean = false)
 data class ActivityCategory(@Json(name="title")val title: String, @Json(name="activities")val activities: List<Activity>)
 
+
+
 private val moshi = Moshi.Builder()
     .add(Date::class.java, Rfc3339DateJsonAdapter())
     .add(KotlinJsonAdapterFactory())
@@ -175,6 +177,15 @@ interface WeeklyApiService {
     @GET("api/activity/{id}/favorite/")
     suspend fun favoriteActivity(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
 
+    @GET("api/holidays/")
+    suspend fun holidays(@HeaderMap header: Map<String, String>):List<HolidayCategory>
+
+    @GET("api/holiday/{id}/activate/")
+    suspend fun activateHoliday(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
+    @GET("api/holiday/{id}/deactivate/")
+    suspend fun deactivateHoliday(@HeaderMap header: Map<String, String>, @Path("id") id: Int)
+
     @JvmSuppressWildcards
     @POST("api/profile/contacts/")
     suspend fun searchContacts(@HeaderMap header: Map<String, String>, @Body body: Map<String, List<String>>): List<Profile>
@@ -191,6 +202,8 @@ interface WeeklyApiService {
     @JvmSuppressWildcards
     @POST("api/weekly/")
     suspend fun postWeekly(@HeaderMap header: Map<String, String>, @Body body: Map<String, Any>)
+
+
 }
 
 object WeeklyApi {
