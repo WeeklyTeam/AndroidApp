@@ -541,7 +541,7 @@ fun MainNavigation(userViewModel: UserViewModel, webSocket: WebSocketClient?, bo
                 )
             }
             composable("accountPage") { AccountPage(navController, userViewModel) }
-            composable("plotDatePage") { PlotDatePage(navController) }
+            composable("plotDatePage") { PlotDatePage(navController, userViewModel) }
             composable("inviteGroupPage/{groupName}") { backStackEntry ->
                 InviteGroupPage(
                     navController,
@@ -626,7 +626,7 @@ fun SheetLayout(
 
     when(bottomSheetViewModel.bottomSheetType){
         BottomSheetType.Planning1 -> Screen1(closeSheet, bottomSheetViewModel)
-        BottomSheetType.Planning2 -> Screen2(closeSheet, bottomSheetViewModel)
+        BottomSheetType.Planning2 -> Screen2(closeSheet, bottomSheetViewModel, userViewModel)
         BottomSheetType.Planning3 -> Screen3(closeSheet, bottomSheetViewModel, userViewModel)
         BottomSheetType.Profile -> ProfileBottomModalSheet(userViewModel = userViewModel, bottomSheetViewModel = bottomSheetViewModel)
         BottomSheetType.Emoji -> EmojiSheet(bottomSheetViewModel = bottomSheetViewModel)
@@ -747,7 +747,7 @@ fun Screen3(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, 
 
 
 @Composable
-fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) {
+fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel, userViewModel: UserViewModel) {
     var selectedDate: Date? by rememberSaveable {
         mutableStateOf(null)
     }
@@ -797,7 +797,7 @@ fun Screen2(closeSheet: () -> Unit, bottomSheetViewModel: BottomSheetViewModel) 
                 if (it != null) {
                     displayMonth = it
                 }
-            })
+            }, userViewModel = userViewModel)
         }
         else {
             ScrollPicker(options = listOf(List(12){ index -> String.format("%02d", (index+1))}, List(60){ index -> String.format("%02d", (index))}, listOf("AM", "PM")), selectItem = listOf(

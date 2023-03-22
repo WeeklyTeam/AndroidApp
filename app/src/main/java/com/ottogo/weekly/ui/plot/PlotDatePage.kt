@@ -25,12 +25,13 @@ import com.ottogo.weekly.ui.calendar.ui.components.CalendarComponent
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.components.ScrollPicker
 import com.ottogo.weekly.ui.components.TitleBar
+import com.ottogo.weekly.viewmodels.UserViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @SuppressLint("SimpleDateFormat")
 @Composable
-fun PlotDatePage(navController: NavController) {
+fun PlotDatePage(navController: NavController, userViewModel: UserViewModel) {
 
     var selectedDate: Date? by rememberSaveable {
         mutableStateOf(null)
@@ -75,7 +76,7 @@ fun PlotDatePage(navController: NavController) {
                 .padding(16.dp), selectedDate = null, selectDate = {
                 displayCalendar = false
                 selectedDate = it
-            })
+            }, userViewModel = userViewModel)
         }
         else {
             ScrollPicker(options = listOf(List(12){ index -> index.toString()}, listOf("AM", "PM")), listOf({}))

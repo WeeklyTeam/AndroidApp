@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.ottogo.weekly.BottomSheetType
@@ -41,10 +42,7 @@ import com.ottogo.weekly.BottomSheetViewModel
 import com.ottogo.weekly.R
 import com.ottogo.weekly.WEEKLY_COMPLETE_PREF_KEY
 import com.ottogo.weekly.api.WeeklyApi
-import com.ottogo.weekly.api.models.Availability
-import com.ottogo.weekly.api.models.ModifiedPlot
-import com.ottogo.weekly.api.models.Plot
-import com.ottogo.weekly.api.models.Status
+import com.ottogo.weekly.api.models.*
 import com.ottogo.weekly.dataStore
 import com.ottogo.weekly.ui.calendar.DateFunctions.*
 import com.ottogo.weekly.ui.calendar.ui.components.EmojiCircle
@@ -93,6 +91,16 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel, ope
 
     var selectedDate: Date by rememberSaveable {
         mutableStateOf(beginningOfDay(Date()))
+    }
+
+    val holidays = remember { mutableStateListOf<Holiday>() }
+
+    LaunchedEffect(key1 = 1) {
+        WeeklyApi.retrofitService.holidays(mapOf("Authorization" to "token ${userViewModel.token}")).forEach { holidayCategory ->
+            holidayCategory.holidays.forEach { holiday ->
+                holidays.add(holiday)
+            }
+        }
     }
 
     val coroutine = rememberCoroutineScope()
@@ -375,7 +383,7 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel, ope
                 } else {
                     false
                 }
-            }, availability = listOf()
+            }, availability = listOf(), holidays = holidays
         )
 
         Column(Modifier.verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.Start) {
@@ -425,6 +433,32 @@ fun CalendarPage(navController: NavController, userViewModel: UserViewModel, ope
 
                         Text("See your recommendations!", style = MaterialTheme.typography.h4, color = MaterialTheme.colors.onPrimary)
 
+                    }
+                }
+            }
+
+            val calendar = Calendar.getInstance()
+            calendar.time = selectedDate
+            Log.d("asdasd", "Selected date: " + calendar.time.toString())
+
+
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                for (holiday in holidays) {
+                    if (holiday.active && calendar.get(Calendar.MONTH) == holiday.month_of_year?.minus(1)) {
+                        var initialGreeting = " Happy "
+                        if (holiday.month_of_year == 12 && holiday.day_of_month == 25) {
+                            initialGreeting = " Merry "
+                        }
+
+                        if (calendar.get(Calendar.DAY_OF_MONTH) == holiday.day_of_month
+                            || calendar.get(Calendar.DAY_OF_WEEK) == holiday.day_of_week && calendar.get(Calendar.WEEK_OF_MONTH) == holiday.week_of_month) {
+                            Text(text = holiday.emoji + initialGreeting + holiday.holiday_name + "!",
+                                fontFamily = nunitoFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(top = 29.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -685,7 +719,7 @@ fun StatusItem(status: ModifiedPlot, userViewModel: UserViewModel, modifier: Mod
 }
 
 @Composable
-fun WeeklyCalendarComponent(week: Date, shortened: Boolean = false, modifier: Modifier = Modifier, selectedDate: Date, selectDate: (Date) -> Unit, plots: List<Plot> = listOf(), availability: List<Availability> = listOf()){
+fun WeeklyCalendarComponent(week: Date, shortened: Boolean = false, modifier: Modifier = Modifier, selectedDate: Date, selectDate: (Date) -> Unit, plots: List<Plot> = listOf(), availability: List<Availability> = listOf(), holidays: List<Holiday>){
 
     val daysOfWeek = if (shortened) { listOf("S", "M", "T", "W", "T", "F", "S") } else { listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") }
 
@@ -711,6 +745,15 @@ fun WeeklyCalendarComponent(week: Date, shortened: Boolean = false, modifier: Mo
                     val busy = availability.firstOrNull{ isSameDay(it.starttime, date)  } != null
                     val plotToday = plots.firstOrNull{ isSameDay(it.starttime, date) && it.is_plot } != null
 
+                    var isHoliday = false
+                    for (holiday in holidays) {
+                        if (holiday.active && holiday.month_of_year?.minus(1) == calendar.get(Calendar.MONTH)) {
+                            if (holiday.day_of_month == calendar.get(Calendar.DAY_OF_MONTH)
+                                || calendar.get(Calendar.DAY_OF_WEEK) == holiday.day_of_week && calendar.get(Calendar.WEEK_OF_MONTH) == holiday.week_of_month) {
+                                isHoliday = true
+                            }
+                        }
+                    }
 
                     CalendarBox(value = calendar.get(Calendar.DATE).toString(), date = date, isSelected = selectedDate == date, modifier = Modifier
                         .weight(1F)
@@ -718,7 +761,7 @@ fun WeeklyCalendarComponent(week: Date, shortened: Boolean = false, modifier: Mo
                         .clickable {
                             selectDate(date)
 
-                        }, isUnavailable = busy, isPlot = plotToday)
+                        }, isUnavailable = busy, isPlot = plotToday, isHoliday = isHoliday)
 
 
 
@@ -799,7 +842,7 @@ fun CalendarTitleBar2(navController: NavController, date: Date, selectedDate: Da
 }
 
 @Composable
-fun CalendarBox(value: String, date: Date = Date(), isSelected: Boolean = false, isPlot: Boolean  = false, isUnavailable: Boolean = false, modifier: Modifier = Modifier){
+fun CalendarBox(value: String, date: Date = Date(), isSelected: Boolean = false, isPlot: Boolean  = false, isHoliday: Boolean = false, isUnavailable: Boolean = false, modifier: Modifier = Modifier){
     Box(modifier = modifier, contentAlignment = Alignment.Center){
 
 
@@ -823,16 +866,38 @@ fun CalendarBox(value: String, date: Date = Date(), isSelected: Boolean = false,
                 ) {}
             }
 
-            if (isPlot) {
-                Surface(
-                    modifier = Modifier
-                        .padding(top = 28.dp)
-                        .size(4.dp),
+            Row {
+                val padding = if (isPlot && isHoliday) 2.dp else 0.dp
 
-                    color = MaterialTheme.colors.primary,
-                    shape = CircleShape
-                ) {}
+                if (isPlot) {
+                    Surface(
+                        modifier = Modifier
+                            .padding(top = 28.dp)
+                            .size(4.dp),
+
+                        color = MaterialTheme.colors.primary,
+                        shape = CircleShape
+                    ) {}
+                }
+
+
+                if (isHoliday) {
+                    Surface(
+                        modifier = Modifier
+                            .padding(top = 28.dp, start = padding)
+                            .size(4.dp),
+
+                        color = Color(0xFFFF922D),
+                        shape = CircleShape
+                    ) {}
+                }
             }
+
+
+
+
+
+
         }
 
         Text(
