@@ -18,7 +18,7 @@ import java.lang.reflect.Modifier
 import java.util.*
 
 
-private val BASE_URL = "https://www.theweeklyapp.com"
+private val BASE_URL = "https://plotsme.herokuapp.com/"
 
 data class Activity(@Json(name="id")val id: Int, @Json(name="emojis")val emojis: String = "\uD83C\uDFD6", @Json(name="activity")val activity: String, @Json(name = "liked") val liked: Boolean = false)
 data class ActivityCategory(@Json(name="title")val title: String, @Json(name="activities")val activities: List<Activity>)

@@ -267,7 +267,7 @@ class MainActivity : ComponentActivity() {
     fun webSocketCreate(){
         val headers = mapOf("authorization" to "token ${userViewModel.token}")
 
-        val uri: URI? = URI("wss://www.theweeklyapp.com/chat/")
+        val uri: URI? = URI("wss://plotsme.herokuapp.com/chat/")
 
         webSocket = object : WebSocketClient(uri, headers) {
             override fun onOpen(handshakedata: ServerHandshake?) {
