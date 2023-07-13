@@ -7,11 +7,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.input.key.Key.Companion.I
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -19,10 +20,12 @@ import androidx.navigation.NavController
 import com.ottogo.weekly.R
 import com.ottogo.weekly.api.models.ChatMessage
 import com.ottogo.weekly.api.models.Plot
+import com.ottogo.weekly.api.models.Profile
 import com.ottogo.weekly.ui.calendar.DateFunctions.isSameDay
 import com.ottogo.weekly.ui.components.CustomButton
 import com.ottogo.weekly.ui.login.coloredShadow
 import com.ottogo.weekly.ui.theme.Black
+import com.ottogo.weekly.ui.theme.Black60
 import com.ottogo.weekly.ui.theme.ExtendedTheme
 import com.ottogo.weekly.ui.theme.LightGray
 import com.ottogo.weekly.viewmodels.UserViewModel
@@ -40,6 +43,8 @@ fun PlotCalendarItem(plot: Plot, navController: NavController, userViewModel: Us
     } else {
         "Date undecided"
     }
+
+    var messageSent by remember {  mutableStateOf(false) }
 
 
     Column(modifier = Modifier
@@ -111,8 +116,9 @@ fun PlotCalendarItem(plot: Plot, navController: NavController, userViewModel: Us
         val currentDate = Calendar.getInstance().time
         if (currentDate.after(before30Min) && currentDate.before(after30Min)) {
             Log.d("status", plot.relationship_id.toString())
+
             if (plot.relationship_id != null) {
-                Log.d("status", "Finding user")
+                Log.d("status", "Finding user...")
                 var recipientId = -1
                 for ((userId, user) in userViewModel.friends) {
                     if (user.relationship_id == plot.relationship_id) {
@@ -125,68 +131,94 @@ fun PlotCalendarItem(plot: Plot, navController: NavController, userViewModel: Us
 
                 if (recipientId != -1) {
 
-                    Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                        CustomButton(buttonText = "Running late", modifier = Modifier.weight(1f).padding(end=16.dp),
-                            backgroundColor = LightGray,
-                            textColor = Black,
-                            onClick = {
-                                webSocket?.send("{\"recipient\": $recipientId, \"message\": \"Running late\"}")
-                                userViewModel.addPrivateMessage(
-                                    message = ChatMessage(
-                                        user_id = userViewModel.profile!!.user_id,
-                                        message = "Running late",
-                                        recipient = recipientId,
-                                        seen = true
-                                    )
-                                )
-                        })
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)) {
 
-                        CustomButton(buttonText = "I'm here", modifier = Modifier.weight(1f),
-                            onClick = {
-                                webSocket?.send("{\"recipient\": $recipientId, \"message\": \"I'm here\"}")
-                                userViewModel.addPrivateMessage(
-                                    message = ChatMessage(
-                                        user_id = userViewModel.profile!!.user_id,
-                                        message = "I'm here",
-                                        recipient = recipientId,
-                                        seen = true
-                                    )
+                        if (!messageSent) {
+
+                            // Running Late Button
+                            CustomButton(buttonText = "Running late", modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 16.dp),
+                                backgroundColor = LightGray,
+                                textColor = Black,
+                                onClick = {
+
+                                    if (recipientId != -1) {
+                                        webSocket?.send("{\"recipient\": $recipientId, \"message\": \"Running late\"}")
+                                        userViewModel.addPrivateMessage(
+                                            message = ChatMessage(
+                                                user_id = userViewModel.profile!!.user_id,
+                                                message = "Running late",
+                                                recipient = recipientId,
+                                                seen = true
+                                            )
+                                        )
+                                    }
+
+                                    else if (plot.group_id != null) {
+                                        webSocket?.send("{\"group\": ${plot.group_id}, \"message\": \"Running late\"}")
+                                        userViewModel.addGroupMessage(
+                                            message = ChatMessage(
+                                                user_id = userViewModel.profile!!.user_id,
+                                                message = "Running late",
+                                                group = plot.group_id,
+                                                seen = true
+                                            )
+                                        )
+                                    }
+
+                                    messageSent = true
+                                })
+
+                            // I'm Here Button
+                            CustomButton(buttonText = "I'm here", modifier = Modifier.weight(1f),
+                                onClick = {
+                                    if (recipientId != -1) {
+                                        webSocket?.send("{\"recipient\": $recipientId, \"message\": \"I'm here\"}")
+                                        userViewModel.addPrivateMessage(
+                                            message = ChatMessage(
+                                                user_id = userViewModel.profile!!.user_id,
+                                                message = "I'm here",
+                                                recipient = recipientId,
+                                                seen = true
+                                            )
+                                        )
+                                    }
+                                    else if (plot.group_id != null) {
+                                        webSocket?.send("{\"group\": ${plot.group_id}, \"message\": \"I'm here\"}")
+                                        userViewModel.addGroupMessage(
+                                            message = ChatMessage(
+                                                user_id = userViewModel.profile!!.user_id,
+                                                message = "I'm here",
+                                                group = plot.group_id,
+                                                seen = true
+                                            )
+                                        )
+                                    }
+
+                                    messageSent = true
+                                })
+                        }
+
+                        else {
+                            Box(modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(CircleShape)
+                                .background(LightGray)
+                                .height(48.dp)
+                                .padding(13.dp)
+                                ) {
+                                Icon(painter = painterResource(id = R.drawable.ic_checkbox_circle_fill),
+                                    contentDescription = "message_sent",
+                                    tint = Black60,
+                                    modifier = Modifier.align(Alignment.Center).fillMaxSize()
                                 )
-                        })
+                            }
+
+                        }
                     }
-
-                }
-            }
-            else if (plot.group_id != null) {
-
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    CustomButton(buttonText = "Running late", modifier = Modifier.weight(1f).padding(end=16.dp),
-                        backgroundColor = LightGray,
-                        textColor = Black,
-                        onClick = {
-                            webSocket?.send("{\"group\": ${plot.group_id}, \"message\": \"Running late\"}")
-                            userViewModel.addGroupMessage(
-                                message = ChatMessage(
-                                    user_id = userViewModel.profile!!.user_id,
-                                    message = "Running late",
-                                    group = plot.group_id,
-                                    seen = true
-                                )
-                            )
-                    })
-
-                    CustomButton(buttonText = "I'm here", modifier = Modifier.weight(1f),
-                        onClick = {
-                            webSocket?.send("{\"group\": ${plot.group_id}, \"message\": \"I'm here\"}")
-                            userViewModel.addGroupMessage(
-                                message = ChatMessage(
-                                    user_id = userViewModel.profile!!.user_id,
-                                    message = "I'm here",
-                                    group = plot.group_id,
-                                    seen = true
-                                )
-                            )
-                    })
                 }
             }
 
